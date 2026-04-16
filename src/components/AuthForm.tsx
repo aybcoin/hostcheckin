@@ -29,7 +29,10 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
         await onSignIn(email, password);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      const msg = err instanceof Error ? err.message
+        : (err && typeof err === 'object' && 'message' in err) ? String((err as { message: unknown }).message)
+        : 'Une erreur est survenue';
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -38,12 +38,12 @@ function App() {
 
   const handleSignIn = async (email: string, password: string) => {
     const { error } = await signIn(email, password);
-    if (error) throw error;
+    if (error) throw new Error(error.message || 'Connexion échouée');
   };
 
   const handleSignUp = async (email: string, password: string, fullName: string) => {
     const { error } = await signUp(email, password, fullName);
-    if (error) throw error;
+    if (error) throw new Error(error.message || 'Inscription échouée');
   };
 
   const handleSignOut = async () => {
