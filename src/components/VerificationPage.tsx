@@ -405,8 +405,9 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         rejection_reason: kycData.rejection_reason || null,
       });
 
-      // Hard block on rejection — do NOT advance to step 2
-      if (kycData.status === 'rejected' || kycData.is_valid_document === false) {
+      // Only hard block on explicit rejection.
+      // Pending responses include manual-review fallbacks when OCR is unavailable.
+      if (kycData.status === 'rejected') {
         setKycLoading(false);
         return;
       }
@@ -468,6 +469,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
       const consentText =
         "Je certifie que les informations fournies sont exactes. J'accepte que ma signature electronique, mon adresse IP, et l'horodatage soient enregistres conformement au reglement eIDAS.";
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       await logAuditEvent({
         reservationId: reservation.id,
@@ -483,42 +486,46 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         },
       });
 
-      const { data: existingContract } = await supabase
-        .from('contracts')
-        .select('*')
-        .eq('reservation_id', reservation.id)
-        .maybeSingle();
+      const signedAt = new Date().toISOString();
+      const contractResponse = await fetch(`${supabaseUrl}/functions/v1/save-guest-contract`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          reservation_id: reservation.id,
+          unique_link: uniqueLink,
+          guest_signature_url: signatureDataUrl,
+          contract_content: renderedContract,
+          signed_at: signedAt,
+        }),
+      });
 
-      let contractId: string | null = null;
+      if (!contractResponse.ok) {
+        const errorBody = await contractResponse.text().catch(() => '');
+        let errorMessage = 'Erreur lors de l\'enregistrement du contrat.';
+        if (errorBody) {
+          try {
+            const parsed = JSON.parse(errorBody);
+            errorMessage = parsed.error || errorMessage;
+          } catch {
+            errorMessage = errorBody;
+          }
+        }
+        console.error(`Guest contract save failed (HTTP ${contractResponse.status}):`, errorMessage);
+        alert(errorMessage);
+        setSubmitting(false);
+        return;
+      }
 
-      if (existingContract) {
-        contractId = existingContract.id;
-        await supabase
-          .from('contracts')
-          .update({
-            signed_by_guest: true,
-            guest_signature_url: signatureDataUrl,
-            signed_at: new Date().toISOString(),
-            contract_content: renderedContract,
-          })
-          .eq('id', existingContract.id);
-      } else {
-        const { data: newContract } = await supabase
-          .from('contracts')
-          .insert({
-            reservation_id: reservation.id,
-            property_id: reservation.property_id,
-            contract_type: 'rental_agreement',
-            pdf_url: 'pending',
-            signed_by_guest: true,
-            signed_by_host: false,
-            guest_signature_url: signatureDataUrl,
-            signed_at: new Date().toISOString(),
-            contract_content: renderedContract,
-          })
-          .select('id')
-          .maybeSingle();
-        contractId = newContract?.id || null;
+      const contractData = await contractResponse.json();
+      const contractId = contractData.contract_id as string | undefined;
+
+      if (!contractId) {
+        alert("Le contrat n'a pas pu etre enregistre. Veuillez reessayer.");
+        setSubmitting(false);
+        return;
       }
 
       if (contractId) {
@@ -538,9 +545,6 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         // Fix #3: PDF generation — don't silently swallow errors.
         // This runs in the background (we don't block step transition)
         // but we log failures for debuggability.
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
         fetch(`${supabaseUrl}/functions/v1/generate-contract-pdf`, {
           method: 'POST',
           headers: {

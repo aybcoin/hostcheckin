@@ -103,6 +103,8 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
         .from('contracts')
         .select('*')
         .eq('reservation_id', reservationId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle(),
       supabase
         .from('signature_audit_log')

@@ -312,16 +312,58 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
     if (!reservation) return;
 
     const defaultTemplate = templates.find((t) => t.is_default);
-    await supabase.from('contracts').insert({
-      reservation_id: selectedReservation,
-      property_id: reservation.property_id,
-      contract_type: 'rental_agreement',
-      pdf_url: 'pending',
-      signed_by_host: true,
-      signed_by_guest: false,
-      host_signature_url: signatureDataUrl,
-      template_id: defaultTemplate?.id || null,
-    });
+    const { data: existingContract, error: existingContractError } = await supabase
+      .from('contracts')
+      .select('id, locked')
+      .eq('reservation_id', selectedReservation)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingContractError) {
+      console.error('Error loading contract before host signature:', existingContractError);
+      alert("Impossible de charger le contrat existant.");
+      return;
+    }
+
+    if (existingContract?.locked) {
+      alert("Ce contrat est deja scelle et ne peut plus etre modifie.");
+      return;
+    }
+
+    if (existingContract) {
+      const { error: updateError } = await supabase
+        .from('contracts')
+        .update({
+          signed_by_host: true,
+          host_signature_url: signatureDataUrl,
+          template_id: defaultTemplate?.id || null,
+        })
+        .eq('id', existingContract.id);
+
+      if (updateError) {
+        console.error('Error updating contract with host signature:', updateError);
+        alert("Impossible d'enregistrer la signature du proprietaire.");
+        return;
+      }
+    } else {
+      const { error: insertError } = await supabase.from('contracts').insert({
+        reservation_id: selectedReservation,
+        property_id: reservation.property_id,
+        contract_type: 'rental_agreement',
+        pdf_url: 'pending',
+        signed_by_host: true,
+        signed_by_guest: false,
+        host_signature_url: signatureDataUrl,
+        template_id: defaultTemplate?.id || null,
+      });
+
+      if (insertError) {
+        console.error('Error creating contract with host signature:', insertError);
+        alert("Impossible de creer le contrat du proprietaire.");
+        return;
+      }
+    }
 
     setIsSigningHost(false);
     setSelectedReservation(null);

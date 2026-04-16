@@ -9,8 +9,9 @@ const corsHeaders = {
 };
 
 interface VerifyRequest {
-  verification_id: string;
+  verification_id?: string;
   reservation_id: string;
+  guest_id?: string;
   id_document_url: string;
   id_back_url?: string;
   selfie_url?: string;
@@ -36,6 +37,15 @@ interface DocumentAnalysis {
   matched_keywords: string[];
   rejection_reasons: string[];
   ocr: OcrResult;
+}
+
+function summarizeUrl(input: string): string {
+  try {
+    const parsed = new URL(input);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return input.slice(0, 120);
+  }
 }
 
 // ---------- Text normalization helpers ----------
@@ -145,29 +155,72 @@ function detectKeywords(text: string, idType: string): string[] {
 
 // ---------- OCR.space call ----------
 
+async function downloadImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string } | null> {
+  try {
+    const resp = await fetch(imageUrl);
+    if (!resp.ok) return null;
+    const buffer = await resp.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    const contentType = resp.headers.get("content-type") || "image/jpeg";
+    return { base64, mimeType: contentType };
+  } catch (error) {
+    console.error("verify-identity image download failed:", {
+      imageUrl: summarizeUrl(imageUrl),
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
 async function callOcrSpace(imageUrl: string): Promise<OcrResult> {
   const apiKey = Deno.env.get("OCR_SPACE_API_KEY") || "helloworld";
   try {
-    // OCR.space /parse/imageurl uses GET with query params
-    const params = new URLSearchParams({
-      url: imageUrl,
-      language: "fre",
-      isOverlayRequired: "false",
-      detectOrientation: "true",
-      scale: "true",
-      OCREngine: "2",
-      filetype: "Auto",
+    console.info("verify-identity OCR start", {
+      provider: "ocr.space",
+      imageUrl: summarizeUrl(imageUrl),
     });
 
-    const resp = await fetch(
-      `https://api.ocr.space/parse/imageurl?${params.toString()}`,
-      {
-        method: "GET",
-        headers: { apikey: apiKey },
-      },
-    );
+    // Download image and send as base64 — more reliable than passing URL
+    const imageData = await downloadImageAsBase64(imageUrl);
+    if (!imageData) {
+      console.warn("verify-identity OCR aborted: image download unavailable", {
+        imageUrl: summarizeUrl(imageUrl),
+      });
+      return {
+        raw_text: "",
+        lines: [],
+        success: false,
+        error: "Failed to download image for OCR",
+        provider: "ocr.space",
+      };
+    }
+
+    const base64String = `data:${imageData.mimeType};base64,${imageData.base64}`;
+
+    const formData = new FormData();
+    formData.append("base64Image", base64String);
+    formData.append("language", "fre");
+    formData.append("isOverlayRequired", "false");
+    formData.append("detectOrientation", "true");
+    formData.append("scale", "true");
+    formData.append("OCREngine", "2");
+
+    const resp = await fetch("https://api.ocr.space/parse/image", {
+      method: "POST",
+      headers: { apikey: apiKey },
+      body: formData,
+    });
 
     if (!resp.ok) {
+      console.warn("verify-identity OCR HTTP error", {
+        status: resp.status,
+        imageUrl: summarizeUrl(imageUrl),
+      });
       return {
         raw_text: "",
         lines: [],
@@ -179,13 +232,18 @@ async function callOcrSpace(imageUrl: string): Promise<OcrResult> {
 
     const json = await resp.json();
     if (json.IsErroredOnProcessing) {
+      const errorMessage = Array.isArray(json.ErrorMessage)
+        ? json.ErrorMessage.join(" | ")
+        : String(json.ErrorMessage || "unknown");
+      console.warn("verify-identity OCR processing error", {
+        imageUrl: summarizeUrl(imageUrl),
+        error: errorMessage,
+      });
       return {
         raw_text: "",
         lines: [],
         success: false,
-        error: Array.isArray(json.ErrorMessage)
-          ? json.ErrorMessage.join(" | ")
-          : String(json.ErrorMessage || "unknown"),
+        error: errorMessage,
         provider: "ocr.space",
       };
     }
@@ -199,6 +257,13 @@ async function callOcrSpace(imageUrl: string): Promise<OcrResult> {
       .map((l: string) => l.trim())
       .filter((l: string) => l.length > 0);
 
+    console.info("verify-identity OCR complete", {
+      imageUrl: summarizeUrl(imageUrl),
+      success: parsed.length > 0,
+      lineCount: lines.length,
+      textLength: parsed.length,
+    });
+
     return {
       raw_text: parsed,
       lines,
@@ -207,6 +272,10 @@ async function callOcrSpace(imageUrl: string): Promise<OcrResult> {
       provider: "ocr.space",
     };
   } catch (e) {
+    console.error("verify-identity OCR request failed:", {
+      imageUrl: summarizeUrl(imageUrl),
+      error: e instanceof Error ? e.message : String(e),
+    });
     return {
       raw_text: "",
       lines: [],
@@ -327,7 +396,7 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const body = await req.json();
+    const body: VerifyRequest = await req.json();
     const {
       reservation_id,
       guest_id,
@@ -346,6 +415,15 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    console.info("verify-identity request received", {
+      reservation_id,
+      guest_id: guest_id || null,
+      id_type: id_type || "unknown",
+      has_back: !!id_back_url,
+      has_selfie: !!selfie_url,
+      id_document_url: summarizeUrl(id_document_url),
+    });
 
     // Create the identity_verification record server-side (bypasses RLS)
     const { data: newVer, error: insertError } = await supabase
@@ -371,6 +449,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const verification_id = newVer.id;
+    console.info("verify-identity record created", {
+      reservation_id,
+      verification_id,
+    });
 
     const ip_address = req.headers.get("x-forwarded-for") ||
       req.headers.get("x-real-ip") ||
@@ -378,12 +460,24 @@ Deno.serve(async (req: Request) => {
     const user_agent = req.headers.get("user-agent") || "unknown";
 
     const analysis = await analyzeDocument(id_document_url, id_type, declared_name);
+    console.info("verify-identity analysis complete", {
+      reservation_id,
+      verification_id,
+      ocr_success: analysis.ocr.success,
+      confidence: analysis.confidence,
+      rejection_reasons: analysis.rejection_reasons.length,
+      matched_keywords: analysis.matched_keywords.length,
+    });
 
     // Fail-closed: no OCR → pending (manual review), never approved
     let status: string;
     let rejection_reason: string | null = null;
+    const requiresManualReview = !analysis.ocr.success;
 
-    if (analysis.rejection_reasons.length > 0) {
+    if (requiresManualReview) {
+      status = "pending";
+      rejection_reason = "Verification necessitant une revue manuelle par l'hote.";
+    } else if (analysis.rejection_reasons.length > 0) {
       status = "rejected";
       rejection_reason = analysis.rejection_reasons.join(" ");
     } else if (analysis.is_valid_document && analysis.confidence >= 0.75) {
@@ -454,6 +548,13 @@ Deno.serve(async (req: Request) => {
         id_type,
       },
     });
+    console.info("verify-identity status decided", {
+      reservation_id,
+      verification_id,
+      status,
+      requires_manual_review: requiresManualReview,
+      confidence: analysis.confidence,
+    });
 
     // Only move reservation forward if approved or pending (manual review)
     // Rejected submissions do NOT progress the reservation.
@@ -473,6 +574,7 @@ Deno.serve(async (req: Request) => {
         is_valid_document: analysis.is_valid_document,
         name_match_score: analysis.name_match_score,
         matched_keywords: analysis.matched_keywords,
+        requires_manual_review: requiresManualReview,
         rejection_reason,
         ocr_data: {
           extracted_name: analysis.extracted_name,

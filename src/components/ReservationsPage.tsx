@@ -83,8 +83,8 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
     try {
       const [guestRes, verRes, contractRes] = await Promise.all([
         supabase.from('guests').select('id, full_name, email, phone').in('id', guestIds),
-        supabase.from('identity_verification').select('id, reservation_id, status, id_type, id_document_url, id_back_url, selfie_url, document_confidence, detected_document_type, rejection_reason').in('reservation_id', resIds),
-        supabase.from('contracts').select('id, reservation_id, signed_by_guest, guest_signature_url, contract_content, pdf_storage_path').in('reservation_id', resIds),
+        supabase.from('identity_verification').select('id, reservation_id, status, id_type, id_document_url, id_back_url, selfie_url, document_confidence, detected_document_type, rejection_reason').in('reservation_id', resIds).order('created_at', { ascending: true }),
+        supabase.from('contracts').select('id, reservation_id, signed_by_guest, guest_signature_url, contract_content, pdf_storage_path').in('reservation_id', resIds).order('created_at', { ascending: true }),
       ]);
 
       if (guestRes.error) console.error('Failed to fetch guests:', guestRes.error);
