@@ -9,6 +9,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export const APP_BASE_URL = import.meta.env.VITE_APP_URL || window.location.origin;
+
 export interface Host {
   id: string;
   email: string;

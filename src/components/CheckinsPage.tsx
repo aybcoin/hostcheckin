@@ -1,5 +1,5 @@
 import { FileText, Upload, CheckCircle, Clock } from 'lucide-react';
-import { Reservation } from '../lib/supabase';
+import { Reservation, APP_BASE_URL } from '../lib/supabase';
 
 interface CheckinsPageProps {
   reservations: Reservation[];
@@ -58,7 +58,7 @@ export function CheckinsPage({ reservations }: CheckinsPageProps) {
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4">
                 <p className="text-xs text-gray-600 mb-1.5">Lien de check-in</p>
                 <p className="text-xs sm:text-sm font-mono text-gray-700 break-all">
-                  {`${window.location.origin}/checkin/${reservation.unique_link}`}
+                  {`${APP_BASE_URL}/checkin/${reservation.unique_link}`}
                 </p>
               </div>
 

@@ -3,7 +3,7 @@ import {
   Calendar, Copy, Check, Clock, Plus, ChevronDown, ChevronUp, Trash2,
   Link2, Star, ClipboardList, FileSearch, Share2, Eye, Lock, Users, Shield
 } from 'lucide-react';
-import { Reservation, Property } from '../lib/supabase';
+import { Reservation, Property, APP_BASE_URL } from '../lib/supabase';
 import { supabase } from '../lib/supabase';
 import { ReservationDocuments } from './ReservationDocuments';
 import { ReservationFilters, FilterValues, EMPTY_FILTERS } from './reservations/ReservationFilters';
@@ -194,7 +194,7 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
             const guest = guests[reservation.guest_id];
             const verification = verifications[reservation.id];
             const contract = contracts[reservation.id];
-            const checkinLink = `${window.location.origin}/checkin/${reservation.unique_link}`;
+            const checkinLink = `${APP_BASE_URL}/checkin/${reservation.unique_link}`;
 
             return (
               <div key={reservation.id} className="bg-white rounded-xl shadow-sm border overflow-hidden transition-shadow hover:shadow-md">

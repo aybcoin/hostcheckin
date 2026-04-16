@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Plus, QrCode, PenLine } from 'lucide-react';
-import { Property } from '../../lib/supabase';
+import { Property, APP_BASE_URL } from '../../lib/supabase';
 import { supabase } from '../../lib/supabase';
 
 interface CreateReservationModalProps {
@@ -124,9 +124,9 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                   </div>
                   <p className="text-sm text-gray-600 mb-2">QR Code pour "{selectedProp.name}"</p>
                   <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200 max-w-md mx-auto">
-                    <span className="text-xs text-gray-500 truncate flex-1">{window.location.origin}/auto/{selectedProp.id}</span>
+                    <span className="text-xs text-gray-500 truncate flex-1">{APP_BASE_URL}/auto/{selectedProp.id}</span>
                     <button
-                      onClick={() => navigator.clipboard.writeText(`${window.location.origin}/auto/${selectedProp.id}`)}
+                      onClick={() => navigator.clipboard.writeText(`${APP_BASE_URL}/auto/${selectedProp.id}`)}
                       className="shrink-0 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
                       Copier
