@@ -84,6 +84,8 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
   const [property, setProperty] = useState<any>(null);
   const [contractTemplate, setContractTemplate] = useState<string | null>(null);
   const [idType, setIdType] = useState('');
+  const [declaredName, setDeclaredName] = useState('');
+  const [declaredEmail, setDeclaredEmail] = useState('');
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
@@ -139,6 +141,10 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
       }
 
       setReservation(resData);
+      // Pre-fill the declared identity fields from the reservation so returning
+      // guests see their data, while still allowing them to edit it.
+      setDeclaredName(resData?.guests?.full_name || '');
+      setDeclaredEmail(resData?.guests?.email || '');
 
       const { data: propData } = await supabase
         .from('properties')
@@ -263,25 +269,47 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   const MAX_FILE_SIZE_MB = 10;
   const OCR_MAX_KB = 950; // OCR.space free = 1024 KB, keep margin
 
+  // HEIC/HEIF detection — iOS 11+ cameras produce these by default. Most
+  // Android browsers CANNOT decode them via <img>, which used to silently
+  // break mobile OCR. We detect by MIME type AND by filename extension
+  // (some browsers advertise an empty MIME for HEIC).
+  const isHeicLike = (f: File): boolean => {
+    const t = (f.type || '').toLowerCase();
+    const n = (f.name || '').toLowerCase();
+    return t === 'image/heic' || t === 'image/heif'
+      || n.endsWith('.heic') || n.endsWith('.heif');
+  };
+
   // Compress image to fit OCR.space 1 MB limit using Canvas API.
   // Returns a JPEG Blob ≤ OCR_MAX_KB. Non-image files pass through.
+  // For HEIC on browsers that can't decode it, throws so the caller shows a
+  // clear error instead of silently uploading an un-OCR-able HEIC blob.
   const compressImage = (file: File, maxKB: number): Promise<File> => {
     if (!file.type.startsWith('image/') || file.type === 'application/pdf') {
       return Promise.resolve(file);
     }
-    if (file.size <= maxKB * 1024) {
+    // Always go through the canvas pipeline for images so we can normalise
+    // HEIC -> JPEG where the browser supports it. Small JPEGs below maxKB
+    // still skip compression to preserve original quality.
+    if (!isHeicLike(file) && file.size <= maxKB * 1024) {
       return Promise.resolve(file);
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
+      let settled = false;
+      const safeResolve = (v: File) => { if (!settled) { settled = true; URL.revokeObjectURL(url); resolve(v); } };
+      const safeReject = (e: Error) => { if (!settled) { settled = true; URL.revokeObjectURL(url); reject(e); } };
 
+      img.onload = () => {
         // Scale down so longest side ≤ 1600px (good OCR quality, small size)
         const MAX_DIM = 1600;
         let { width, height } = img;
+        if (!width || !height) {
+          safeReject(new Error('Image vide ou illisible.'));
+          return;
+        }
         if (width > MAX_DIM || height > MAX_DIM) {
           const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
           width = Math.round(width * ratio);
@@ -291,16 +319,19 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d')!;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          safeReject(new Error('Canvas indisponible sur cet appareil.'));
+          return;
+        }
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Try progressively lower quality until under maxKB
         const tryQuality = (q: number) => {
           canvas.toBlob(
             (blob) => {
-              if (!blob) { resolve(file); return; }
+              if (!blob) { safeReject(new Error('Echec de la compression JPEG.')); return; }
               if (blob.size <= maxKB * 1024 || q <= 0.3) {
-                resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
+                safeResolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
               } else {
                 tryQuality(q - 0.1);
               }
@@ -311,7 +342,17 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         };
         tryQuality(0.8);
       };
-      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.onerror = () => {
+        if (isHeicLike(file)) {
+          safeReject(new Error(
+            "Format HEIC/HEIF non pris en charge par ce navigateur. Sur iPhone, activez Reglages -> Appareil photo -> Formats -> Le plus compatible, ou envoyez la photo en JPEG/PNG.",
+          ));
+        } else {
+          safeReject(new Error(
+            "Impossible de lire l'image. Le fichier est peut-etre corrompu ou dans un format non supporte.",
+          ));
+        }
+      };
       img.src = url;
     });
   };
@@ -321,17 +362,34 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       alert(`Le fichier "${label}" depasse la taille maximale autorisee (${MAX_FILE_SIZE_MB} Mo).`);
       return null;
     }
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
+    // Accept common mobile-camera variants. Some Android browsers advertise
+    // `image/heif` for iPhone photos; empty MIME is also possible — in that
+    // case we fall back to the filename extension check inside compressImage.
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+      'image/heic', 'image/heif', 'application/pdf', '',
+    ];
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const extOk = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf'].includes(ext);
+    if (!allowedTypes.includes(file.type) && !extOk) {
       alert(`Type de fichier non accepte pour "${label}". Formats acceptes: JPEG, PNG, WebP, HEIC, PDF.`);
       return null;
     }
 
-    // Compress for OCR compatibility (< 1 MB)
-    const compressed = await compressImage(file, OCR_MAX_KB);
+    // Compress for OCR compatibility (< 1 MB). Any decode / format error is
+    // surfaced clearly to the guest instead of silently producing an
+    // un-readable upload that the edge function would then reject.
+    let compressed: File;
+    try {
+      compressed = await compressImage(file, OCR_MAX_KB);
+    } catch (e) {
+      console.error(`compressImage failed for ${label}:`, e);
+      alert(`${label} : ${(e as Error).message}`);
+      return null;
+    }
 
-    const ext = compressed.name.split('.').pop() || 'jpg';
-    const path = `${reservation.id}/${folder}_${Date.now()}.${ext}`;
+    const finalExt = compressed.name.split('.').pop() || 'jpg';
+    const path = `${reservation.id}/${folder}_${Date.now()}.${finalExt}`;
     const { error } = await supabase.storage
       .from('checkin-files')
       .upload(path, compressed, { contentType: compressed.type, upsert: true });
@@ -345,10 +403,36 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
   const handleStep1Continue = async () => {
     if (!idType || !idFrontFile || !reservation) return;
+    const trimmedName = (declaredName || '').trim();
+    if (!trimmedName) {
+      alert("Veuillez renseigner votre nom complet.");
+      return;
+    }
     setKycLoading(true);
     setKycResult(null);
 
     try {
+      // Persist any edits the guest made to their own name / email back onto
+      // the guests row so the contract, PDF and audit trail reflect the
+      // identity they just declared. We don't fail the flow if this update
+      // errors — the KYC step is what matters most here.
+      const trimmedEmail = (declaredEmail || '').trim();
+      try {
+        const guestUpdate: Record<string, string> = { full_name: trimmedName };
+        if (trimmedEmail) guestUpdate.email = trimmedEmail;
+        if (reservation.guest_id) {
+          await supabase.from('guests').update(guestUpdate).eq('id', reservation.guest_id);
+        }
+        // Mirror locally so downstream code (contract render, audit payloads)
+        // immediately sees the updated name/email.
+        setReservation((prev: any) => prev ? {
+          ...prev,
+          guests: { ...(prev.guests || {}), full_name: trimmedName, email: trimmedEmail || prev.guests?.email || null },
+        } : prev);
+      } catch (updateErr) {
+        console.warn('Guest profile update failed (non-fatal):', updateErr);
+      }
+
       const frontUrl = await uploadFile(idFrontFile, 'id_front', 'ID front');
       const backUrl = idBackFile ? await uploadFile(idBackFile, 'id_back', 'ID back') : null;
 
@@ -374,18 +458,52 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
           guest_id: reservation.guest_id,
           id_document_url: frontUrl,
           id_back_url: backUrl,
-          declared_name: reservation.guests?.full_name || '',
+          declared_name: trimmedName,
           id_type: idType,
         }),
       });
 
       if (!kycResponse.ok) {
+        // Try to surface the actual reason from the edge function rather than
+        // always showing a generic "service indisponible" message — this is
+        // especially important on mobile where users land via QR codes with
+        // incomplete guest data and were hitting silent 400 "Missing required
+        // fields" responses before.
+        let serverReason: string | null = null;
+        try {
+          const errBody = await kycResponse.json();
+          serverReason = errBody?.error || errBody?.rejection_reason || null;
+        } catch {
+          /* body wasn't JSON — keep serverReason null */
+        }
+
+        let message: string;
+        if (kycResponse.status === 400) {
+          message = serverReason
+            ? `Donnees incompletes : ${serverReason}. Verifiez votre nom et la photo du document.`
+            : "Donnees incompletes. Verifiez votre nom et la photo du document.";
+        } else if (kycResponse.status === 413 || kycResponse.status === 414) {
+          message = "La photo du document est trop volumineuse. Essayez avec une photo plus petite ou mieux cadree.";
+        } else if (kycResponse.status >= 500) {
+          message = serverReason
+            ? `Erreur du service : ${serverReason}. Veuillez reessayer dans quelques instants.`
+            : "Le service de verification est momentanement indisponible. Veuillez reessayer dans quelques instants.";
+        } else {
+          message = serverReason
+            || "Le service de verification a refuse la demande. Veuillez reessayer.";
+        }
+
+        console.error('KYC verification HTTP error:', {
+          status: kycResponse.status,
+          serverReason,
+          platform: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        });
+
         setKycResult({
           status: 'rejected',
           confidence: 0,
           is_valid_document: false,
-          rejection_reason:
-            "Le service de verification est momentanement indisponible. Veuillez reessayer dans quelques instants.",
+          rejection_reason: message,
         });
         setKycLoading(false);
         return;
@@ -468,7 +586,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       }
 
       const consentText =
-        "Je certifie que les informations fournies sont exactes. J'accepte que ma signature electronique, mon adresse IP, et l'horodatage soient enregistres conformement au reglement eIDAS.";
+        "Je certifie que les informations fournies sont exactes. J'accepte que ma signature electronique, mon adresse IP, et l'horodatage soient enregistres conformement a la loi marocaine n° 53-05 du 30 novembre 2007 relative a l'echange electronique de donnees juridiques.";
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -655,7 +773,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             </p>
           </div>
           <p className="text-[11px] text-gray-400 mt-4">
-            Votre adresse IP, navigateur et horodatage ont ete enregistres conformement au reglement eIDAS (UE 910/2014).
+            Votre adresse IP, navigateur et horodatage ont ete enregistres conformement a la loi marocaine n° 53-05 du 30 novembre 2007 relative a l'echange electronique de donnees juridiques.
           </p>
         </div>
       </div>
@@ -719,6 +837,39 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             {step === 1 && (
               <div className="space-y-5">
                 <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Vos informations</h3>
+                  <p className="text-sm text-gray-600">Confirmez votre identite avant la verification du document</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Nom complet <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={declaredName}
+                    onChange={(e) => setDeclaredName(e.target.value)}
+                    placeholder="Tel qu'indique sur votre piece d'identite"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base"
+                    autoComplete="name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Email <span className="text-gray-400 font-normal">(optionnel)</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={declaredEmail}
+                    onChange={(e) => setDeclaredEmail(e.target.value)}
+                    placeholder="email@exemple.com"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base"
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-gray-200">
                   <h3 className="text-lg font-bold text-gray-900 mb-1">Piece d'identite</h3>
                   <p className="text-sm text-gray-600">Votre document sera verifie automatiquement</p>
                 </div>
@@ -830,7 +981,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
                 <button
                   onClick={handleStep1Continue}
-                  disabled={!idType || !idFrontFile || kycLoading}
+                  disabled={!idType || !idFrontFile || !declaredName.trim() || kycLoading}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
                 >
                   {kycLoading ? (
@@ -967,8 +1118,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     />
                     <span className="text-xs text-blue-800 leading-relaxed">
                       Je certifie que les informations fournies sont exactes. J'accepte que ma signature electronique,
-                      mon adresse IP, et l'horodatage soient enregistres conformement au reglement eIDAS (UE 910/2014)
-                      sur les signatures electroniques.
+                      mon adresse IP et l'horodatage soient enregistres conformement a la loi marocaine n° 53-05
+                      du 30 novembre 2007 relative a l'echange electronique de donnees juridiques.
                     </span>
                   </label>
                 </div>

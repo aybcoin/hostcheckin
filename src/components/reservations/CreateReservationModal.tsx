@@ -36,11 +36,19 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
     e.preventDefault();
     setLoading(true);
     try {
-      const { data: guestData, error: guestError } = await supabase
-        .from('guests')
-        .upsert({ email: formData.guest_email, full_name: formData.guest_name, phone: formData.guest_phone }, { onConflict: 'email' })
-        .select()
-        .single();
+      // Email is optional. When provided, upsert by email so re-using the
+      // same guest doesn't create duplicates. When absent, always insert a
+      // new guest row (no unique key to conflict on).
+      const email = (formData.guest_email || '').trim();
+      const guestPayload = {
+        full_name: formData.guest_name,
+        phone: formData.guest_phone || null,
+        ...(email ? { email } : {}),
+      };
+      const query = email
+        ? supabase.from('guests').upsert(guestPayload, { onConflict: 'email' })
+        : supabase.from('guests').insert(guestPayload);
+      const { data: guestData, error: guestError } = await query.select().single();
       if (guestError) throw guestError;
 
       await onAdd({
@@ -190,12 +198,13 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email <span className="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
                     <input
                       type="email"
                       value={formData.guest_email}
                       onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
-                      required
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                       placeholder="email@exemple.com"
                     />
