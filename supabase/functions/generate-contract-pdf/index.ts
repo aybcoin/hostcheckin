@@ -49,7 +49,7 @@ function clean(t: string): string {
     .replace(/[^\x00-\xff]/g, "?");
 }
 
-// ── Word wrap ─────────────────────────────────────────────────────
+// ── Word wrap (char-based fallback) ──────────────────────────────
 function wrap(text: string, maxCh: number): string[] {
   const out: string[] = [];
   for (const raw of text.split("\n")) {
@@ -62,6 +62,38 @@ function wrap(text: string, maxCh: number): string[] {
       rem = rem.slice(brk).trimStart();
     }
     out.push(rem);
+  }
+  return out;
+}
+
+// ── Width-based wrap — measures actual glyph widths ──────────────
+// Returns per-line data including a flag marking the last line of a
+// paragraph (so the caller can skip justification on that line, like CSS
+// `text-align: justify` leaves the final line flush-left).
+// deno-lint-ignore no-explicit-any
+function wrapByWidth(text: string, maxW: number, size: number, f: any)
+  : Array<{ text: string; lastOfPara: boolean; blank: boolean }> {
+  const out: Array<{ text: string; lastOfPara: boolean; blank: boolean }> = [];
+  const paragraphs = clean(text).split("\n");
+  for (let p = 0; p < paragraphs.length; p++) {
+    const raw = paragraphs[p];
+    if (!raw.trim()) { out.push({ text: "", lastOfPara: true, blank: true }); continue; }
+    const words = raw.split(/\s+/);
+    const lineBuf: string[] = [];
+    let cur = "";
+    for (const w of words) {
+      const trial = cur ? cur + " " + w : w;
+      if (f.widthOfTextAtSize(trial, size) <= maxW) {
+        cur = trial;
+      } else {
+        if (cur) lineBuf.push(cur);
+        cur = w;
+      }
+    }
+    if (cur) lineBuf.push(cur);
+    for (let i = 0; i < lineBuf.length; i++) {
+      out.push({ text: lineBuf[i], lastOfPara: i === lineBuf.length - 1, blank: false });
+    }
   }
   return out;
 }
@@ -355,17 +387,141 @@ Deno.serve(async (req: Request) => {
       }
     };
 
-    // Section header: thin accent bar + uppercase label
+    // Section header — equivalent to CSS `.section-title { font-weight: 600;
+    // margin-top: 20px; margin-bottom: 10px; }` plus a thin blue accent bar.
     const sectionHeader = (label: string, subtitle?: string) => {
-      ensureSpace(30);
+      ensureSpace(36);
+      y -= 8; // part of the 20pt top breathing room (the caller already left some)
       R(M, y, 3, 14, BLUE);
-      T(label.toUpperCase(), M + 10, y - 10, 9.5, fontB, INK);
+      T(label.toUpperCase(), M + 10, y - 10, 10, fontB, INK);
       if (subtitle) {
-        T(subtitle, M + 10 + Tw(label.toUpperCase(), 9.5, fontB) + 10, y - 10, 8.5, font, GRAY_2);
+        T(subtitle, M + 10 + Tw(label.toUpperCase(), 10, fontB) + 10, y - 10, 8.5, font, GRAY_2);
       }
       y -= 18;
       HL(y, M, CW, 0.5, GRAY_3);
-      y -= 12;
+      y -= 10; // margin-bottom: 10px
+    };
+
+    // Draw a single text line with optional full justification. Word spacing
+    // is expanded so the line fills `w`; last line of a paragraph (and lines
+    // with a single word) render flush-left as in CSS `text-align: justify`.
+    // deno-lint-ignore no-explicit-any
+    const drawJustified = (text: string, x: number, ty: number, w: number, size: number, f: any, col: any, justify: boolean) => {
+      const cleaned = clean(text);
+      if (!justify || !cleaned.trim()) {
+        page.drawText(cleaned, { x, y: ty, size, font: f, color: col });
+        return;
+      }
+      const parts = cleaned.split(" ").filter((s) => s.length > 0);
+      if (parts.length < 2) {
+        page.drawText(cleaned, { x, y: ty, size, font: f, color: col });
+        return;
+      }
+      const wordsW = parts.reduce((s, p) => s + f.widthOfTextAtSize(p, size), 0);
+      const gaps = parts.length - 1;
+      const naturalGap = f.widthOfTextAtSize(" ", size);
+      const neededGap = (w - wordsW) / gaps;
+      // Cap extra spacing so stretched lines don't look grotesque.
+      const maxGap = naturalGap * 3.2;
+      const gap = Math.max(naturalGap, Math.min(neededGap, maxGap));
+      let cx = x;
+      for (let i = 0; i < parts.length; i++) {
+        page.drawText(parts[i], { x: cx, y: ty, size, font: f, color: col });
+        cx += f.widthOfTextAtSize(parts[i], size) + gap;
+      }
+    };
+
+    // Paragraph renderer — translates the CSS
+    //   p { text-align: justify; line-height: 1.6; margin-bottom: 10px; }
+    // into pdf-lib calls. Handles page breaks, returns nothing (mutates `y`).
+    const drawParagraph = (
+      text: string,
+      opts: {
+        x?: number;
+        width?: number;
+        size?: number;
+        // deno-lint-ignore no-explicit-any
+        font?: any;
+        // deno-lint-ignore no-explicit-any
+        color?: any;
+        lineHeight?: number;   // multiplier, CSS-style; defaults to 1.6
+        marginBottom?: number; // pt
+        justify?: boolean;
+      } = {},
+    ) => {
+      const x = opts.x ?? M;
+      const w = opts.width ?? CW;
+      const sz = opts.size ?? 9;
+      const f = opts.font ?? font;
+      const col = opts.color ?? INK;
+      const lh = opts.lineHeight ?? 1.6;
+      const mb = opts.marginBottom ?? 10;
+      const justify = opts.justify ?? true;
+      const step = sz * lh;
+
+      const lines = wrapByWidth(text, w, sz, f);
+      for (const ln of lines) {
+        if (ln.blank) { y -= step * 0.5; continue; }
+        ensureSpace(step);
+        drawJustified(ln.text, x, y - sz, w, sz, f, col, justify && !ln.lastOfPara);
+        y -= step;
+      }
+      y -= mb;
+    };
+
+    // Bulleted list — CSS `ul { margin-left: 20px; line-height: 1.6; }`.
+    // Each item wraps with a hanging indent so wrapped lines align under the
+    // first word of the item rather than under the bullet.
+    const drawBulletList = (
+      items: string[],
+      opts: {
+        x?: number;
+        width?: number;
+        size?: number;
+        // deno-lint-ignore no-explicit-any
+        font?: any;
+        // deno-lint-ignore no-explicit-any
+        color?: any;
+        lineHeight?: number;
+        marginBottom?: number;
+        indent?: number;      // left offset for the bullet (CSS margin-left)
+        hang?: number;        // gap between bullet and item text
+        justify?: boolean;
+      } = {},
+    ) => {
+      const x = opts.x ?? M;
+      const w = opts.width ?? CW;
+      const sz = opts.size ?? 9;
+      const f = opts.font ?? font;
+      const col = opts.color ?? INK;
+      const lh = opts.lineHeight ?? 1.6;
+      const mb = opts.marginBottom ?? 10;
+      const indent = opts.indent ?? 20;
+      const hang = opts.hang ?? 8;
+      const justify = opts.justify ?? true;
+      const step = sz * lh;
+      const textX = x + indent + hang;
+      const textW = w - indent - hang;
+
+      for (const item of items) {
+        const lines = wrapByWidth(item, textW, sz, f);
+        ensureSpace(step);
+        // Draw a small filled square bullet — CSS list-style-type: square.
+        // (Unicode bullets get stripped to '*' by clean() for WinAnsi fonts.)
+        const bulletSide = Math.max(2.2, sz * 0.28);
+        page.drawRectangle({
+          x: x + indent,
+          y: y - sz + (sz - bulletSide) / 2 + 1,
+          width: bulletSide, height: bulletSide, color: BLUE,
+        });
+        for (let i = 0; i < lines.length; i++) {
+          if (i > 0) ensureSpace(step);
+          const ln = lines[i];
+          drawJustified(ln.text, textX, y - sz, textW, sz, f, col, justify && !ln.lastOfPara);
+          y -= step;
+        }
+      }
+      y -= mb;
     };
 
     // ─────────────────────────────────────────────────────────
@@ -501,68 +657,96 @@ Deno.serve(async (req: Request) => {
     y -= propertyH + 16;
 
     // ─────────────────────────────────────────────────────────
-    // CONTRACT BODY
+    // CONTRACT BODY  —  .contract-block { text-align: justify; }
+    //                   p { line-height: 1.6; margin-bottom: 10px; }
     // ─────────────────────────────────────────────────────────
     sectionHeader("Termes du contrat", "Clauses contractuelles convenues");
 
-    const bodyLines = wrap(contractContent, 92);
-    for (const line of bodyLines) {
-      ensureSpace(14);
-      if (!line.trim()) { y -= 6; continue; }
-      if (/^---+$/.test(line.trim()) || /^--+$/.test(line.trim())) {
-        y -= 3; HL(y, M + 30, CW - 60, 0.4, GRAY_3); y -= 8; continue;
+    // Split the template on BLANK lines → each block is one paragraph. Within
+    // a block, newlines are soft (joined with a space) so wrapByWidth can
+    // re-flow the text to the page width with proper justification.
+    const rawBlocks = contractContent.split(/\n\s*\n/);
+    for (let rb = 0; rb < rawBlocks.length; rb++) {
+      const blockRaw = rawBlocks[rb];
+      const block = blockRaw.replace(/\n/g, " ").trim();
+      if (!block) { y -= 6; continue; }
+
+      // Horizontal rule marker
+      if (/^---+$/.test(block) || /^--+$/.test(block)) {
+        ensureSpace(14);
+        HL(y, M + 30, CW - 60, 0.4, GRAY_3);
+        y -= 12;
+        continue;
       }
-      const isArticle = /^(article|art\.?)\s*\d+/i.test(line.trim());
-      const isNumbered = /^\d+[.)]/.test(line.trim());
-      const isHeading = /^[A-Z\s]{6,}$/.test(line.trim()) && line.trim().length < 60;
+
+      const isArticle  = /^(article|art\.?)\s*\d+/i.test(block);
+      const isNumbered = /^\d+[.)]\s/.test(block);
+      const isHeading  = /^[A-Z0-9\s\-:]{6,}$/.test(block) && block.length < 80;
+      const isBullet   = /^\s*[-*•]\s+/.test(blockRaw) && blockRaw.includes("\n");
+
       if (isArticle) {
+        // Article N. — Title on its own line, then the body (if any) after a colon.
+        ensureSpace(24);
         y -= 4;
-        ensureSpace(20);
-        R(M, y + 1, 3, 12, BLUE);
-        T(line, M + 9, y - 9, 9.5, fontB, NAVY);
-        y -= 16;
+        R(M, y + 1, 3, 14, BLUE);
+        const colonIdx = block.indexOf(":");
+        if (colonIdx > 0 && colonIdx < 80) {
+          const head = block.slice(0, colonIdx + 1).trim();
+          const tail = block.slice(colonIdx + 1).trim();
+          T(head, M + 10, y - 10, 10, fontB, NAVY);
+          y -= 18;
+          if (tail) drawParagraph(tail, { size: 9, marginBottom: 10 });
+          else y -= 4;
+        } else {
+          T(block, M + 10, y - 10, 10, fontB, NAVY);
+          y -= 18;
+        }
       } else if (isHeading) {
-        y -= 2;
-        T(line, M, y - 8, 9.5, fontB, NAVY);
-        y -= 14;
+        ensureSpace(20);
+        y -= 4;
+        T(block, M, y - 10, 10, fontB, NAVY);
+        y -= 18;
+      } else if (isBullet) {
+        // A block that contains multiple bullet lines → render as a list.
+        const items = blockRaw
+          .split(/\n/)
+          .map((l) => l.replace(/^\s*[-*•]\s+/, "").trim())
+          .filter((l) => l.length > 0);
+        drawBulletList(items, { size: 9, lineHeight: 1.55, indent: 16, marginBottom: 10 });
       } else if (isNumbered) {
-        T(line, M + 6, y, 9, font, INK);
-        y -= 13;
+        drawParagraph(block, {
+          x: M + 6, width: CW - 6,
+          size: 9, lineHeight: 1.6, marginBottom: 10,
+          justify: true,
+        });
       } else {
-        T(line, M, y, 9, font, INK);
-        y -= 13;
+        drawParagraph(block, {
+          size: 9, lineHeight: 1.6, marginBottom: 10,
+          justify: true,
+        });
       }
     }
-    y -= 10;
 
     // ─────────────────────────────────────────────────────────
-    // ELECTRONIC SIGNATURE CLAUSE (Morocco law 53-05)
+    // ELECTRONIC SIGNATURE CLAUSE  —  Moroccan Law 53-05
     // ─────────────────────────────────────────────────────────
-    ensureSpace(130);
+    ensureSpace(140);
     sectionHeader("Signature electronique", "Clause juridique - Loi n° 53-05");
 
-    const clauseLines = [
-      "Les parties reconnaissent expressement que la signature electronique apposee sur le present contrat a,",
-      "conformement a la loi marocaine n° 53-05 du 30 novembre 2007 relative a l'echange electronique de",
-      "donnees juridiques, la meme valeur juridique qu'une signature manuscrite. Les parties conviennent que :",
-      "",
-      " -  L'identite du locataire est verifiee par analyse automatisee de sa piece d'identite officielle",
-      "    (procedure KYC) avant signature du contrat.",
-      " -  L'horodatage du systeme, l'adresse IP et l'empreinte du terminal utilise par le signataire sont",
-      "    enregistres dans une piste d'audit securisee afin d'etablir la preuve probante de l'acte.",
-      " -  L'integrite du document signe est garantie par une empreinte cryptographique SHA-256 calculee",
-      "    sur l'ensemble du contenu du contrat, des signatures et de leur horodatage. Toute modification",
-      "    ulterieure du document romprait cette empreinte et rendrait le document non opposable.",
-      " -  Le consentement electronique est exprime par la coche explicite et la signature numerique apposees",
-      "    par chacune des parties, apres lecture complete du present contrat.",
-    ];
-    for (const l of clauseLines) {
-      ensureSpace(11);
-      if (!l.trim()) { y -= 4; continue; }
-      T(l, M, y, 8.5, font, INK);
-      y -= 11;
-    }
-    y -= 8;
+    drawParagraph(
+      "Les parties reconnaissent expressement que la signature electronique apposee sur le present contrat a, conformement a la loi marocaine n° 53-05 du 30 novembre 2007 relative a l'echange electronique de donnees juridiques, la meme valeur juridique qu'une signature manuscrite. Les parties conviennent que :",
+      { size: 9, lineHeight: 1.6, marginBottom: 8, justify: true },
+    );
+
+    drawBulletList(
+      [
+        "L'identite du locataire est verifiee par analyse automatisee de sa piece d'identite officielle (procedure KYC) avant signature du contrat.",
+        "L'horodatage du systeme, l'adresse IP et l'empreinte du terminal utilise par le signataire sont enregistres dans une piste d'audit securisee afin d'etablir la preuve probante de l'acte.",
+        "L'integrite du document signe est garantie par une empreinte cryptographique SHA-256 calculee sur l'ensemble du contenu du contrat, des signatures et de leur horodatage. Toute modification ulterieure du document romprait cette empreinte et rendrait le document non opposable.",
+        "Le consentement electronique est exprime par la coche explicite et la signature numerique apposees par chacune des parties, apres lecture complete du present contrat.",
+      ],
+      { size: 9, lineHeight: 1.55, indent: 18, marginBottom: 10, justify: true },
+    );
 
     // ─────────────────────────────────────────────────────────
     // SIGNATURE PANELS
@@ -759,19 +943,15 @@ Deno.serve(async (req: Request) => {
     y -= 12;
 
     // ─────────────────────────────────────────────────────────
-    // Legal reminder footer paragraph
+    // Legal reminder paragraph — justified, 1.6 line-height.
     // ─────────────────────────────────────────────────────────
-    ensureSpace(36);
+    ensureSpace(42);
     HL(y, M, CW, 0.4, GRAY_3);
-    y -= 10;
-    T("Document genere electroniquement conformement a la loi marocaine n° 53-05 du 30 novembre 2007",
-      M, y, 7.5, font, GRAY_1);
-    y -= 10;
-    T("relative a l'echange electronique de donnees juridiques. La signature electronique a la meme valeur",
-      M, y, 7.5, font, GRAY_1);
-    y -= 10;
-    T("juridique qu'une signature manuscrite (art. 417-1 et suivants du Dahir des obligations et des contrats).",
-      M, y, 7.5, font, GRAY_1);
+    y -= 12;
+    drawParagraph(
+      "Document genere electroniquement conformement a la loi marocaine n° 53-05 du 30 novembre 2007 relative a l'echange electronique de donnees juridiques. La signature electronique a la meme valeur juridique qu'une signature manuscrite (art. 417-1 et suivants du Dahir des obligations et des contrats).",
+      { size: 7.8, lineHeight: 1.6, marginBottom: 4, justify: true, color: GRAY_1 },
+    );
 
     // ─────────────────────────────────────────────────────────
     // FOOTER on every page — Page X / Y
