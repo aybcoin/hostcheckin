@@ -331,6 +331,8 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
       return;
     }
 
+    let contractId: string | null = null;
+
     if (existingContract) {
       const { error: updateError } = await supabase
         .from('contracts')
@@ -346,22 +348,78 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
         alert("Impossible d'enregistrer la signature du proprietaire.");
         return;
       }
+      contractId = existingContract.id;
     } else {
-      const { error: insertError } = await supabase.from('contracts').insert({
-        reservation_id: selectedReservation,
-        property_id: reservation.property_id,
-        contract_type: 'rental_agreement',
-        pdf_url: 'pending',
-        signed_by_host: true,
-        signed_by_guest: false,
-        host_signature_url: signatureDataUrl,
-        template_id: defaultTemplate?.id || null,
-      });
+      const { data: inserted, error: insertError } = await supabase
+        .from('contracts')
+        .insert({
+          reservation_id: selectedReservation,
+          property_id: reservation.property_id,
+          contract_type: 'rental_agreement',
+          pdf_url: 'pending',
+          signed_by_host: true,
+          signed_by_guest: false,
+          host_signature_url: signatureDataUrl,
+          template_id: defaultTemplate?.id || null,
+        })
+        .select('id')
+        .single();
 
-      if (insertError) {
+      if (insertError || !inserted) {
         console.error('Error creating contract with host signature:', insertError);
         alert("Impossible de creer le contrat du proprietaire.");
         return;
+      }
+      contractId = inserted.id;
+    }
+
+    // Log the host signature audit event (server-side IP + UA capture).
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/log-audit-event`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            contract_id: contractId,
+            reservation_id: selectedReservation,
+            event_type: 'contract_signed_host',
+            signer_role: 'host',
+            consent_text:
+              "Le proprietaire confirme avoir signe electroniquement le contrat conformement a la Loi marocaine 53-05.",
+            metadata: { source: 'host_dashboard' },
+          }),
+        },
+      );
+    } catch (auditErr) {
+      console.warn('Host signature audit log failed:', auditErr);
+    }
+
+    // Regenerate the PDF so that it embeds the host signature. The edge
+    // function seals (locks) the contract only once BOTH parties have signed.
+    if (contractId) {
+      try {
+        const session = (await supabase.auth.getSession()).data.session;
+        const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-contract-pdf`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              contract_id: contractId,
+              reservation_id: selectedReservation,
+            }),
+          },
+        );
+        if (!resp.ok) {
+          const err = await resp.text().catch(() => '');
+          console.warn('PDF regeneration after host signature failed:', resp.status, err);
+        }
+      } catch (pdfErr) {
+        console.warn('PDF regeneration error:', pdfErr);
       }
     }
 
