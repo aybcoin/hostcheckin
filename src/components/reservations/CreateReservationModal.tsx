@@ -49,9 +49,19 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
         ? supabase.from('guests').upsert(guestPayload, { onConflict: 'email' })
         : supabase.from('guests').insert(guestPayload);
       const { data: guestData, error: guestError } = await query.select().single();
-      if (guestError) throw guestError;
+      if (guestError) {
+        console.error('Supabase error (guests):', guestError);
+        alert(
+          `Erreur lors de la creation de l'invite:\n` +
+          `${guestError.message}` +
+          (guestError.details ? `\nDetails: ${guestError.details}` : '') +
+          (guestError.hint ? `\nHint: ${guestError.hint}` : '') +
+          (guestError.code ? `\nCode: ${guestError.code}` : '')
+        );
+        return;
+      }
 
-      await onAdd({
+      const reservationPayload = {
         property_id: formData.property_id,
         guest_id: guestData.id,
         check_in_date: formData.check_in_date,
@@ -62,10 +72,31 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
         verification_type: formData.verification_type,
         smart_lock_code: formData.smart_lock_code || null,
         notes: formData.notes,
-      });
+      };
+      console.log('Reservation payload ->', reservationPayload);
+      const addResult: any = await onAdd(reservationPayload);
+      if (addResult && addResult.error) {
+        const resError = addResult.error;
+        console.error('Supabase error (reservations):', resError);
+        alert(
+          `Erreur lors de la creation de la reservation:\n` +
+          `${resError.message}` +
+          (resError.details ? `\nDetails: ${resError.details}` : '') +
+          (resError.hint ? `\nHint: ${resError.hint}` : '') +
+          (resError.code ? `\nCode: ${resError.code}` : '')
+        );
+        return;
+      }
       onClose();
-    } catch {
-      alert('Erreur lors de la creation de la reservation');
+    } catch (err: any) {
+      console.error('Unexpected error (reservation create):', err);
+      const supaMsg = err?.message || err?.error_description || err?.error || JSON.stringify(err);
+      alert(
+        `Erreur lors de la creation de la reservation:\n${supaMsg}` +
+        (err?.details ? `\nDetails: ${err.details}` : '') +
+        (err?.hint ? `\nHint: ${err.hint}` : '') +
+        (err?.code ? `\nCode: ${err.code}` : '')
+      );
     } finally {
       setLoading(false);
     }
