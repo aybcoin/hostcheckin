@@ -1,13 +1,26 @@
 import { useState } from 'react';
 import { User, Mail, Phone, Building2, Save } from 'lucide-react';
-import { Host } from '../lib/supabase';
+import { Host, Property, Reservation } from '../lib/supabase';
+import { OnboardingChecklist } from './OnboardingChecklist';
+import { AppPage } from '../lib/navigation';
 
 interface ProfilePageProps {
   host: Host | null;
   onUpdate: (updates: Partial<Host>) => Promise<void>;
+  properties: Property[];
+  reservations: Reservation[];
+  userEmailVerified: boolean;
+  onNavigate: (page: AppPage) => void;
 }
 
-export function ProfilePage({ host, onUpdate }: ProfilePageProps) {
+export function ProfilePage({
+  host,
+  onUpdate,
+  properties,
+  reservations,
+  userEmailVerified,
+  onNavigate,
+}: ProfilePageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     full_name: host?.full_name || '',
@@ -149,6 +162,14 @@ export function ProfilePage({ host, onUpdate }: ProfilePageProps) {
           </div>
         </div>
       </div>
+
+      <OnboardingChecklist
+        host={host}
+        properties={properties}
+        reservations={reservations}
+        userEmailVerified={userEmailVerified}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }

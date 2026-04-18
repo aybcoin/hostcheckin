@@ -13,7 +13,6 @@ const corsHeaders = {
 // No flashy blue, no aggressive green; pending state uses a muted ochre.
 const INK      = rgb(0.090, 0.122, 0.180); // near-black body text
 const NAVY     = rgb(0.082, 0.157, 0.275); // deep navy — primary brand
-const NAVY_2   = rgb(0.047, 0.110, 0.212); // darker navy for depth
 const BLUE     = rgb(0.220, 0.388, 0.612); // muted blue accent (less saturated)
 const BLUE_DK  = rgb(0.145, 0.282, 0.486); // darker blue
 const BLUE_SOFT= rgb(0.957, 0.969, 0.984); // very light blue card bg
@@ -429,13 +428,21 @@ Deno.serve(async (req: Request) => {
       return out.replace(/\s+$/, "") + ell;
     };
 
-    // Wrap a long monospace string (typically the SHA-256 hash) into N lines
-    // that strictly fit the available width.
+    // Wrap a long monospace string (typically a SHA-256 hash) so each line
+    // strictly fits the available width.
     const wrapMono = (s: string, maxW: number, sz: number, f: typeof font): string[] => {
       const out: string[] = [];
-      const cw = f.widthOfTextAtSize("0", sz);
-      const perLine = Math.max(1, Math.floor(maxW / cw));
-      for (let i = 0; i < s.length; i += perLine) out.push(s.slice(i, i + perLine));
+      let line = "";
+      for (const ch of clean(s)) {
+        const next = line + ch;
+        if (line && f.widthOfTextAtSize(next, sz) > maxW) {
+          out.push(line);
+          line = ch;
+        } else {
+          line = next;
+        }
+      }
+      if (line) out.push(line);
       return out;
     };
 
@@ -446,6 +453,10 @@ Deno.serve(async (req: Request) => {
 
     const HL = (ty: number, x = M, w = CW, thick = 0.5, col = GRAY_3) =>
       page.drawLine({ start: { x, y: ty }, end: { x: x + w, y: ty }, thickness: thick, color: col });
+
+    // Vertically center text in a colored header bar.
+    const headerTextY = (topY: number, barH: number, textSize: number) =>
+      topY - (barH / 2) - (textSize / 2);
 
     const ensureSpace = (needed: number) => {
       if (y - needed < M + FOOTER_RESERVED) {
@@ -598,10 +609,11 @@ Deno.serve(async (req: Request) => {
     // ─────────────────────────────────────────────────────────
     const HEADER_H = 90;
     R(0, PH, PW, HEADER_H, NAVY);
-    // Very subtle inner gradient feel — a darker band at the bottom
-    R(0, PH - HEADER_H + 14, PW, HEADER_H - 14, NAVY_2);
     // Single crisp accent rule at the bottom (discreet orange, not bright blue)
     R(0, PH - HEADER_H + 2, PW, 2, ACCENT);
+    // Force a clean white zone right below the orange rule.
+    // This guarantees the status area is rendered on white.
+    R(0, PH - HEADER_H, PW, 64, WHITE);
 
     // ── Left: title block ──
     const titleY = PH - 38;
@@ -648,48 +660,50 @@ Deno.serve(async (req: Request) => {
     const statusBd: any  = contractAccepted ? SOFT_OK_BD : ACCENT_M;
 
     const pillSize = 9;
-    const markSide = 5;
-    const groupGap = 8;
     const pillTextW = Tw(statusLabel, pillSize, fontB);
-    const contentW = markSide + groupGap + pillTextW;
+    const contentW = pillTextW;
     const pillW = Math.min(CW, contentW + 36);
     const pillH = 24;
     const pillX = (PW - pillW) / 2;
     // Card with subtle border, soft fill
     R(pillX, y, pillW, pillH, statusBg, statusBd, 0.8);
-    // Group (mark + text) centred horizontally and vertically
+    // Text centred horizontally and vertically
     const contentX = pillX + (pillW - contentW) / 2;
-    page.drawRectangle({
-      x: contentX,
-      y: y - (pillH + markSide) / 2,
-      width: markSide, height: markSide, color: statusCol,
-    });
     // Label baseline tuned for visual vertical centring in the pill
     T(statusLabel,
-      contentX + markSide + groupGap,
+      contentX,
       y - (pillH / 2) - (pillSize * 0.72) / 2 + 1,
       pillSize, fontB, statusCol);
     y -= pillH + 8;
 
-    // Sub-line under the pill — italics, gray, never overflows
-    let sub = "";
+    // Sub-line under the pill — slightly more airy for readability.
     if (contractAccepted && signedAt) {
-      sub = `Signé par le locataire le ${signedAt}  ·  Empreinte SHA-256 : ${contentHash.slice(0, 16)}...`;
-    } else if (!contractAccepted && hostIssuedAt) {
-      sub = `Contrat émis par le bailleur le ${hostIssuedAt}  ·  Lien de signature transmis au locataire`;
-    }
-    if (sub) {
-      // Truncate gracefully if too wide for the page
-      const subSize = 7.5;
-      let subShown = sub;
-      while (Tw(subShown, subSize, fontI) > CW - 20 && subShown.length > 20) {
-        subShown = subShown.slice(0, subShown.length - 2);
+      const signedLine = `Signé par le locataire le ${signedAt}`;
+      const signedSize = 7.5;
+      T(signedLine, (PW - Tw(signedLine, signedSize, fontI)) / 2, y, signedSize, fontI, GRAY_1);
+      y -= 10.5;
+
+      const hashLine = `Empreinte SHA-256 : ${contentHash}`;
+      const hashSize = 7.1;
+      const hashLines = wrapByWidth(hashLine, CW - 20, hashSize, fontM)
+        .filter((ln) => !ln.blank)
+        .map((ln) => ln.text);
+      for (const line of hashLines) {
+        T(line, (PW - Tw(line, hashSize, fontM)) / 2, y, hashSize, fontM, GRAY_2);
+        y -= 8.8;
       }
-      if (subShown !== sub) subShown = subShown.replace(/\.{0,3}$/, "...");
-      T(subShown, (PW - Tw(subShown, subSize, fontI)) / 2, y, subSize, fontI, GRAY_1);
-      y -= 12;
+    } else if (!contractAccepted && hostIssuedAt) {
+      const sub = `Contrat émis par le bailleur le ${hostIssuedAt}  ·  Lien de signature transmis au locataire`;
+      const subSize = 7.5;
+      const subLines = wrapByWidth(sub, CW - 20, subSize, fontI)
+        .filter((ln) => !ln.blank)
+        .map((ln) => ln.text);
+      for (const line of subLines) {
+        T(line, (PW - Tw(line, subSize, fontI)) / 2, y, subSize, fontI, GRAY_1);
+        y -= 9.5;
+      }
     }
-    y -= 12;
+    y -= 10;
 
     // ─────────────────────────────────────────────────────────
     // PARTIES CARD
@@ -697,19 +711,28 @@ Deno.serve(async (req: Request) => {
     sectionHeader("Parties au contrat", "Identification des parties");
 
     const halfW = Math.floor((CW - 14) / 2);
-    const partyH = 124;
 
     // Compact party card — close to the first-model layout: navy header, name
     // in bold, then "Label : value" rows. Uses the same accent for both roles
     // (the role itself is the differentiator, not the colour).
     const drawPartyCard = (
       x: number,
+      h: number,
       roleTag: string,
       person: { name: string; rows: Array<{ k: string; v: string }> },
     ) => {
-      R(x, y, halfW, partyH, WHITE, GRAY_3, 0.7);
-      R(x, y, halfW, 22, NAVY);
-      T(clean(roleTag), x + 12, y - 9, 8.5, fontB, WHITE);
+      const headH = 22;
+      R(x, y, halfW, h, WHITE, GRAY_3, 0.7);
+      R(x, y, halfW, headH, NAVY);
+      const roleText = clean(roleTag);
+      T(
+        roleText,
+        x + (halfW - Tw(roleText, 8.5, fontB)) / 2,
+        headerTextY(y, headH, 8.5),
+        8.5,
+        fontB,
+        WHITE,
+      );
 
       // Name on its own line, generous breathing room
       let ly = y - 22 - 16;
@@ -743,63 +766,73 @@ Deno.serve(async (req: Request) => {
     guestRows.push({ k: "Rôle", v: "Locataire / Voyageur (signataire)" });
     guestRows.push({ k: "Pièce d'identité", v: idType });
 
-    drawPartyCard(M, "BAILLEUR (HÔTE)", { name: hostName, rows: hostRows });
-    drawPartyCard(M + halfW + 14, "LOCATAIRE (INVITÉ)", { name: guestName, rows: guestRows });
+    const maxPartyRows = Math.max(hostRows.length, guestRows.length);
+    const partyH = Math.max(96, 56 + maxPartyRows * 13);
+
+    drawPartyCard(M, partyH, "BAILLEUR (HÔTE)", { name: hostName, rows: hostRows });
+    drawPartyCard(M + halfW + 14, partyH, "LOCATAIRE (INVITÉ)", { name: guestName, rows: guestRows });
     y -= partyH + 18;
 
     // ─────────────────────────────────────────────────────────
     // PROPERTY & RESERVATION CARD
     // ─────────────────────────────────────────────────────────
     sectionHeader("Bien et séjour", "Détails de la location");
+    const drawStayCard = (
+      x: number,
+      h: number,
+      headerTag: string,
+      title: string,
+      rows: Array<{ k: string; v: string }>,
+    ) => {
+      const headH = 22;
+      R(x, y, halfW, h, WHITE, GRAY_3, 0.7);
+      R(x, y, halfW, headH, NAVY);
+      const tag = clean(headerTag);
+      T(
+        tag,
+        x + (halfW - Tw(tag, 8.5, fontB)) / 2,
+        headerTextY(y, headH, 8.5),
+        8.5,
+        fontB,
+        WHITE,
+      );
 
-    const propertyH = 110;
-    // Sober blue-tinted card, hairline border, no top stripe (kept clean).
-    R(M, y, CW, propertyH, BLUE_SOFT, BLUE_M, 0.6);
-    const topY = y;
-    const colSplit = M + CW / 2;
-    const col1X = M + 14;
-    const col2X = colSplit + 14;
-    const col1Inner = CW / 2 - 28;
-    const col2Inner = CW / 2 - 28;
+      let ly = y - 22 - 16;
+      const padX = 12;
+      const innerW = halfW - padX * 2;
+      T(truncateToWidth(title, innerW, 11, fontB), x + padX, ly, 11, fontB, INK);
+      ly -= 16;
 
-    // LEFT: Propriété
-    T("PROPRIÉTÉ", col1X, topY - 16, 7.5, fontB, NAVY);
-    const pnFit = truncateToWidth(propName, col1Inner, 11, fontB);
-    T(pnFit, col1X, topY - 32, 11, fontB, INK);
-    const addrFit = truncateToWidth(propAddr, col1Inner, 8.5, font);
-    T(addrFit, col1X, topY - 47, 8.5, font, GRAY_1);
-    if (propCountry) {
-      T(truncateToWidth(propCountry, col1Inner, 8, font), col1X, topY - 60, 8, font, GRAY_2);
-    }
-    if (property?.rooms_count || property?.max_guests) {
-      const propMeta = `${property?.rooms_count ?? "?"} chambre(s)  ·  Capacité max. ${property?.max_guests ?? "?"} personne(s)`;
-      T(truncateToWidth(propMeta, col1Inner, 7.5, font), col1X, topY - 84, 7.5, font, GRAY_1);
-    }
+      for (const r of rows) {
+        const k = clean(r.k + " :");
+        const kw = Tw(k, 7.5, font);
+        T(k, x + padX, ly, 7.5, font, GRAY_2);
+        const valMaxW = innerW - kw - 6;
+        T(truncateToWidth(r.v, valMaxW, 8.5, font), x + padX + kw + 6, ly, 8.5, font, INK);
+        ly -= 13;
+      }
+    };
 
-    // Vertical separator
-    page.drawLine({
-      start: { x: colSplit, y: topY - 12 },
-      end:   { x: colSplit, y: topY - propertyH + 12 },
-      thickness: 0.5, color: BLUE_M,
-    });
-
-    // RIGHT: Séjour
-    T("SÉJOUR", col2X, topY - 16, 7.5, fontB, NAVY);
-    const resLines: Array<[string, string]> = [
-      ["Référence", bookRef],
-      ["Arrivée",   `${checkIn} à ${checkInTime}`],
-      ["Départ",    `${checkOut} à ${checkOutTime}`],
-      ["Voyageurs", `${nbGuests} personne(s)`],
+    const propertyRows: Array<{ k: string; v: string }> = [
+      { k: "Adresse", v: propAddr },
     ];
-    let rly = topY - 34;
-    for (const [k, v] of resLines) {
-      T(k, col2X, rly, 7.5, font, GRAY_2);
-      const valX = col2X + 64;
-      const valW = col2Inner - 64;
-      T(truncateToWidth(v, valW, 9, fontB), valX, rly, 9, fontB, INK);
-      rly -= 14;
-    }
-    y -= propertyH + 18;
+    if (propCountry) propertyRows.push({ k: "Pays", v: propCountry });
+    if (property?.rooms_count != null) propertyRows.push({ k: "Chambres", v: `${property.rooms_count}` });
+    if (property?.max_guests != null) propertyRows.push({ k: "Capacité max.", v: `${property.max_guests} personne(s)` });
+
+    const stayRows: Array<{ k: string; v: string }> = [
+      { k: "Référence", v: bookRef },
+      { k: "Arrivée", v: `${checkIn} à ${checkInTime}` },
+      { k: "Départ", v: `${checkOut} à ${checkOutTime}` },
+      { k: "Voyageurs", v: `${nbGuests} personne(s)` },
+    ];
+
+    const maxStayRows = Math.max(propertyRows.length, stayRows.length);
+    const stayH = Math.max(96, 56 + maxStayRows * 13);
+
+    drawStayCard(M, stayH, "PROPRIÉTÉ", propName, propertyRows);
+    drawStayCard(M + halfW + 14, stayH, "SÉJOUR", `Réservation ${bookRef}`, stayRows);
+    y -= stayH + 18;
 
     // ─────────────────────────────────────────────────────────
     // CONTRACT BODY  —  .contract-block { text-align: justify; }
@@ -833,10 +866,11 @@ Deno.serve(async (req: Request) => {
 
       if (isArticle) {
         // Article N. — Title on its own line, then the body (if any) after a colon.
-        ensureSpace(28);
+        const colonIdx = block.indexOf(":");
+        const minNeed = colonIdx > 0 ? 48 : 32;
+        ensureSpace(minNeed);
         y -= 8;
         R(M, y + 1, 3, 14, BLUE);
-        const colonIdx = block.indexOf(":");
         if (colonIdx > 0 && colonIdx < 80) {
           const head = block.slice(0, colonIdx + 1).trim();
           const tail = block.slice(colonIdx + 1).trim();
@@ -849,7 +883,7 @@ Deno.serve(async (req: Request) => {
           y -= 20;
         }
       } else if (isHeading) {
-        ensureSpace(28);
+        ensureSpace(40);
         y -= 6;
         T(block, M, y - 10, 11, fontB, NAVY);
         // tiny accent rule under the heading
@@ -878,7 +912,8 @@ Deno.serve(async (req: Request) => {
           title = rest.slice(0, colonIdx).trim();
           body = rest.slice(colonIdx + 1).trim();
         }
-        ensureSpace(28);
+        const minNeed = body ? 48 : 32;
+        ensureSpace(minNeed);
         y -= 8;
         const headLine = `${numStr}.  ${title}`;
         const headFit = truncateToWidth(headLine, CW, 10.5, fontB);
@@ -930,7 +965,7 @@ Deno.serve(async (req: Request) => {
     sectionHeader("Signatures et consentements", "Preuve électronique — Loi n° 53-05");
 
     const sigBoxW = Math.floor((CW - 14) / 2);
-    const sigBoxH = 196;
+    const sigBoxH = 176;
     ensureSpace(sigBoxH + 16);
     const sigY = y;
     const padX = 14;
@@ -948,23 +983,40 @@ Deno.serve(async (req: Request) => {
     // ── LOCATAIRE — electronic signature ────────────────────────
     const drawTenantPanel = async (panelX: number) => {
       const innerW = sigBoxW - padX * 2;
+      const headH = 24;
       // Card
       R(panelX, sigY, sigBoxW, sigBoxH, WHITE, GRAY_3, 0.7);
-      R(panelX, sigY, sigBoxW, 24, NAVY);
-      T("LOCATAIRE", panelX + padX, sigY - 9, 8.5, fontB, WHITE);
-      T("Signataire électronique", panelX + padX + Tw("LOCATAIRE", 8.5, fontB) + 10, sigY - 9, 7.5, font, rgb(0.788, 0.851, 0.929));
+      R(panelX, sigY, sigBoxW, headH, NAVY);
+      const tenantTitle = "LOCATAIRE";
+      T(
+        tenantTitle,
+        panelX + (sigBoxW - Tw(tenantTitle, 8.5, fontB)) / 2,
+        headerTextY(sigY, headH, 8.5),
+        8.5,
+        fontB,
+        WHITE,
+      );
+      const tenantSubtitle = "Signataire électronique";
+      T(
+        tenantSubtitle,
+        panelX + (sigBoxW - Tw(tenantSubtitle, 7.0, fontB)) / 2,
+        sigY - headH - 6,
+        7.0,
+        fontB,
+        GRAY_2,
+      );
 
       // Name + signature date
       const nm = truncateToWidth(guestName, innerW, 11, fontB);
-      T(nm, panelX + padX, sigY - 40, 11, fontB, INK);
+      T(nm, panelX + padX, sigY - 44, 11, fontB, INK);
       if (signedAt) {
-        T(`Signé le ${signedAt}`, panelX + padX, sigY - 52, 7.5, font, GRAY_1);
+        T(`Signé le ${signedAt}`, panelX + padX, sigY - 56, 7.5, font, GRAY_1);
       } else {
-        T("Signature en attente", panelX + padX, sigY - 52, 7.5, fontI, GRAY_2);
+        T("Signature en attente", panelX + padX, sigY - 56, 7.5, fontI, GRAY_2);
       }
 
       // Signature image area
-      const imgTop = sigY - 60;
+      const imgTop = sigY - 64;
       const imgH = 54;
       R(panelX + padX, imgTop, innerW, imgH, rgb(0.984, 0.988, 0.996), GRAY_4, 0.5);
 
@@ -1020,21 +1072,38 @@ Deno.serve(async (req: Request) => {
     // ── BAILLEUR — issuer / consent by emission ────────────────
     const drawHostPanel = (panelX: number) => {
       const innerW = sigBoxW - padX * 2;
+      const headH = 24;
       R(panelX, sigY, sigBoxW, sigBoxH, WHITE, GRAY_3, 0.7);
-      R(panelX, sigY, sigBoxW, 24, NAVY);
-      T("BAILLEUR", panelX + padX, sigY - 9, 8.5, fontB, WHITE);
-      T("Émetteur du contrat", panelX + padX + Tw("BAILLEUR", 8.5, fontB) + 10, sigY - 9, 7.5, font, rgb(0.788, 0.851, 0.929));
+      R(panelX, sigY, sigBoxW, headH, NAVY);
+      const hostTitle = "BAILLEUR";
+      T(
+        hostTitle,
+        panelX + (sigBoxW - Tw(hostTitle, 8.5, fontB)) / 2,
+        headerTextY(sigY, headH, 8.5),
+        8.5,
+        fontB,
+        WHITE,
+      );
+      const hostSubtitle = "Émetteur du contrat";
+      T(
+        hostSubtitle,
+        panelX + (sigBoxW - Tw(hostSubtitle, 7.0, fontB)) / 2,
+        sigY - headH - 6,
+        7.0,
+        fontB,
+        GRAY_2,
+      );
 
       const nm = truncateToWidth(hostName, innerW, 11, fontB);
-      T(nm, panelX + padX, sigY - 40, 11, fontB, INK);
+      T(nm, panelX + padX, sigY - 44, 11, fontB, INK);
       if (hostIssuedAt) {
-        T(`Contrat émis le ${hostIssuedAt}`, panelX + padX, sigY - 52, 7.5, font, GRAY_1);
+        T(`Contrat émis le ${hostIssuedAt}`, panelX + padX, sigY - 56, 7.5, font, GRAY_1);
       }
 
       // "Consent by emission" panel — mirrors the signature image area on the
       // tenant side. Sober: very light gray-green tint, hairline border, no
       // bright stamp.
-      const noteTop = sigY - 60;
+      const noteTop = sigY - 64;
       const noteH = 54;
       R(panelX + padX, noteTop, innerW, noteH, SOFT_OK, SOFT_OK_BD, 0.5);
       // Two-line note, vertically centred
@@ -1082,7 +1151,9 @@ Deno.serve(async (req: Request) => {
     const pLeft = M + proofPadX;
     const proofInnerW = CW - proofPadX * 2;
     const hashLines = wrapMono(contentHash, proofInnerW, 7.5, fontMB);
-    const proofBoxH = 78 + Math.max(0, hashLines.length - 1) * 11;
+    // Keep a small bottom padding so the last SHA-256 line never touches
+    // or crosses the border of the proof box.
+    const proofBoxH = 82 + Math.max(0, hashLines.length - 1) * 11;
 
     ensureSpace(proofBoxH + 30);
     sectionHeader("Traçabilité du document", "Empreinte cryptographique — lien signature / contenu");
@@ -1110,7 +1181,7 @@ Deno.serve(async (req: Request) => {
     // SHA-256 row, full width, monospace, wrapped to fit
     py -= 52;
     T("EMPREINTE CRYPTOGRAPHIQUE SHA-256", pLeft, py, 6.5, fontB, GRAY_2);
-    let hy = py - 11;
+    let hy = py - 10;
     for (const line of hashLines) {
       T(line, pLeft, hy, 7.5, fontMB, NAVY);
       hy -= 11;

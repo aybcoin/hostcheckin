@@ -35,12 +35,15 @@ export interface Property {
   bathrooms_count: number;
   max_guests: number;
   amenities?: string[];
-  check_in_time: string;
-  check_out_time: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  verification_mode?: 'simple' | 'complete';
   image_url?: string;
   created_at: string;
   updated_at: string;
 }
+
+export type PropertyCreateInput = Omit<Property, 'id' | 'host_id' | 'created_at' | 'updated_at'>;
 
 export interface Guest {
   id: string;
@@ -65,12 +68,36 @@ export interface Reservation {
   unique_link: string;
   status: 'pending' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
   verification_type?: 'simple' | 'complete';
-  smart_lock_code?: string;
+  verification_mode?: 'simple' | 'complete';
+  smart_lock_code?: string | null;
   guest_rating?: number;
   cancelled_at?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export type ReservationCreateInput = Omit<Reservation, 'id' | 'unique_link' | 'created_at' | 'updated_at'>;
+
+export interface PropertyAutoLink {
+  id: string;
+  property_id: string;
+  host_id: string;
+  property_token: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlacklistedGuest {
+  id: string;
+  host_id: string;
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  document_number?: string | null;
+  reason: string;
+  created_at: string;
 }
 
 export interface ContractTemplate {

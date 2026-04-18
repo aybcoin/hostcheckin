@@ -77,6 +77,7 @@ async function logAuditEvent(params: {
 }
 
 export function VerificationPage({ uniqueLink }: VerificationPageProps) {
+  const isDemoMode = uniqueLink === 'demo-preview';
   const [step, setStep] = useState(1);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [submitting, setSubmitting] = useState(false);
@@ -121,6 +122,38 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
   }, [selfieFile]);
 
   const fetchReservation = async () => {
+    if (isDemoMode) {
+      setReservation({
+        id: 'demo-reservation',
+        booking_reference: 'DEMO#1',
+        check_in_date: new Date().toISOString().slice(0, 10),
+        check_out_date: new Date(Date.now() + (2 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10),
+        number_of_guests: 2,
+        guest_id: 'demo-guest',
+        smart_lock_code: '1234#',
+        guests: {
+          full_name: 'Invité Démo',
+          email: 'demo@hostcheckin.app',
+          phone: '+212600000000',
+        },
+      });
+      setProperty({
+        id: 'demo-property',
+        host_id: 'demo-host',
+        name: 'Appartement Démo HostCheckIn',
+        address: 'Témara Centre',
+        city: 'Témara',
+        country: 'Maroc',
+        max_guests: 4,
+        rooms_count: 2,
+        check_in_time: '15:00',
+        check_out_time: '11:00',
+      });
+      setContractTemplate(null);
+      setLoadState('loaded');
+      return;
+    }
+
     try {
       setLoadState('loading');
 
@@ -402,6 +435,17 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   };
 
   const handleStep1Continue = async () => {
+    if (isDemoMode) {
+      setKycResult({
+        status: 'approved',
+        confidence: 0.94,
+        is_valid_document: true,
+        rejection_reason: null,
+      });
+      setStep(2);
+      return;
+    }
+
     if (!idType || !idFrontFile || !reservation) return;
     const trimmedName = (declaredName || '').trim();
     if (!trimmedName) {
@@ -561,6 +605,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   };
 
   const handleSubmit = async () => {
+    if (isDemoMode) {
+      setStep(4);
+      return;
+    }
+
     if (!consentChecked) return;
     setSubmitting(true);
     try {
@@ -772,6 +821,19 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
               Conservez ce lien au cas ou vous auriez besoin de le consulter.
             </p>
           </div>
+          {reservation?.smart_lock_code ? (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-left">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Félicitations, voici votre code d’accès
+              </p>
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                {reservation.smart_lock_code}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Ce code est activé pour la période de votre séjour.
+              </p>
+            </div>
+          ) : null}
           <p className="text-[11px] text-gray-400 mt-4">
             Votre adresse IP, navigateur et horodatage ont ete enregistres conformement a la loi marocaine n° 53-05 du 30 novembre 2007 relative a l'echange electronique de donnees juridiques.
           </p>
@@ -981,7 +1043,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
                 <button
                   onClick={handleStep1Continue}
-                  disabled={!idType || !idFrontFile || !declaredName.trim() || kycLoading}
+                  disabled={(!isDemoMode && (!idType || !idFrontFile || !declaredName.trim())) || kycLoading}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
                 >
                   {kycLoading ? (
@@ -1059,13 +1121,15 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   </button>
                   <button
                     onClick={() => {
-                      logAuditEvent({
-                        reservationId: reservation.id,
-                        eventType: 'contract_viewed',
-                        signerRole: 'guest',
-                        signerEmail: reservation.guests?.email,
-                        signerName: reservation.guests?.full_name,
-                      });
+                      if (!isDemoMode) {
+                        void logAuditEvent({
+                          reservationId: reservation.id,
+                          eventType: 'contract_viewed',
+                          signerRole: 'guest',
+                          signerEmail: reservation.guests?.email,
+                          signerName: reservation.guests?.full_name,
+                        });
+                      }
                       setStep(3);
                     }}
                     className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -1168,7 +1232,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   </button>
                   <button
                     onClick={handleSubmit}
-                    disabled={submitting || !consentChecked}
+                    disabled={submitting || (!consentChecked && !isDemoMode)}
                     className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
                   >
                     {submitting ? (

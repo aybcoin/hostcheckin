@@ -730,7 +730,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
           {templates.length === 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <p className="text-sm text-amber-800">
-                Vous n'avez pas encore de modele de contrat. Creez-en un dans l'onglet "Modeles de contrat" pour pouvoir signer des contrats.
+                Vous n'avez pas encore de modèle de contrat. Créez-en un dans l'onglet "Modèles de contrat" pour pouvoir émettre des contrats.
               </p>
             </div>
           )}
@@ -738,7 +738,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
           {reservations.length === 0 ? (
             <div className="bg-white rounded-lg p-8 text-center">
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Aucune reservation disponible</p>
+              <p className="text-gray-600">Aucune réservation disponible</p>
             </div>
           ) : (
             reservations.map((reservation) => {
@@ -756,8 +756,8 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                         </div>
                       </div>
                       <div className="flex gap-6 text-sm text-gray-600">
-                        <span>Arrivee: {formatDate(reservation.check_in_date)}</span>
-                        <span>Depart: {formatDate(reservation.check_out_date)}</span>
+                        <span>Arrivée : {formatDate(reservation.check_in_date)}</span>
+                        <span>Départ : {formatDate(reservation.check_out_date)}</span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -765,11 +765,11 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                         <>
                           <span className="px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-sm font-medium flex items-center gap-1.5">
                             <Check className="w-4 h-4" />
-                            Contrat signe
+                            Contrat signé
                           </span>
                           <div className="flex gap-3 text-xs text-gray-500">
-                            {contract.signed_by_host && <span>Proprietaire</span>}
-                            {contract.signed_by_guest && <span>Invite</span>}
+                            {contract.signed_by_host && <span>Bailleur (émetteur)</span>}
+                            {contract.signed_by_guest && <span>Locataire (signataire)</span>}
                           </div>
                           {contract.pdf_storage_path && (
                             <button
@@ -787,9 +787,9 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                                   if (!resp.ok) {
                                     const errText = await resp.text().catch(() => '');
                                     if (resp.status === 409) {
-                                      alert('Erreur d\'integrite: le PDF semble avoir ete modifie. Contactez le support.');
+                                      alert("Erreur d'intégrité : le PDF semble avoir été modifié. Contactez le support.");
                                     } else {
-                                      alert('Erreur lors du telechargement du PDF. Veuillez reessayer.');
+                                      alert('Erreur lors du téléchargement du PDF. Veuillez réessayer.');
                                     }
                                     console.error(`PDF download failed (${resp.status}):`, errText);
                                     return;
@@ -805,7 +805,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                                   URL.revokeObjectURL(url);
                                 } catch (err) {
                                   console.error('PDF download error:', err);
-                                  alert('Erreur reseau lors du telechargement. Verifiez votre connexion.');
+                                  alert('Erreur réseau lors du téléchargement. Vérifiez votre connexion.');
                                 } finally {
                                   setDownloadingPdfId(null);
                                 }
@@ -823,7 +823,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                           disabled={templates.length === 0}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-40"
                         >
-                          Creer et signer
+                          Créer et valider
                         </button>
                       )}
                     </div>

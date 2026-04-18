@@ -123,7 +123,6 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
         <CalendarGrid
           currentMonth={currentMonth}
           reservations={filteredByProperty}
-          properties={properties}
           guests={guests}
           filter={filter}
           onReservationClick={setSelectedReservation}
@@ -141,7 +140,7 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedReservation(null)}>
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Details de la reservation</h2>
+              <h2 className="text-lg font-bold text-gray-900">Détails de la réservation</h2>
               <button onClick={() => setSelectedReservation(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <X size={20} />
               </button>
@@ -149,19 +148,19 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-gray-500">Reference</p>
+                  <p className="text-xs text-gray-500">Référence</p>
                   <p className="text-sm font-bold text-gray-900">{selectedReservation.booking_reference}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Propriete</p>
+                  <p className="text-xs text-gray-500">Propriété</p>
                   <p className="text-sm font-medium text-gray-900">{getPropertyName(selectedReservation.property_id)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Arrivee</p>
+                  <p className="text-xs text-gray-500">Arrivée</p>
                   <p className="text-sm font-medium text-gray-900">{formatDate(selectedReservation.check_in_date)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Depart</p>
+                  <p className="text-xs text-gray-500">Départ</p>
                   <p className="text-sm font-medium text-gray-900">{formatDate(selectedReservation.check_out_date)}</p>
                 </div>
                 <div>
@@ -176,16 +175,16 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
                     : selectedReservation.status === 'cancelled' ? 'bg-red-100 text-red-700'
                     : 'bg-amber-100 text-amber-800'
                   }`}>
-                    {selectedReservation.status === 'checked_in' ? 'Verifiee'
-                    : selectedReservation.status === 'completed' ? 'Terminee'
-                    : selectedReservation.status === 'cancelled' ? 'Annulee'
+                    {selectedReservation.status === 'checked_in' ? 'Vérifiée'
+                    : selectedReservation.status === 'completed' ? 'Terminée'
+                    : selectedReservation.status === 'cancelled' ? 'Annulée'
                     : 'En attente'}
                   </span>
                 </div>
               </div>
               {guests[selectedReservation.guest_id] && (
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 mb-1">Invite</p>
+                  <p className="text-xs text-gray-500 mb-1">Invité</p>
                   <p className="text-sm font-medium text-gray-900">{guests[selectedReservation.guest_id].full_name}</p>
                   <p className="text-xs text-gray-500">{guests[selectedReservation.guest_id].email}</p>
                 </div>
@@ -195,7 +194,7 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
                 <ExternalLink size={14} />
-                Ouvrir les details
+                Ouvrir les détails
               </button>
             </div>
           </div>

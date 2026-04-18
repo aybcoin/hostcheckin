@@ -32,10 +32,11 @@ export function useHost(userId: string | null) {
       .update(updates)
       .eq('id', userId);
 
-    if (!error) {
-      setHost((prev) => prev ? { ...prev, ...updates } : null);
+    if (error) {
+      throw error;
     }
-    return { error };
+
+    setHost((prev) => prev ? { ...prev, ...updates } : null);
   };
 
   return { host, loading, updateHost };

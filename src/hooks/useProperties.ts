@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, Property } from '../lib/supabase';
+import { supabase, Property, PropertyCreateInput } from '../lib/supabase';
 
 export function useProperties(hostId: string | null) {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -26,7 +26,7 @@ export function useProperties(hostId: string | null) {
     }
   };
 
-  const addProperty = async (property: Omit<Property, 'id' | 'created_at' | 'updated_at'>) => {
+  const addProperty = async (property: PropertyCreateInput) => {
     const { data, error } = await supabase
       .from('properties')
       .insert([{ ...property, host_id: hostId }])

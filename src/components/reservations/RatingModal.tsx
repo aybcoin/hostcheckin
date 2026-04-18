@@ -16,13 +16,13 @@ export function RatingModal({ bookingReference, currentRating, onSave, onClose }
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
         <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Noter l'invite</h2>
+          <h2 className="text-lg font-bold text-gray-900">Noter l'invité</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <X size={20} />
           </button>
         </div>
         <div className="p-5">
-          <p className="text-sm text-gray-600 mb-4">Reservation : {bookingReference}</p>
+          <p className="text-sm text-gray-600 mb-4">Réservation : {bookingReference}</p>
           <div className="flex justify-center gap-2 mb-6">
             {[1, 2, 3, 4, 5].map((star) => (
               <button

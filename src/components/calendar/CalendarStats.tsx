@@ -1,4 +1,4 @@
-import { Star, TrendingUp, CheckCircle, Clock, CalendarDays, Users } from 'lucide-react';
+import { Star, TrendingUp, CheckCircle, Clock, CalendarDays } from 'lucide-react';
 import { Reservation } from '../../lib/supabase';
 
 interface CalendarStatsProps {
@@ -102,7 +102,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
             <CalendarDays size={16} className="text-blue-600" />
-            <span className="text-sm text-gray-700">Reservations</span>
+            <span className="text-sm text-gray-700">Réservations</span>
           </div>
           <span className="font-bold text-gray-900">{monthReservations.length}</span>
         </div>
@@ -110,7 +110,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
             <CheckCircle size={16} className="text-green-600" />
-            <span className="text-sm text-gray-700">Taux verification</span>
+            <span className="text-sm text-gray-700">Taux de vérification</span>
           </div>
           <span className="font-bold text-gray-900">{verificationRate}%</span>
         </div>
@@ -118,7 +118,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
             <Clock size={16} className="text-teal-600" />
-            <span className="text-sm text-gray-700">Duree moyenne</span>
+            <span className="text-sm text-gray-700">Durée moyenne</span>
           </div>
           <span className="font-bold text-gray-900">{avgStay} nuits</span>
         </div>
@@ -126,7 +126,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
             <TrendingUp size={16} className="text-amber-600" />
-            <span className="text-sm text-gray-700">Arrivees a venir</span>
+            <span className="text-sm text-gray-700">Arrivées à venir</span>
           </div>
           <span className="font-bold text-gray-900">{upcomingArrivals}</span>
         </div>

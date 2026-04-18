@@ -8,27 +8,26 @@ interface ShareLinkModalProps {
   onClose: () => void;
 }
 
-type Language = 'fr' | 'en' | 'ar' | 'es';
+type Language = 'fr' | 'en' | 'ar';
 type Template = 'standard' | 'security' | 'custom';
 
 const LANGUAGES: { key: Language; label: string }[] = [
-  { key: 'fr', label: 'Francais' },
-  { key: 'en', label: 'English' },
+  { key: 'fr', label: 'Français' },
+  { key: 'en', label: 'Anglais' },
   { key: 'ar', label: 'العربية' },
-  { key: 'es', label: 'Espanol' },
 ];
 
 const TEMPLATES: { key: Template; label: string }[] = [
   { key: 'standard', label: 'Standard' },
-  { key: 'security', label: 'Securite & Code' },
-  { key: 'custom', label: 'Personnalise' },
+  { key: 'security', label: 'Sécurité et code' },
+  { key: 'custom', label: 'Personnalisé' },
 ];
 
 function getMessage(lang: Language, template: Template, guestName: string, propertyName: string, link: string, custom: string): string {
   const messages: Record<Language, Record<Exclude<Template, 'custom'>, string>> = {
     fr: {
-      standard: `Bonjour ${guestName},\n\nVotre hebergement "${propertyName}" vous attend ! Pour finaliser votre reservation, veuillez completer votre verification en ligne :\n\n[LIEN]\n\nMerci et a bientot !`,
-      security: `Bonjour ${guestName},\n\nPour des raisons de securite, nous vous demandons de verifier votre identite avant votre arrivee a "${propertyName}".\n\nCliquez ici pour completer la verification :\n[LIEN]\n\nVotre code d'acces vous sera communique apres verification.\n\nCordialement.`,
+      standard: `Bonjour ${guestName},\n\nVotre hébergement "${propertyName}" vous attend. Pour finaliser votre réservation, veuillez compléter votre vérification en ligne :\n\n[LIEN]\n\nMerci et à bientôt.`,
+      security: `Bonjour ${guestName},\n\nPour des raisons de sécurité, nous vous demandons de vérifier votre identité avant votre arrivée à "${propertyName}".\n\nCliquez ici pour compléter la vérification :\n[LIEN]\n\nVotre code d'accès vous sera communiqué après vérification.\n\nCordialement.`,
     },
     en: {
       standard: `Hello ${guestName},\n\nYour accommodation "${propertyName}" is ready! Please complete your online verification:\n\n[LIEN]\n\nThank you and see you soon!`,
@@ -37,10 +36,6 @@ function getMessage(lang: Language, template: Template, guestName: string, prope
     ar: {
       standard: `مرحبا ${guestName}،\n\nإقامتك "${propertyName}" بانتظارك! يرجى إكمال التحقق عبر الإنترنت:\n\n[LIEN]\n\nشكرا لك!`,
       security: `مرحبا ${guestName}،\n\nلأسباب أمنية، يرجى التحقق من هويتك قبل وصولك إلى "${propertyName}".\n\nانقر هنا لإكمال التحقق:\n[LIEN]\n\nسيتم مشاركة رمز الدخول بعد التحقق.\n\nتحياتنا.`,
-    },
-    es: {
-      standard: `Hola ${guestName},\n\nSu alojamiento "${propertyName}" le espera! Complete la verificacion en linea:\n\n[LIEN]\n\nGracias y hasta pronto!`,
-      security: `Hola ${guestName},\n\nPor razones de seguridad, verifique su identidad antes de llegar a "${propertyName}".\n\nHaga clic aqui para completar la verificacion:\n[LIEN]\n\nSu codigo de acceso se compartira despues de la verificacion.\n\nSaludos.`,
     },
   };
 
@@ -53,7 +48,7 @@ function getMessage(lang: Language, template: Template, guestName: string, prope
 export function ShareLinkModal({ link, guestName, propertyName, onClose }: ShareLinkModalProps) {
   const [language, setLanguage] = useState<Language>('fr');
   const [template, setTemplate] = useState<Template>('standard');
-  const [customMessage, setCustomMessage] = useState(`Bonjour,\n\nVeuillez completer votre verification :\n[LIEN]\n\nMerci !`);
+  const [customMessage, setCustomMessage] = useState(`Bonjour,\n\nVeuillez compléter votre vérification :\n[LIEN]\n\nMerci.`);
   const [copied, setCopied] = useState<'link' | 'message' | null>(null);
 
   const message = getMessage(language, template, guestName, propertyName, link, customMessage);
@@ -68,7 +63,7 @@ export function ShareLinkModal({ link, guestName, propertyName, onClose }: Share
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Partager le lien de verification</h2>
+          <h2 className="text-lg font-bold text-gray-900">Partager le lien de vérification</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <X size={20} />
           </button>
@@ -76,7 +71,7 @@ export function ShareLinkModal({ link, guestName, propertyName, onClose }: Share
 
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Lien de verification</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Lien de vérification</label>
             <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
               <input type="text" value={link} readOnly className="flex-1 bg-transparent text-sm text-gray-700 outline-none min-w-0" />
               <button
@@ -109,7 +104,7 @@ export function ShareLinkModal({ link, guestName, propertyName, onClose }: Share
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Modele de message</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Modèle de message</label>
             <div className="flex gap-2 flex-wrap">
               {TEMPLATES.map((t) => (
                 <button
@@ -127,20 +122,20 @@ export function ShareLinkModal({ link, guestName, propertyName, onClose }: Share
 
           {template === 'custom' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Message personnalise</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Message personnalisé</label>
               <textarea
                 value={customMessage}
                 onChange={(e) => setCustomMessage(e.target.value)}
                 rows={5}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Utilisez [LIEN] pour inserer le lien..."
+                placeholder="Utilisez [LIEN] pour insérer le lien..."
               />
-              <p className="text-xs text-gray-500 mt-1">Utilisez [LIEN] pour inserer automatiquement le lien de verification.</p>
+              <p className="text-xs text-gray-500 mt-1">Utilisez [LIEN] pour insérer automatiquement le lien de vérification.</p>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Apercu du message</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Aperçu du message</label>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto">
               <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">{message}</pre>
             </div>
@@ -152,7 +147,7 @@ export function ShareLinkModal({ link, guestName, propertyName, onClose }: Share
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
               {copied === 'message' ? <Check size={16} /> : <Copy size={16} />}
-              {copied === 'message' ? 'Copie !' : 'Copier le message'}
+              {copied === 'message' ? 'Copié' : 'Copier le message'}
             </button>
             <a
               href={`https://wa.me/?text=${encodeURIComponent(message)}`}

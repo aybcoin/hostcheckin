@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, Reservation } from '../lib/supabase';
+import { supabase, Reservation, ReservationCreateInput } from '../lib/supabase';
 
 export function useReservations(propertyId?: string | null) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -30,12 +30,18 @@ export function useReservations(propertyId?: string | null) {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   };
 
-  const addReservation = async (reservation: Omit<Reservation, 'id' | 'unique_link' | 'created_at' | 'updated_at'>) => {
+  const addReservation = async (reservation: ReservationCreateInput) => {
     const uniqueLink = generateUniqueLink();
+    const verificationMode = reservation.verification_mode || reservation.verification_type || 'simple';
 
     const { data, error } = await supabase
       .from('reservations')
-      .insert([{ ...reservation, unique_link: uniqueLink }])
+      .insert([{
+        ...reservation,
+        verification_mode: verificationMode,
+        verification_type: reservation.verification_type || verificationMode,
+        unique_link: uniqueLink,
+      }])
       .select();
 
     if (error) {

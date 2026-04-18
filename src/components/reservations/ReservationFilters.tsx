@@ -39,7 +39,7 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
     <div className="bg-white rounded-xl shadow-sm border p-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Date d'arrivee</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Date d'arrivée</label>
           <input
             type="date"
             value={local.checkInDate}
@@ -48,7 +48,7 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Date de depart</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Date de départ</label>
           <input
             type="date"
             value={local.checkOutDate}
@@ -57,7 +57,7 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Hebergement</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Hébergement</label>
           <select
             value={local.propertyId}
             onChange={(e) => setLocal({ ...local, propertyId: e.target.value })}
@@ -78,22 +78,22 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
           >
             <option value="all">Tous</option>
             <option value="pending">En attente</option>
-            <option value="checked_in">Verifiee</option>
-            <option value="completed">Terminee</option>
-            <option value="cancelled">Annulee</option>
+            <option value="checked_in">Vérifiée</option>
+            <option value="completed">Terminée</option>
+            <option value="cancelled">Annulée</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Verification</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Vérification</label>
           <select
             value={local.verification}
             onChange={(e) => setLocal({ ...local, verification: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="all">Toutes</option>
-            <option value="checked_in">Verifiee</option>
+            <option value="checked_in">Vérifiée</option>
             <option value="pending">En attente</option>
-            <option value="not_started">Non commencee</option>
+            <option value="not_started">Non commencée</option>
           </select>
         </div>
       </div>
@@ -110,7 +110,7 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
           className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
         >
           <RotateCcw size={14} />
-          Reinitialiser
+          Réinitialiser
         </button>
       </div>
     </div>

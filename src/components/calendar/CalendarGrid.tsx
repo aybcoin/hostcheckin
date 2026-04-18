@@ -1,9 +1,8 @@
-import { Reservation, Property } from '../../lib/supabase';
+import { Reservation } from '../../lib/supabase';
 
 interface CalendarGridProps {
   currentMonth: Date;
   reservations: Reservation[];
-  properties: Property[];
   guests: Record<string, { full_name: string }>;
   filter: string;
   onReservationClick: (reservation: Reservation) => void;
@@ -32,7 +31,7 @@ function getReservationColor(reservation: Reservation, date: Date): string {
   return 'bg-blue-50 text-blue-800';
 }
 
-export function CalendarGrid({ currentMonth, reservations, properties, guests, filter, onReservationClick }: CalendarGridProps) {
+export function CalendarGrid({ currentMonth, reservations, guests, filter, onReservationClick }: CalendarGridProps) {
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
   const daysInMonth = getDaysInMonth(year, month);
@@ -105,7 +104,7 @@ export function CalendarGrid({ currentMonth, reservations, properties, guests, f
               <div className="space-y-0.5">
                 {dayReservations.slice(0, 3).map((r) => {
                   const guest = guests[r.guest_id];
-                  const name = guest?.full_name?.split(' ')[0] || 'Invite';
+                  const name = guest?.full_name?.split(' ')[0] || 'Invité';
                   return (
                     <button
                       key={r.id}

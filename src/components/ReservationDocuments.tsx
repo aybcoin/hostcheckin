@@ -4,6 +4,7 @@ import {
   AlertCircle, ShieldCheck, ShieldX, Clock, Activity, Hash
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { SecurityNotice } from './SecurityNotice';
 
 interface VerificationData {
   id: string;
@@ -58,22 +59,29 @@ interface ReservationDocumentsProps {
 }
 
 const ID_TYPE_LABELS: Record<string, string> = {
-  cin: "Carte d'identite nationale",
+  cin: "Carte nationale d'identité",
   passport: 'Passeport',
   driver_license: 'Permis de conduire',
-  sejour: 'Titre de sejour',
-  carte_identite: "Carte d'identite",
+  sejour: 'Titre de séjour',
+  carte_identite: "Carte nationale d'identité",
   passeport: 'Passeport',
   permis_conduire: 'Permis de conduire',
-  titre_sejour: 'Titre de sejour',
+  titre_sejour: 'Titre de séjour',
 };
 
 const EVENT_LABELS: Record<string, string> = {
-  identity_submitted: 'Identite soumise',
-  contract_viewed: 'Contrat consulte',
-  consent_given: 'Consentement donne',
-  contract_signed: 'Contrat signe',
-  pdf_generated: 'PDF genere',
+  identity_submitted: "Pièce d'identité soumise",
+  contract_viewed: 'Contrat consulté',
+  consent_given: 'Consentement exprimé',
+  contract_signed: 'Signature électronique du locataire apposée',
+  pdf_generated: 'PDF généré',
+  host_emitted_contract: 'Consentement du bailleur matérialisé par émission',
+};
+
+const SIGNER_ROLE_LABELS: Record<string, string> = {
+  guest: 'Locataire',
+  host: 'Bailleur',
+  system: 'Système',
 };
 
 export function ReservationDocuments({ reservationId, bookingReference, onClose }: ReservationDocumentsProps) {
@@ -153,9 +161,9 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
         if (resp.status === 409) {
-          alert('Erreur d\'integrite: le PDF semble avoir ete modifie. Contactez le support.');
+          alert("Erreur d'intégrité : le PDF semble avoir été modifié. Contactez le support.");
         } else {
-          alert(err.error || 'Erreur lors du telechargement du PDF.');
+          alert(err.error || 'Erreur lors du téléchargement du PDF.');
         }
         console.error(`PDF download failed (${resp.status}):`, err);
         return;
@@ -172,7 +180,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('PDF download error:', err);
-      alert('Erreur reseau lors du telechargement. Verifiez votre connexion.');
+      alert('Erreur réseau lors du téléchargement. Vérifiez votre connexion.');
     } finally {
       setDownloadingPdf(false);
     }
@@ -196,7 +204,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
           <div className="p-4 sm:p-5 border-b border-gray-200 flex items-center justify-between shrink-0">
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Documents du check-in</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Reservation {bookingReference}</p>
+              <p className="text-sm text-gray-500 mt-0.5">Réservation {bookingReference}</p>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <X size={20} />
@@ -214,7 +222,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
               </div>
               <p className="text-gray-600 text-center font-medium">Aucun document soumis</p>
               <p className="text-sm text-gray-400 text-center mt-1">
-                Le client n'a pas encore complete son check-in en ligne.
+                Le client n'a pas encore complété son check-in en ligne.
               </p>
             </div>
           ) : (
@@ -227,7 +235,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                   }`}
                 >
                   <User size={16} />
-                  <span>Identite</span>
+                  <span>Identité</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('contract')}
@@ -263,9 +271,9 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {verification.status === 'approved' ? (
-                              <><ShieldCheck size={12} /> Approuve</>
+                              <><ShieldCheck size={12} /> Vérifiée</>
                             ) : verification.status === 'rejected' ? (
-                              <><ShieldX size={12} /> Rejete</>
+                              <><ShieldX size={12} /> Rejetée</>
                             ) : (
                               <><Clock size={12} /> En attente</>
                             )}
@@ -314,7 +322,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         {verification.ocr_data?.declared_name && (
                           <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-2 gap-3">
                             <div>
-                              <p className="text-xs text-gray-500">Nom declare</p>
+                              <p className="text-xs text-gray-500">Nom déclaré</p>
                               <p className="text-sm font-medium text-gray-900">{verification.ocr_data.declared_name}</p>
                             </div>
                             {verification.ocr_data.document_number && (
@@ -326,12 +334,14 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                           </div>
                         )}
 
+                        <SecurityNotice />
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {isValidUrl(verification.id_document_url) && (
                             <div>
                               <p className="text-sm font-medium text-gray-700 mb-2">Recto</p>
                               <div
-                                className="relative group rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50"
+                                className="relative group secure-document-preview rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50"
                                 onClick={() => setZoomedImage(verification.id_document_url)}
                               >
                                 <img
@@ -350,7 +360,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                             <div>
                               <p className="text-sm font-medium text-gray-700 mb-2">Verso</p>
                               <div
-                                className="relative group rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50"
+                                className="relative group secure-document-preview rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50"
                                 onClick={() => setZoomedImage(verification.id_back_url!)}
                               >
                                 <img
@@ -373,7 +383,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                               Selfie
                             </p>
                             <div
-                              className="relative group rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50 max-w-xs"
+                              className="relative group secure-document-preview rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50 max-w-xs"
                               onClick={() => setZoomedImage(verification.selfie_url!)}
                             >
                               <img
@@ -391,7 +401,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         {!isValidUrl(verification.id_document_url) && !isValidUrl(verification.selfie_url) && (
                           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                             <p className="text-sm text-amber-800">
-                              Les documents ont ete soumis mais les fichiers ne sont pas disponibles.
+                              Les documents ont été soumis, mais les fichiers ne sont pas disponibles.
                             </p>
                           </div>
                         )}
@@ -399,7 +409,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                     ) : (
                       <div className="text-center py-8">
                         <User className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500">Aucune verification d'identite soumise</p>
+                        <p className="text-gray-500">Aucune vérification d'identité soumise</p>
                       </div>
                     )}
                   </div>
@@ -411,21 +421,17 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                       <>
                         <div className="flex flex-wrap items-center gap-3">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-                            contract.signed_by_guest && contract.signed_by_host
+                            contract.signed_by_guest
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
+                              : 'bg-slate-100 text-slate-700'
                           }`}>
-                            {contract.signed_by_guest && contract.signed_by_host
-                              ? 'Signe par les deux parties'
-                              : contract.signed_by_host
-                              ? 'Signe par le proprietaire'
-                              : contract.signed_by_guest
-                              ? 'Signe par le client'
-                              : 'Non signe'}
+                            {contract.signed_by_guest
+                              ? 'Contrat émis par le bailleur et signé électroniquement par le locataire'
+                              : 'Contrat émis par le bailleur'}
                           </span>
                           {contract.signed_at && (
                             <span className="text-xs text-gray-400">
-                              Signe le {formatDate(contract.signed_at)}
+                              Signé le {formatDate(contract.signed_at)}
                             </span>
                           )}
                         </div>
@@ -454,7 +460,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                               ) : (
                                 <Download size={16} />
                               )}
-                              Telecharger PDF
+                              Télécharger le PDF
                             </button>
                           </div>
                         )}
@@ -478,12 +484,12 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                             <div>
                               <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
                                 <PenTool size={14} />
-                                Signature proprietaire
+                                Validation du bailleur
                               </p>
                               <div className="bg-white rounded-lg border border-gray-200 p-3">
                                 <img
                                   src={contract.host_signature_url}
-                                  alt="Signature proprietaire"
+                                  alt="Validation du bailleur"
                                   className="w-full h-24 object-contain"
                                 />
                               </div>
@@ -494,12 +500,12 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                             <div>
                               <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
                                 <PenTool size={14} />
-                                Signature client
+                                Signature du locataire
                               </p>
                               <div className="bg-white rounded-lg border border-gray-200 p-3">
                                 <img
                                   src={contract.guest_signature_url}
-                                  alt="Signature client"
+                                  alt="Signature du locataire"
                                   className="w-full h-24 object-contain"
                                 />
                               </div>
@@ -510,7 +516,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         {!contract.contract_content && !contract.guest_signature_url && !contract.host_signature_url && (
                           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                             <p className="text-sm text-amber-800">
-                              Le contrat a ete cree mais n'a pas encore de contenu ou de signatures.
+                              Le contrat a été créé, mais il n'a pas encore de contenu ou de signature.
                             </p>
                           </div>
                         )}
@@ -518,7 +524,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                     ) : (
                       <div className="text-center py-8">
                         <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500">Aucun contrat pour cette reservation</p>
+                        <p className="text-gray-500">Aucun contrat pour cette réservation</p>
                       </div>
                     )}
                   </div>
@@ -544,7 +550,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                                 </div>
                                 <div className="flex flex-wrap gap-2 text-xs text-gray-500">
                                   <span className="px-2 py-0.5 bg-white rounded border border-gray-200">
-                                    {entry.signer_role}
+                                    {SIGNER_ROLE_LABELS[entry.signer_role] || entry.signer_role}
                                   </span>
                                   {entry.signer_email && (
                                     <span>{entry.signer_email}</span>
@@ -566,7 +572,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                     ) : (
                       <div className="text-center py-8">
                         <Activity className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500">Aucun evenement d'audit enregistre</p>
+                        <p className="text-gray-500">Aucun événement d'audit enregistré</p>
                       </div>
                     )}
                   </div>
@@ -591,7 +597,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
             </button>
             <img
               src={zoomedImage}
-              alt="Document en plein ecran"
+              alt="Document en plein écran"
               className="w-full h-full object-contain rounded-lg"
             />
             <a
