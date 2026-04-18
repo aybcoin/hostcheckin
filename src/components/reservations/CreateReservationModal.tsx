@@ -36,19 +36,23 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
     e.preventDefault();
     setLoading(true);
     try {
-      // Email is optional. When provided, upsert by email so re-using the
-      // same guest doesn't create duplicates. When absent, always insert a
-      // new guest row (no unique key to conflict on).
-      const email = (formData.guest_email || '').trim();
+      // Email is optional. When provided, upsert by email so the same guest
+      // is not duplicated. When absent, always insert a fresh row with email
+      // explicitly set to null (Postgres allows multiple NULLs in a UNIQUE
+      // index, so this never conflicts).
+      const rawEmail = (formData.guest_email || '').trim();
+      const email = rawEmail.length > 0 ? rawEmail : null;
       const guestPayload = {
-        full_name: formData.guest_name,
-        phone: formData.guest_phone || null,
-        ...(email ? { email } : {}),
+        full_name: formData.guest_name.trim(),
+        phone: formData.guest_phone?.trim() || null,
+        email,
       };
+      console.log('Guest payload ->', guestPayload);
       const query = email
         ? supabase.from('guests').upsert(guestPayload, { onConflict: 'email' })
         : supabase.from('guests').insert(guestPayload);
       const { data: guestData, error: guestError } = await query.select().single();
+      console.log('Guest insert/upsert result ->', { guestData, guestError });
       if (guestError) {
         console.error('Supabase error (guests):', guestError);
         alert(

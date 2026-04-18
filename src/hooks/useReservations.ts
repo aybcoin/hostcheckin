@@ -38,7 +38,14 @@ export function useReservations(propertyId?: string | null) {
       .insert([{ ...reservation, unique_link: uniqueLink }])
       .select();
 
-    if (!error && data) {
+    if (error) {
+      console.error('Supabase error (reservations.insert):', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+    } else if (data) {
       setReservations((prev) => [data[0], ...prev]);
     }
     return { data, error };
