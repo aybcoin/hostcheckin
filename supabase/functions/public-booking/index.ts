@@ -143,18 +143,26 @@ Deno.serve(async (req: Request) => {
     .eq("property_token", propertyToken)
     .maybeSingle();
 
-  if (autoLinkError || !autoLink || !autoLink.is_active) {
+  if (autoLinkError || !autoLink) {
     return json(req, 404, { error: "invalid_or_inactive_token" });
+  }
+
+  if (!autoLink.is_active) {
+    return json(req, 410, { error: "inactive_link" });
   }
 
   const { data: property } = await supabase
     .from("properties")
-    .select("id, name, city, country, verification_mode")
+    .select("id, name, city, country, image_url, verification_mode, auto_link_active")
     .eq("id", autoLink.property_id)
     .maybeSingle();
 
   if (!property) {
     return json(req, 404, { error: "property_not_found" });
+  }
+
+  if (property.auto_link_active === false) {
+    return json(req, 410, { error: "inactive_link" });
   }
 
   if (req.method === "GET") {

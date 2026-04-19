@@ -20,13 +20,21 @@
 
 ## Migrations à exécuter
 
-Exécuter la migration:
+Exécuter dans l'ordre :
 - `supabase/migrations/20260418170000_add_auto_link_blacklist_and_verification_mode.sql`
+  - colonnes `verification_mode` (`properties`, `reservations`)
+  - tables `property_auto_links`, `blacklisted_guests`, `public_booking_attempts`
+  - index + politiques RLS associées
+- `supabase/migrations/20260419090000_add_auto_link_active_to_properties.sql`
+  - colonnes `auto_link_active` (bool, default true) et `auto_link_regenerated_at`
+    (timestamptz) sur `properties`
+  - index `idx_properties_auto_link_active`
+  - backfill depuis `property_auto_links.is_active`
 
-Elle ajoute:
-- colonnes `verification_mode` (`properties`, `reservations`)
-- tables `property_auto_links`, `blacklisted_guests`, `public_booking_attempts`
-- index + politiques RLS associées
+## Edge functions à déployer
+
+- `public-booking` v2 (vérifie `properties.auto_link_active`)
+- `generate-contract-pdf` v26 (sober palette + accents complets)
 
 ## Vérifications staging recommandées
 

@@ -7,7 +7,8 @@ export type AppPage =
   | 'contracts'
   | 'profile'
   | 'pricing'
-  | 'blacklist';
+  | 'blacklist'
+  | 'help';
 
 export const APP_PAGE_PATHS: Record<AppPage, string> = {
   dashboard: '/',
@@ -19,4 +20,5 @@ export const APP_PAGE_PATHS: Record<AppPage, string> = {
   profile: '/profile',
   pricing: '/pricing',
   blacklist: '/blacklist',
+  help: '/help',
 };

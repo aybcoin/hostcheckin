@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Copy, Download, Link2, Printer } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { APP_BASE_URL, Property, PropertyAutoLink, supabase } from '../lib/supabase';
+import { ctaTokens } from '../lib/design-tokens';
 
 interface AutoLinkGeneratorProps {
   property: Property | null;
@@ -30,7 +31,12 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [regeneratedAt, setRegeneratedAt] = useState<string | null>(property?.auto_link_regenerated_at || null);
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    setRegeneratedAt(property?.auto_link_regenerated_at || null);
+  }, [property?.auto_link_regenerated_at]);
 
   useEffect(() => {
     const fetchAutoLink = async () => {
@@ -65,6 +71,22 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
     return `${APP_BASE_URL}/book/${autoLink.property_token}`;
   }, [autoLink?.property_token]);
 
+  const syncPropertyAutoLinkState = async (updates: {
+    auto_link_active: boolean;
+    auto_link_regenerated_at?: string | null;
+  }) => {
+    if (!property?.id) return;
+    const { error: propertyError } = await supabase
+      .from('properties')
+      .update(updates)
+      .eq('id', property.id);
+
+    // Migration may not yet be applied on every environment.
+    if (propertyError) {
+      console.warn('Property auto-link sync skipped:', propertyError.message);
+    }
+  };
+
   const handleCreate = async () => {
     if (!property?.id || !hostId) return;
     setCreating(true);
@@ -90,6 +112,11 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
     setAutoLink(data as PropertyAutoLink);
     setError(null);
     setActionError(null);
+    setRegeneratedAt(null);
+    await syncPropertyAutoLinkState({
+      auto_link_active: true,
+      auto_link_regenerated_at: null,
+    });
     setCreating(false);
   };
 
@@ -159,12 +186,77 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
     poster.document.close();
   };
 
+  const handleRegenerateLink = async () => {
+    if (!autoLink || !property) return;
+    const confirmed = window.confirm(
+      "Cette action invalidera l'ancien lien et les QR codes déjà imprimés. Confirmer ?",
+    );
+    if (!confirmed) return;
+
+    setActionError(null);
+    const now = new Date().toISOString();
+    const nextToken = createToken();
+
+    const { data, error: updateError } = await supabase
+      .from('property_auto_links')
+      .update({
+        property_token: nextToken,
+        is_active: true,
+        updated_at: now,
+      })
+      .eq('id', autoLink.id)
+      .select()
+      .maybeSingle();
+
+    if (updateError || !data) {
+      setActionError("Impossible de régénérer le lien pour le moment.");
+      return;
+    }
+
+    setAutoLink(data as PropertyAutoLink);
+    setRegeneratedAt(now);
+    await syncPropertyAutoLinkState({
+      auto_link_active: true,
+      auto_link_regenerated_at: now,
+    });
+  };
+
+  const handleDeactivateLink = async () => {
+    if (!autoLink || !property) return;
+    const confirmed = window.confirm(
+      "Le lien sera désactivé. Aucune nouvelle réservation ne pourra être créée via ce lien. Confirmer ?",
+    );
+    if (!confirmed) return;
+
+    setActionError(null);
+    const { data, error: updateError } = await supabase
+      .from('property_auto_links')
+      .update({
+        is_active: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', autoLink.id)
+      .select()
+      .maybeSingle();
+
+    if (updateError || !data) {
+      setActionError("Impossible de désactiver le lien pour le moment.");
+      return;
+    }
+
+    setAutoLink(data as PropertyAutoLink);
+    await syncPropertyAutoLinkState({
+      auto_link_active: false,
+      auto_link_regenerated_at: property.auto_link_regenerated_at || null,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+        className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.secondary}`}
       >
         <ArrowLeft size={16} aria-hidden="true" />
         Retour aux propriétés
@@ -204,7 +296,7 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
             type="button"
             onClick={handleCreate}
             disabled={creating}
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ctaTokens.primary}`}
           >
             <Link2 size={16} aria-hidden="true" />
             {creating ? 'Génération…' : 'Générer le lien permanent'}
@@ -214,6 +306,9 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.2fr_1fr]">
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Lien permanent</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Statut : {autoLink.is_active ? 'Actif' : 'Désactivé'}
+            </p>
             <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="break-all text-sm text-slate-700">{bookingLink}</p>
             </div>
@@ -221,13 +316,33 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
               <button
                 type="button"
                 onClick={handleCopy}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.secondary}`}
                 aria-live="polite"
               >
                 <Copy size={16} aria-hidden="true" />
                 {copied ? 'Copié' : 'Copier le lien'}
               </button>
+              <button
+                type="button"
+                onClick={handleRegenerateLink}
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.secondary}`}
+              >
+                Régénérer le lien
+              </button>
+              <button
+                type="button"
+                onClick={handleDeactivateLink}
+                disabled={!autoLink.is_active}
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ctaTokens.dangerSoft}`}
+              >
+                Désactiver le lien
+              </button>
             </div>
+            {regeneratedAt ? (
+              <p className="mt-2 text-xs text-slate-500">
+                Dernière régénération : {new Date(regeneratedAt).toLocaleString('fr-FR')}
+              </p>
+            ) : null}
           </section>
 
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -256,7 +371,7 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
               <button
                 type="button"
                 onClick={handleDownloadQr}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.secondary}`}
               >
                 <Download size={16} aria-hidden="true" />
                 Télécharger le QR code (PNG)
@@ -264,7 +379,7 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
               <button
                 type="button"
                 onClick={handlePrintPoster}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.primary}`}
               >
                 <Printer size={16} aria-hidden="true" />
                 Télécharger l'affiche imprimable

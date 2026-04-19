@@ -23,6 +23,20 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // Lightweight i18n guardrail: avoid adding new hardcoded UI text in JSX.
+      // Existing strings can be migrated incrementally to /lib/i18n/fr.ts.
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'JSXText[value=/[A-Za-zÀ-ÿ]/]',
+          message: 'Texte UI hardcodé détecté : externalisez dans /lib/i18n/fr.ts',
+        },
+        {
+          selector:
+            "JSXAttribute[name.name=/^(placeholder|title|aria-label)$/][value.type='Literal'][value.value=/[A-Za-zÀ-ÿ]/]",
+          message: 'Chaîne UI hardcodée : externalisez dans /lib/i18n/fr.ts',
+        },
+      ],
     },
   }
 );

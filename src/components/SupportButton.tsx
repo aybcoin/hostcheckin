@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircleMore, MessageSquareText, Mail } from "lucide-react";
+import { MessageCircleMore, MessageSquareText, Mail, BookOpen } from "lucide-react";
 import { fr } from "../lib/i18n/fr";
 
 const getSupportConfig = () => {
@@ -106,16 +106,15 @@ export function SupportButton() {
             </button>
           )}
 
-          <button
-            type="button"
-            disabled
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-400 cursor-not-allowed bg-slate-50 border-t border-slate-100"
-            aria-label={fr.support.chatHelp}
+          <a
+            href="/help"
+            role="menuitem"
+            aria-label={fr.support.documentationHelp}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors border-t border-slate-100"
           >
-            <MessageCircleMore size={16} />
-            <span>{fr.support.chat}</span>
-            <span className="ml-auto text-[11px]">{fr.common.soon}</span>
-          </button>
+            <BookOpen size={16} className="text-slate-700" />
+            <span>{fr.support.documentation}</span>
+          </a>
         </div>
       )}
     </div>

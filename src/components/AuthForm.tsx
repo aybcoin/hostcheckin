@@ -39,16 +39,16 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8">
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-gradient-to-r from-blue-600 to-teal-500 rounded-xl">
+              <div className="p-3 bg-gradient-to-r from-slate-900 to-slate-700 rounded-xl">
                 <Building2 className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">
               HostCheckIn
             </h1>
             <p className="text-gray-600">
@@ -68,7 +68,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={isSignUp}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-base"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-transparent outline-none transition text-base"
                   placeholder="Jean Dupont"
                 />
               </div>
@@ -84,7 +84,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-base"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-transparent outline-none transition text-base"
                 placeholder="vous@exemple.com"
               />
             </div>
@@ -100,7 +100,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-base"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-transparent outline-none transition text-base"
                 placeholder="••••••••"
               />
             </div>
@@ -114,10 +114,10 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
-                'Chargement...'
+                'Chargement…'
               ) : isSignUp ? (
                 <>
                   <UserPlus className="w-5 h-5" />
@@ -139,7 +139,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                 setError(null);
                 setFullName('');
               }}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-slate-700 hover:text-slate-900 font-medium"
             >
               {isSignUp
                 ? 'Vous avez déjà un compte ? Connectez-vous'

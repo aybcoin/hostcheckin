@@ -107,3 +107,56 @@
 - Migration `20260418170000` vérifiée présente en base via Management API.
 - Edge function `public-booking` v1 vérifiée `ACTIVE` via Management API.
 - `generate-contract-pdf` en v26 (sprint précédent), toujours `ACTIVE`.
+
+## Pass V2 (2026-04-19) — LOT A + LOT B
+
+### Périmètre audité (V2)
+
+| Fichier | Cohérence visuelle | Cohérence linguistique | Accessibilité | Responsive | Sécurité | Qualité code | Statut |
+|---|---|---|---|---|---|---|---|
+| `src/lib/i18n/fr.ts` (namespaces étendus) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/lib/design-tokens.ts` (ctaTokens) | ✅ | n/a | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/Sidebar.tsx` (logo + close repositionné) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/SupportButton.tsx` (bas de sidebar permanent) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/AutoLinkGenerator.tsx` (régénérer + désactiver) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/PublicBookingForm.tsx` (bandeau + footer RGPD) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/BlacklistPage.tsx` (CTA conditionnel + tooltip) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/CheckinMessageTemplates.tsx` (FR/EN/AR/ES) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/ProfilePage.tsx` (placeholder MA) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/ShareLinkModal.tsx` (ctaTokens) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/RatingModal.tsx` (ctaTokens) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/ReservationFilters.tsx` (ctaTokens) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/HelpPage.tsx` (ctaTokens) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `src/components/PricingPage.tsx` (ctaTokens) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `supabase/functions/public-booking/index.ts` v2 (auto_link_active) | ✅ | ✅ | n/a | n/a | ✅ | ✅ | ✅ |
+| `supabase/migrations/20260419090000_add_auto_link_active_to_properties.sql` | n/a | n/a | n/a | n/a | ✅ | ✅ | ✅ |
+
+### Validations LOT A (Critique)
+
+- **A1 — Audit accentuation FR** : ✅ Aucune chaîne UX hardcodée non accentuée. 132 occurrences grep relevées sont toutes des identifiants TS (`reservations`, `verified_at`, etc.), pas du texte affiché. Tous les libellés produits passent par `src/lib/i18n/fr.ts`.
+- **A2 — Logo sidebar** : ✅ Bouton de fermeture désormais en `absolute top-X right-X`, le libellé "HostCheckIn" s'affiche intégralement (mobile + desktop).
+- **A3 — Support permanent** : ✅ `SupportButton` ancré en bas de sidebar avec dropdown WhatsApp / e-mail / docs. Variables `VITE_SUPPORT_WHATSAPP` et `VITE_SUPPORT_EMAIL` lues depuis `import.meta.env`.
+- **A4 — Design tokens CTA** : ✅ `src/lib/design-tokens.ts` exporte `ctaTokens.{primary,secondary,success,danger,dangerSoft}`. Refactor effectif sur 8 composants listés ci-dessus.
+- **A5 — Placeholder téléphone MA** : ✅ `fr.profile.phonePlaceholder = "Ex : 06 12 34 56 78"`, exploité par `ProfilePage`, `PublicBookingForm`, `BlacklistPage`.
+
+### Validations LOT B (Haute)
+
+- **B1 — Élévation `/book/{token}`** : ✅ Bandeau dégradé navy/teal aligné sur `/checkin/`, badge "Réservation 100% sécurisée", footer RGPD, carte centrale arrondie/ombrée.
+- **B2 — `BlacklistPage` CTA conditionnel** : ✅ Bouton activé dès qu'un identifiant (e-mail OU téléphone OU nom) est saisi, sinon disabled + tooltip.
+- **B3 — Régénération + désactivation lien permanent** :
+  - ✅ `AutoLinkGenerator` : actions "Régénérer" et "Désactiver" avec `confirm()` natif et states optimistes.
+  - ✅ Edge function `public-booking` v2 déployée (`ACTIVE`), refuse les payloads quand `properties.auto_link_active === false` → `403 link_disabled`.
+  - ✅ Migration `20260419090000` appliquée : colonnes `auto_link_active boolean DEFAULT true`, `auto_link_regenerated_at timestamptz`, index `idx_properties_auto_link_active`, backfill depuis `property_auto_links.is_active`. Enregistrée dans `supabase_migrations.schema_migrations`.
+- **B4 — Templates ES** : ✅ Espagnol ajouté à `CheckinMessageTemplates` (FR / EN / AR / ES), mêmes variables interpolées.
+
+### Vérifications techniques V2
+
+- `tsc --noEmit -p tsconfig.app.json` → exit 0 ✅
+- `vite build` → exit 0, 1583 modules transformés, chunk principal 523.49 kB / 141.97 kB gzip ✅
+- Migration `20260419090000` vérifiée présente en base via Management API ✅
+- Edge function `public-booking` v2 `ACTIVE` (`verify_jwt=false`) ✅
+- `generate-contract-pdf` toujours en v26 `ACTIVE` ✅
+
+### LOT C / LOT D — Hors périmètre de cette itération
+
+Notifications avancées, dark mode, PWA, micro-animations : non livrés dans ce sprint, à planifier en V2.1.

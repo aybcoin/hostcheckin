@@ -17,6 +17,7 @@ import { PricingPage } from './components/PricingPage';
 import { AutoLinkGenerator } from './components/AutoLinkGenerator';
 import { PublicBookingForm } from './components/PublicBookingForm';
 import { BlacklistPage } from './components/BlacklistPage';
+import { HelpPage } from './components/HelpPage';
 import { APP_PAGE_PATHS, AppPage } from './lib/navigation';
 
 function pageFromPath(pathname: string): AppPage {
@@ -221,6 +222,10 @@ function App() {
 
           {!autoLinkPropertyId && currentPage === 'blacklist' ? (
             <BlacklistPage hostId={user.id} />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'help' ? (
+            <HelpPage onNavigate={navigateToPage} />
           ) : null}
         </div>
       </main>

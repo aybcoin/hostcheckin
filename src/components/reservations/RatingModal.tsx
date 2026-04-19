@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { X, Star } from 'lucide-react';
+import { ctaTokens } from '../../lib/design-tokens';
+import { fr } from '../../lib/i18n/fr';
 
 interface RatingModalProps {
   bookingReference: string;
@@ -45,15 +47,15 @@ export function RatingModal({ bookingReference, currentRating, onSave, onClose }
             <button
               onClick={() => { if (rating > 0) onSave(rating); }}
               disabled={rating === 0}
-              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-40"
+              className={`flex-1 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium disabled:opacity-40 ${ctaTokens.primary}`}
             >
-              Enregistrer
+              {fr.common.save}
             </button>
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              className={`flex-1 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${ctaTokens.secondary}`}
             >
-              Annuler
+              {fr.common.cancel}
             </button>
           </div>
         </div>

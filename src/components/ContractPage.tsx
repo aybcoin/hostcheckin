@@ -2,131 +2,132 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { FileText, Check, X, Trash2, Star, Eye, Save, Info, Download, Shield, Sparkles } from 'lucide-react';
 import { Reservation, Property, Contract, ContractTemplate } from '../lib/supabase';
 import { supabase } from '../lib/supabase';
+import { fr } from '../lib/i18n/fr';
 
 interface ContractPageProps {
   reservations: Reservation[];
   properties: Property[];
 }
 
-const DEFAULT_TEMPLATE_1 = `CONTRAT DE LOCATION COURTE DUREE
+const DEFAULT_TEMPLATE_1 = `CONTRAT DE LOCATION COURTE DURÉE
 
-Entre les soussignes :
+Entre les soussignés :
 
-Le proprietaire du logement : {{property_name}}
+Le propriétaire du logement : {{property_name}}
 Adresse : {{property_address}}
 
 Et le locataire : {{guest_name}}
 Email : {{guest_email}}
-Telephone : {{guest_phone}}
+Téléphone : {{guest_phone}}
 
-Reservation : {{booking_reference}}
+Réservation : {{booking_reference}}
 
-Il a ete convenu ce qui suit :
+Il a été convenu ce qui suit :
 
 Article 1 - Objet du contrat
-Le proprietaire loue au locataire le logement situe a l'adresse suivante :
+Le propriétaire loue au locataire le logement situé à l'adresse suivante :
 {{property_address}}
 
-Article 2 - Duree du sejour
+Article 2 - Durée du séjour
 Du {{check_in_date}} au {{check_out_date}}
-Heure d'arrivee : {{check_in_time}}
-Heure de depart : {{check_out_time}}
+Heure d'arrivée : {{check_in_time}}
+Heure de départ : {{check_out_time}}
 
-Article 3 - Capacite d'accueil
-Nombre d'occupants declares : {{number_of_guests}} personne(s)
-Capacite maximum du logement : {{max_guests}} personne(s)
+Article 3 - Capacité d'accueil
+Nombre d'occupants déclarés : {{number_of_guests}} personne(s)
+Capacité maximum du logement : {{max_guests}} personne(s)
 Nombre de chambres : {{rooms_count}}
 
-Article 4 - Regles de la maison
+Article 4 - Règles de la maison
 - Respect du voisinage et des horaires de repos (22h - 8h)
-- Interdiction de fumer a l'interieur du logement
-- Interdiction d'organiser des fetes ou evenements sans accord prealable
-- Les animaux ne sont acceptes qu'avec autorisation prealable du proprietaire
-- Maintenir les lieux propres et en bon etat
+- Interdiction de fumer à l'intérieur du logement
+- Interdiction d'organiser des fêtes ou événements sans accord préalable
+- Les animaux ne sont acceptés qu'avec autorisation préalable du propriétaire
+- Maintenir les lieux propres et en bon état
 
-Article 5 - Responsabilites du locataire
-Le locataire s'engage a :
+Article 5 - Responsabilités du locataire
+Le locataire s'engage à :
 - Prendre soin du logement et de son contenu
-- Signaler immediatement toute deterioration ou dysfonctionnement
-- Restituer les cles a l'heure convenue
-- Laisser le logement dans un etat de proprete raisonnable
+- Signaler immédiatement toute détérioration ou dysfonctionnement
+- Restituer les clés à l'heure convenue
+- Laisser le logement dans un état de propreté raisonnable
 
 Fait le {{today_date}}`;
 
-const DEFAULT_TEMPLATE_2 = `CONTRAT DE LOCATION SAISONNIERE DETAILLE
+const DEFAULT_TEMPLATE_2 = `CONTRAT DE LOCATION SAISONNIÈRE DÉTAILLÉ
 
 ENTRE LES PARTIES :
 
 LE BAILLEUR :
-Proprietaire du logement : {{property_name}}
+Propriétaire du logement : {{property_name}}
 Adresse du logement : {{property_address}}, {{property_city}}, {{property_country}}
 
 LE LOCATAIRE :
 Nom complet : {{guest_name}}
 Email : {{guest_email}}
-Telephone : {{guest_phone}}
+Téléphone : {{guest_phone}}
 
-REFERENCE DE RESERVATION : {{booking_reference}}
+RÉFÉRENCE DE RÉSERVATION : {{booking_reference}}
 
 PREAMBULE
-Le present contrat est conclu dans le cadre d'une location saisonniere de courte duree. Il definit les droits et obligations de chacune des parties.
+Le présent contrat est conclu dans le cadre d'une location saisonnière de courte durée. Il définit les droits et obligations de chacune des parties.
 
 ARTICLE 1 - OBJET
-Le bailleur met a disposition du locataire le logement decrit ci-dessus, meuble et equipe, pour un usage exclusif d'habitation temporaire.
+Le bailleur met à disposition du locataire le logement décrit ci-dessus, meublé et équipé, pour un usage exclusif d'habitation temporaire.
 
-ARTICLE 2 - DUREE ET HORAIRES
-- Date d'arrivee : {{check_in_date}} a {{check_in_time}}
-- Date de depart : {{check_out_date}} a {{check_out_time}}
-- Toute prolongation devra faire l'objet d'un accord ecrit prealable.
+ARTICLE 2 - DURÉE ET HORAIRES
+- Date d'arrivée : {{check_in_date}} à {{check_in_time}}
+- Date de départ : {{check_out_date}} à {{check_out_time}}
+- Toute prolongation devra faire l'objet d'un accord écrit préalable.
 
-ARTICLE 3 - CAPACITE D'ACCUEIL
-- Nombre de voyageurs declares : {{number_of_guests}}
-- Capacite maximale autorisee : {{max_guests}} personnes
+ARTICLE 3 - CAPACITÉ D'ACCUEIL
+- Nombre de voyageurs déclarés : {{number_of_guests}}
+- Capacité maximale autorisée : {{max_guests}} personnes
 - Nombre de chambres : {{rooms_count}}
-- Tout depassement de la capacite maximale est strictement interdit.
+- Tout dépassement de la capacité maximale est strictement interdit.
 
 ARTICLE 4 - ETAT DES LIEUX
-Un etat des lieux sera realise a l'arrivee et au depart du locataire. Toute degradation constatee sera a la charge du locataire.
+Un état des lieux sera réalisé à l'arrivée et au départ du locataire. Toute dégradation constatée sera à la charge du locataire.
 
-ARTICLE 5 - REGLEMENT INTERIEUR
-Le locataire s'engage a respecter les regles suivantes :
+ARTICLE 5 - RÈGLEMENT INTÉRIEUR
+Le locataire s'engage à respecter les règles suivantes :
 1. Respect du voisinage et des horaires de repos (22h00 - 08h00)
 2. Interdiction formelle de fumer dans le logement
-3. Interdiction d'organiser des fetes, soirees ou rassemblements
-4. Maintien du logement en bon etat de proprete
-5. Utilisation responsable des equipements et installations
-6. Les animaux ne sont admis qu'avec autorisation ecrite prealable
-7. Le locataire est responsable de la fermeture des portes et fenetres
+3. Interdiction d'organiser des fêtes, soirées ou rassemblements
+4. Maintien du logement en bon état de propreté
+5. Utilisation responsable des équipements et installations
+6. Les animaux ne sont admis qu'avec autorisation écrite préalable
+7. Le locataire est responsable de la fermeture des portes et fenêtres
 
-ARTICLE 6 - RESPONSABILITE
-Le locataire est responsable des dommages causes au logement pendant toute la duree du sejour, qu'ils soient de son fait ou du fait des personnes presentes dans le logement.
+ARTICLE 6 - RESPONSABILITÉ
+Le locataire est responsable des dommages causés au logement pendant toute la durée du séjour, qu'ils soient de son fait ou du fait des personnes présentes dans le logement.
 
-ARTICLE 7 - RESILIATION
-En cas de non-respect des clauses du present contrat, le bailleur se reserve le droit de resilier immediatement la location sans remboursement.
+ARTICLE 7 - RÉSILIATION
+En cas de non-respect des clauses du présent contrat, le bailleur se réserve le droit de résilier immédiatement la location sans remboursement.
 
 ARTICLE 8 - LITIGES
-En cas de litige, les parties s'engagent a rechercher une solution amiable avant toute action judiciaire.
+En cas de litige, les parties s'engagent à rechercher une solution amiable avant toute action judiciaire.
 
 Fait en deux exemplaires, le {{today_date}}
 
 Signature du bailleur :                    Signature du locataire :`;
 
 const PLACEHOLDERS = [
-  { key: '{{property_name}}', label: 'Nom propriete' },
-  { key: '{{property_address}}', label: 'Adresse complete' },
+  { key: '{{property_name}}', label: 'Nom propriété' },
+  { key: '{{property_address}}', label: 'Adresse complète' },
   { key: '{{property_city}}', label: 'Ville' },
   { key: '{{property_country}}', label: 'Pays' },
-  { key: '{{guest_name}}', label: "Nom invite" },
-  { key: '{{guest_email}}', label: "Email invite" },
-  { key: '{{guest_phone}}', label: "Telephone invite" },
-  { key: '{{check_in_date}}', label: "Date arrivee" },
-  { key: '{{check_out_date}}', label: 'Date depart' },
-  { key: '{{check_in_time}}', label: "Heure arrivee" },
-  { key: '{{check_out_time}}', label: 'Heure depart' },
-  { key: '{{number_of_guests}}', label: "Nombre invites" },
-  { key: '{{max_guests}}', label: 'Capacite max' },
+  { key: '{{guest_name}}', label: "Nom invité" },
+  { key: '{{guest_email}}', label: "E-mail invité" },
+  { key: '{{guest_phone}}', label: "Téléphone invité" },
+  { key: '{{check_in_date}}', label: "Date d'arrivée" },
+  { key: '{{check_out_date}}', label: 'Date de départ' },
+  { key: '{{check_in_time}}', label: "Heure d'arrivée" },
+  { key: '{{check_out_time}}', label: 'Heure de départ' },
+  { key: '{{number_of_guests}}', label: "Nombre d'invités" },
+  { key: '{{max_guests}}', label: 'Capacité max' },
   { key: '{{rooms_count}}', label: 'Nombre chambres' },
-  { key: '{{booking_reference}}', label: 'Reference reservation' },
+  { key: '{{booking_reference}}', label: 'Référence réservation' },
   { key: '{{today_date}}', label: 'Date du jour' },
 ];
 
@@ -140,7 +141,7 @@ function replaceVars(content: string, props: Property[], reservations: Reservati
     .replace(/\{\{property_country\}\}/g, p?.country || 'France')
     .replace(/\{\{guest_name\}\}/g, 'Jean Dupont')
     .replace(/\{\{guest_email\}\}/g, 'jean@exemple.com')
-    .replace(/\{\{guest_phone\}\}/g, '+33 6 12 34 56 78')
+    .replace(/\{\{guest_phone\}\}/g, fr.contracts.phoneFallback)
     .replace(/\{\{check_in_date\}\}/g, r ? new Date(r.check_in_date).toLocaleDateString('fr-FR') : '15/04/2026')
     .replace(/\{\{check_out_date\}\}/g, r ? new Date(r.check_out_date).toLocaleDateString('fr-FR') : '20/04/2026')
     .replace(/\{\{check_in_time\}\}/g, p?.check_in_time || '15:00')
@@ -242,7 +243,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
   };
 
   const deleteTemplate = async (id: string) => {
-    if (!confirm('Supprimer ce modele de contrat ?')) return;
+    if (!confirm('Supprimer ce modèle de contrat ?')) return;
     await supabase.from('contract_templates').delete().eq('id', id);
     fetchTemplates();
   };
@@ -327,7 +328,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
     }
 
     if (existingContract?.locked) {
-      alert("Ce contrat est deja scelle et ne peut plus etre modifie.");
+      alert("Ce contrat est déjà scellé et ne peut plus être modifié.");
       return;
     }
 
@@ -345,7 +346,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
 
       if (updateError) {
         console.error('Error updating contract with host signature:', updateError);
-        alert("Impossible d'enregistrer la signature du proprietaire.");
+        alert("Impossible d'enregistrer la signature du propriétaire.");
         return;
       }
       contractId = existingContract.id;
@@ -367,7 +368,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
 
       if (insertError || !inserted) {
         console.error('Error creating contract with host signature:', insertError);
-        alert("Impossible de creer le contrat du proprietaire.");
+        alert("Impossible de créer le contrat du propriétaire.");
         return;
       }
       contractId = inserted.id;
@@ -388,7 +389,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
             event_type: 'contract_signed_host',
             signer_role: 'host',
             consent_text:
-              "Le proprietaire confirme avoir signe electroniquement le contrat conformement a la Loi marocaine 53-05.",
+              "Le propriétaire confirme avoir signé électroniquement le contrat conformément à la Loi marocaine 53-05.",
             metadata: { source: 'host_dashboard' },
           }),
         },
@@ -438,23 +439,23 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestion des Contrats</h1>
           {activeCustomTemplate && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-200 text-slate-800 rounded-full text-xs font-medium">
               <Check size={12} />
-              Contrat personnalise actif
+              Contrat personnalisé actif
             </span>
           )}
         </div>
-        <p className="text-gray-600 mt-1">Gerez vos contrats de location et personnalisez-les selon vos besoins</p>
+        <p className="text-gray-600 mt-1">Gérez vos contrats de location et personnalisez-les selon vos besoins</p>
       </div>
 
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-        <button
-          onClick={() => setActiveTab('templates')}
+          <button
+            onClick={() => setActiveTab('templates')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'templates' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
           }`}
-        >
-          Modeles de contrat
+          >
+          Modèles de contrat
         </button>
         <button
           onClick={() => setActiveTab('signed')}
@@ -462,7 +463,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
             activeTab === 'signed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Contrats signes ({contracts.length})
+          Contrats signés ({contracts.length})
         </button>
       </div>
 
@@ -471,10 +472,10 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-xl shadow-sm border p-5 flex flex-col">
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Contrat par defaut type 1</h3>
+                <FileText className="w-5 h-5 text-slate-700" />
+                <h3 className="font-semibold text-gray-900">Contrat par défaut type 1</h3>
               </div>
-              <p className="text-sm text-gray-500 mb-4 flex-1">Contrat standard prefigure avec les clauses essentielles pour une location courte duree.</p>
+              <p className="text-sm text-gray-500 mb-4 flex-1">Contrat standard préfiguré avec les clauses essentielles pour une location courte durée.</p>
               <div className="flex gap-2 mt-auto">
                 <button
                   onClick={() => { setPreviewContent(replaceVars(DEFAULT_TEMPLATE_1, properties, reservations)); setPreviewType('default1'); setShowPreview(true); }}
@@ -491,15 +492,15 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border p-5 flex flex-col relative">
-              <span className="absolute top-3 right-3 px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full flex items-center gap-1">
+              <span className="absolute top-3 right-3 px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-full flex items-center gap-1">
                 <Sparkles size={10} />
                 Nouveau
               </span>
               <div className="flex items-center gap-2 mb-3">
-                <Shield className="w-5 h-5 text-teal-600" />
-                <h3 className="font-semibold text-gray-900">Contrat par defaut type 2</h3>
+                <Shield className="w-5 h-5 text-slate-700" />
+                <h3 className="font-semibold text-gray-900">Contrat par défaut type 2</h3>
               </div>
-              <p className="text-sm text-gray-500 mb-4 flex-1">Contrat detaille avec clauses de securite, reglement interieur complet et responsabilites.</p>
+              <p className="text-sm text-gray-500 mb-4 flex-1">Contrat détaillé avec clauses de sécurité, règlement intérieur complet et responsabilités.</p>
               <div className="flex gap-2 mt-auto">
                 <button
                   onClick={() => { setPreviewContent(replaceVars(DEFAULT_TEMPLATE_2, properties, reservations)); setPreviewType('default2'); setShowPreview(true); }}
@@ -537,7 +538,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                           )}
                           <button
                             onClick={() => { setEditingTemplate(t); setShowEditor(true); }}
-                            className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded"
+                            className="px-2 py-1 text-xs text-slate-700 hover:bg-slate-100 rounded"
                           >
                             Modifier
                           </button>
@@ -549,32 +550,32 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     ))}
                   </div>
                   <p className="text-[11px] text-gray-400 mb-3">
-                    Derniere modification : {formatDate(templates[0].updated_at)}
+                    Dernière modification : {formatDate(templates[0].updated_at)}
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-gray-500 mb-4 flex-1">Creez votre propre contrat personnalise avec vos clauses specifiques.</p>
+                <p className="text-sm text-gray-500 mb-4 flex-1">Créez votre propre contrat personnalisé avec vos clauses spécifiques.</p>
               )}
               <button
                 onClick={() => { setEditingTemplate(null); setNewTemplateName(''); setNewTemplateContent(''); setShowEditor(true); }}
-                className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
               >
-                {templates.length > 0 ? 'Ajouter un modele' : 'Creer mon contrat'}
+                {templates.length > 0 ? 'Ajouter un modèle' : 'Créer mon contrat'}
               </button>
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <Info className="w-5 h-5 text-slate-700 shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-semibold text-blue-900 mb-2">Comment utiliser les contrats</h4>
-                <p className="text-sm text-blue-800 mb-3">
-                  Les contrats sont automatiquement presentes aux invites lors du check-in. Le contrat actif sera utilise pour toutes les nouvelles reservations.
+                <h4 className="font-semibold text-slate-900 mb-2">Comment utiliser les contrats</h4>
+                <p className="text-sm text-slate-700 mb-3">
+                  Les contrats sont automatiquement présentés aux invités lors du check-in. Le contrat actif sera utilisé pour toutes les nouvelles réservations.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {PLACEHOLDERS.slice(0, 8).map((p) => (
-                    <span key={p.key} className="text-xs bg-white/70 text-blue-700 rounded px-2 py-1 font-mono">{p.key}</span>
+                    <span key={p.key} className="text-xs bg-white/70 text-slate-700 rounded px-2 py-1 font-mono">{p.key}</span>
                   ))}
                 </div>
               </div>
@@ -585,7 +586,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
             <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
               <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900">
-                  {isEditing ? `Modifier : ${editingTemplate!.name}` : 'Nouveau modele'}
+                  {isEditing ? `Modifier : ${editingTemplate!.name}` : 'Nouveau modèle'}
                 </h3>
                 <div className="flex items-center gap-2">
                   <button
@@ -598,7 +599,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
                   >
                     <Eye className="w-4 h-4" />
-                    Apercu
+                    Aperçu
                   </button>
                   <button onClick={() => { setEditingTemplate(null); setShowEditor(false); }} className="p-1.5 text-gray-400 hover:text-gray-600">
                     <X className="w-5 h-5" />
@@ -607,13 +608,13 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
               </div>
               <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du modele</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du modèle</label>
                   <input
                     type="text"
                     value={isEditing ? editingTemplate!.name : newTemplateName}
                     onChange={(e) => isEditing ? setEditingTemplate({ ...editingTemplate!, name: e.target.value }) : setNewTemplateName(e.target.value)}
-                    placeholder="Ex: Contrat standard, Contrat longue duree..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="Ex: Contrat standard, Contrat longue durée..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-sm"
                   />
                 </div>
                 <div>
@@ -623,7 +624,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                       <button
                         key={p.key}
                         onClick={() => insertPlaceholder(p.key)}
-                        className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors border border-blue-200"
+                        className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors border border-slate-200"
                         title={p.label}
                       >
                         {p.label}
@@ -638,8 +639,8 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     value={isEditing ? editingTemplate!.content : newTemplateContent}
                     onChange={(e) => isEditing ? setEditingTemplate({ ...editingTemplate!, content: e.target.value }) : setNewTemplateContent(e.target.value)}
                     rows={18}
-                    placeholder="Redigez votre contrat ici... Utilisez les variables ci-dessus pour inserer automatiquement les informations."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm leading-relaxed"
+                    placeholder="Rédigez votre contrat ici... Utilisez les variables ci-dessus pour insérer automatiquement les informations."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none font-mono text-sm leading-relaxed"
                   />
                 </div>
                 <div className="flex gap-3">
@@ -649,16 +650,16 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                       className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
                     >
                       <FileText className="w-4 h-4" />
-                      Utiliser le modele par defaut
+                      Utiliser le modèle par défaut
                     </button>
                   )}
                   <button
                     onClick={saveTemplate}
                     disabled={saving || !(isEditing ? editingTemplate!.name && editingTemplate!.content : newTemplateName && newTemplateContent)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 text-sm ml-auto"
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40 text-sm ml-auto"
                   >
                     <Save className="w-4 h-4" />
-                    {saving ? 'Enregistrement...' : 'Enregistrer'}
+                    {saving ? 'Enregistrement…' : 'Enregistrer'}
                   </button>
                 </div>
               </div>
@@ -686,7 +687,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     const tpl = templates.find((t) => t.is_default);
                     const text = tpl
                       ? replaceVars(tpl.content, [property], [reservation])
-                      : `Contrat pour ${property.name}\nReservation: ${reservation.booking_reference}`;
+                      : `Contrat pour ${property.name}\nRéservation : ${reservation.booking_reference}`;
                     return (
                       <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
                         <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">{text}</pre>
@@ -694,7 +695,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     );
                   })()}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Signature du proprietaire</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Signature du propriétaire</label>
                     <canvas
                       ref={canvasRef}
                       width={600}
@@ -714,7 +715,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     </button>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={saveSignature} className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700">
+                    <button onClick={saveSignature} className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800">
                       <Check className="w-5 h-5" />
                       Signer et enregistrer
                     </button>
@@ -749,7 +750,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <FileText className="w-5 h-5 text-blue-600" />
+                        <FileText className="w-5 h-5 text-slate-700" />
                         <div>
                           <p className="font-bold text-gray-900">{reservation.booking_reference}</p>
                           <p className="text-sm text-gray-600">{property?.name}</p>
@@ -763,7 +764,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     <div className="flex flex-col items-end gap-2">
                       {contract ? (
                         <>
-                          <span className="px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-sm font-medium flex items-center gap-1.5">
+                          <span className="px-3 py-1.5 bg-slate-200 text-slate-800 rounded-lg text-sm font-medium flex items-center gap-1.5">
                             <Check className="w-4 h-4" />
                             Contrat signé
                           </span>
@@ -810,7 +811,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                                   setDownloadingPdfId(null);
                                 }
                               }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 disabled:opacity-50"
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors border border-slate-200 disabled:opacity-50"
                             >
                               <Download size={12} className={downloadingPdfId === contract.id ? 'animate-bounce' : ''} />
                               {downloadingPdfId === contract.id ? '...' : 'PDF'}
@@ -821,7 +822,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                         <button
                           onClick={() => { setSelectedReservation(reservation.id); setIsSigningHost(true); }}
                           disabled={templates.length === 0}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-40"
+                          className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm disabled:opacity-40"
                         >
                           Créer et valider
                         </button>

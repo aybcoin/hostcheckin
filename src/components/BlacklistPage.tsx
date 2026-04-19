@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Ban, Plus, Trash2 } from 'lucide-react';
 import { supabase, BlacklistedGuest } from '../lib/supabase';
 import { fr } from '../lib/i18n/fr';
+import { ctaTokens } from '../lib/design-tokens';
 
 interface BlacklistPageProps {
   hostId: string | null;
@@ -170,6 +171,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
               value={form.phone}
               onChange={(event) => setForm((previous) => ({ ...previous, phone: event.target.value }))}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              placeholder={fr.profile.phonePlaceholder}
             />
           </div>
           <div className="space-y-1">
@@ -202,10 +204,11 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
           type="button"
           onClick={handleAdd}
           disabled={!isFormValid || saving}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          title={!isFormValid ? fr.blacklist.addHint : undefined}
+          className={`mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ctaTokens.primary}`}
         >
           <Plus size={16} />
-          {saving ? 'Ajout…' : 'Ajouter à la liste noire'}
+          {saving ? 'Ajout…' : fr.blacklist.addButton}
         </button>
 
         {error ? (

@@ -1,5 +1,6 @@
 import { Star, TrendingUp, CheckCircle, Clock, CalendarDays } from 'lucide-react';
 import { Reservation } from '../../lib/supabase';
+import { fr } from '../../lib/i18n/fr';
 
 interface CalendarStatsProps {
   reservations: Reservation[];
@@ -71,7 +72,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
 
   return (
     <div className="bg-white rounded-xl shadow-sm border p-5 space-y-5">
-      <h3 className="font-semibold text-gray-900 text-sm">Statistiques du mois</h3>
+      <h3 className="font-semibold text-gray-900 text-sm">{fr.calendar.fields.monthStats}</h3>
 
       <div className="flex flex-col items-center">
         <div className="relative w-24 h-24">
@@ -79,7 +80,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
             <circle cx="40" cy="40" r={circleRadius} fill="none" stroke="#e5e7eb" strokeWidth="6" />
             <circle
               cx="40" cy="40" r={circleRadius} fill="none"
-              stroke="#3b82f6" strokeWidth="6" strokeLinecap="round"
+              stroke="#0f172a" strokeWidth="6" strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={dashOffset}
               className="transition-all duration-700"
@@ -89,11 +90,11 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
             <span className="text-xl font-bold text-gray-900">{occupancyRate}%</span>
           </div>
         </div>
-        <p className="text-sm font-medium text-gray-700 mt-2">Taux d'occupation</p>
+        <p className="text-sm font-medium text-gray-700 mt-2">{fr.calendar.fields.occupancyRate}</p>
         <p className="text-xs text-gray-500">{occupiedNights} nuits / {daysInMonth}</p>
         {rateChange !== 0 && (
-          <p className={`text-xs font-medium mt-1 ${rateChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {rateChange > 0 ? '↑' : '↓'} {Math.abs(rateChange)}% vs mois dernier
+          <p className={`text-xs font-medium mt-1 ${rateChange > 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+            {rateChange > 0 ? '↑' : '↓'} {Math.abs(rateChange)}% {fr.calendar.fields.versusLastMonth}
           </p>
         )}
       </div>
@@ -101,24 +102,24 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
       <div className="space-y-3">
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
-            <CalendarDays size={16} className="text-blue-600" />
-            <span className="text-sm text-gray-700">Réservations</span>
+            <CalendarDays size={16} className="text-slate-700" />
+            <span className="text-sm text-gray-700">{fr.calendar.fields.bookings}</span>
           </div>
           <span className="font-bold text-gray-900">{monthReservations.length}</span>
         </div>
 
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
-            <CheckCircle size={16} className="text-green-600" />
-            <span className="text-sm text-gray-700">Taux de vérification</span>
+            <CheckCircle size={16} className="text-emerald-700" />
+            <span className="text-sm text-gray-700">{fr.calendar.fields.verificationRate}</span>
           </div>
           <span className="font-bold text-gray-900">{verificationRate}%</span>
         </div>
 
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
-            <Clock size={16} className="text-teal-600" />
-            <span className="text-sm text-gray-700">Durée moyenne</span>
+            <Clock size={16} className="text-slate-700" />
+            <span className="text-sm text-gray-700">{fr.calendar.fields.averageStay}</span>
           </div>
           <span className="font-bold text-gray-900">{avgStay} nuits</span>
         </div>
@@ -126,7 +127,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
             <TrendingUp size={16} className="text-amber-600" />
-            <span className="text-sm text-gray-700">Arrivées à venir</span>
+            <span className="text-sm text-gray-700">{fr.calendar.fields.upcomingArrivals}</span>
           </div>
           <span className="font-bold text-gray-900">{upcomingArrivals}</span>
         </div>
@@ -134,7 +135,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
             <Star size={16} className="text-amber-500" />
-            <span className="text-sm text-gray-700">Note moyenne</span>
+            <span className="text-sm text-gray-700">{fr.calendar.fields.averageRating}</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="font-bold text-gray-900">{avgRating}</span>

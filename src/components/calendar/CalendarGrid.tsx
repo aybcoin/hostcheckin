@@ -26,9 +26,9 @@ function getReservationColor(reservation: Reservation, date: Date): string {
   const isCheckOut = checkOut.toDateString() === date.toDateString();
 
   if (reservation.status === 'cancelled') return 'bg-gray-200 text-gray-600';
-  if (isCheckIn) return 'bg-green-100 text-green-800 border-l-2 border-green-500';
+  if (isCheckIn) return 'bg-emerald-100 text-emerald-800 border-l-2 border-emerald-600';
   if (isCheckOut) return 'bg-rose-100 text-rose-800 border-l-2 border-rose-500';
-  return 'bg-blue-50 text-blue-800';
+  return 'bg-slate-100 text-slate-800';
 }
 
 export function CalendarGrid({ currentMonth, reservations, guests, filter, onReservationClick }: CalendarGridProps) {
@@ -91,12 +91,12 @@ export function CalendarGrid({ currentMonth, reservations, guests, filter, onRes
             <div
               key={dayNum}
               className={`min-h-[100px] border-b border-r border-gray-100 p-1.5 ${
-                isToday(dayNum) ? 'bg-blue-50/50' : ''
+                isToday(dayNum) ? 'bg-slate-100/70' : ''
               }`}
             >
               <div className={`text-xs font-medium mb-1 ${
                 isToday(dayNum)
-                  ? 'w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center'
+                  ? 'w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center'
                   : 'text-gray-600 pl-1'
               }`}>
                 {dayNum}

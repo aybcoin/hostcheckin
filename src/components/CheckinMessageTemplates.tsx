@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Languages, PencilLine } from "lucide-react";
 import { fr } from "../lib/i18n/fr";
+import {
+  interpolateMessageTemplate,
+  messageTemplateLocales,
+  messageTemplates,
+  MessageLocale,
+} from "../lib/checkin-message-templates";
 
-type TemplateLocale = "fr" | "en" | "ar";
 type TemplateId = "standard" | "reminder24h" | "withLockCode";
 
 interface CheckinMessageTemplatesProps {
@@ -12,55 +17,7 @@ interface CheckinMessageTemplatesProps {
   smartLockCode?: string | null;
 }
 
-const templates: Record<TemplateLocale, Record<TemplateId, string>> = {
-  fr: {
-    standard:
-      "Bonjour [NOM],\n\nBienvenue chez [PROPRIETE]. Merci de compléter votre check-in en ligne via ce lien :\n[LIEN]\n\nÀ très bientôt.",
-    reminder24h:
-      "Bonjour [NOM],\n\nRappel pour votre arrivée dans 24 h chez [PROPRIETE]. Merci de finaliser votre check-in ici :\n[LIEN]\n\nNous restons à votre disposition.",
-    withLockCode:
-      "Bonjour [NOM],\n\nVotre check-in pour [PROPRIETE] est prêt. Merci de compléter la vérification via :\n[LIEN]\n\nCode de serrure : [CODE_SERRURE]\n\nBonne installation.",
-  },
-  en: {
-    standard:
-      "Hello [NOM],\n\nWelcome to [PROPRIETE]. Please complete your check-in using this link:\n[LIEN]\n\nSee you soon.",
-    reminder24h:
-      "Hello [NOM],\n\nReminder for your arrival in 24h at [PROPRIETE]. Please complete your check-in here:\n[LIEN]\n\nWe remain available if needed.",
-    withLockCode:
-      "Hello [NOM],\n\nYour check-in for [PROPRIETE] is ready. Please complete verification here:\n[LIEN]\n\nLock code: [CODE_SERRURE]\n\nWelcome.",
-  },
-  ar: {
-    standard:
-      "مرحبًا [NOM]،\n\nمرحبًا بك في [PROPRIETE]. يُرجى إكمال تسجيل الوصول عبر الرابط التالي:\n[LIEN]\n\nشكرًا لك.",
-    reminder24h:
-      "مرحبًا [NOM]،\n\nتذكير بوصولك خلال 24 ساعة إلى [PROPRIETE]. يُرجى إتمام تسجيل الوصول هنا:\n[LIEN]\n\nنحن رهن إشارتك.",
-    withLockCode:
-      "مرحبًا [NOM]،\n\nتسجيل الوصول الخاص بك في [PROPRIETE] جاهز. يُرجى إكمال التحقق عبر:\n[LIEN]\n\nرمز القفل: [CODE_SERRURE]\n\nإقامة سعيدة.",
-  },
-};
-
 const templateIds: TemplateId[] = ["standard", "reminder24h", "withLockCode"];
-const locales: Array<{ key: TemplateLocale; label: string }> = [
-  { key: "fr", label: "🇫🇷 FR" },
-  { key: "en", label: "🇬🇧 EN" },
-  { key: "ar", label: "🇸🇦 AR" },
-];
-
-function replaceVariables(
-  content: string,
-  values: {
-    link: string;
-    guestName: string;
-    propertyName: string;
-    lockCode: string;
-  },
-) {
-  return content
-    .replace(/\[LIEN\]/g, values.link)
-    .replace(/\[NOM\]/g, values.guestName)
-    .replace(/\[PROPRIETE\]/g, values.propertyName)
-    .replace(/\[CODE_SERRURE\]/g, values.lockCode);
-}
 
 export function CheckinMessageTemplates({
   checkinLink,
@@ -68,7 +25,7 @@ export function CheckinMessageTemplates({
   propertyName,
   smartLockCode,
 }: CheckinMessageTemplatesProps) {
-  const [locale, setLocale] = useState<TemplateLocale>("fr");
+  const [locale, setLocale] = useState<MessageLocale>("fr");
   const [templateId, setTemplateId] = useState<TemplateId>("standard");
   const [isEditing, setIsEditing] = useState(false);
   const [editorValue, setEditorValue] = useState("");
@@ -82,7 +39,7 @@ export function CheckinMessageTemplates({
       propertyName: propertyName || "votre hébergement",
       lockCode: smartLockCode || "non communiqué",
     };
-    return replaceVariables(templates[locale][templateId], values);
+    return interpolateMessageTemplate(messageTemplates[locale][templateId], values);
   }, [checkinLink, guestName, locale, propertyName, smartLockCode, templateId]);
 
   useEffect(() => {
@@ -131,10 +88,10 @@ export function CheckinMessageTemplates({
           <select
             id="template-locale"
             value={locale}
-            onChange={(event) => setLocale(event.target.value as TemplateLocale)}
+            onChange={(event) => setLocale(event.target.value as MessageLocale)}
             className="bg-transparent text-xs font-semibold text-slate-800 outline-none"
           >
-            {locales.map((item) => (
+            {messageTemplateLocales.map((item) => (
               <option key={item.key} value={item.key}>
                 {item.label}
               </option>

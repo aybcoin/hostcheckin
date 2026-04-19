@@ -11,6 +11,37 @@ interface VerificationPageProps {
 
 type LoadState = 'loading' | 'loaded' | 'not_found' | 'error';
 
+interface GuestIdentity {
+  full_name?: string;
+  email?: string | null;
+  phone?: string | null;
+}
+
+interface VerificationReservation {
+  id: string;
+  booking_reference: string;
+  check_in_date: string;
+  check_out_date: string;
+  number_of_guests: number;
+  guest_id: string;
+  property_id?: string;
+  smart_lock_code?: string | null;
+  guests?: GuestIdentity | null;
+}
+
+interface VerificationProperty {
+  id: string;
+  host_id: string;
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  max_guests?: number;
+  rooms_count?: number;
+  check_in_time?: string;
+  check_out_time?: string;
+}
+
 interface KycResult {
   status: string;
   confidence: number;
@@ -81,8 +112,8 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
   const [step, setStep] = useState(1);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [submitting, setSubmitting] = useState(false);
-  const [reservation, setReservation] = useState<any>(null);
-  const [property, setProperty] = useState<any>(null);
+  const [reservation, setReservation] = useState<VerificationReservation | null>(null);
+  const [property, setProperty] = useState<VerificationProperty | null>(null);
   const [contractTemplate, setContractTemplate] = useState<string | null>(null);
   const [idType, setIdType] = useState('');
   const [declaredName, setDeclaredName] = useState('');
@@ -173,7 +204,7 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
         return;
       }
 
-      setReservation(resData);
+      setReservation(resData as VerificationReservation);
       // Pre-fill the declared identity fields from the reservation so returning
       // guests see their data, while still allowing them to edit it.
       setDeclaredName(resData?.guests?.full_name || '');
@@ -186,7 +217,7 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
         .maybeSingle();
 
       if (propData) {
-        setProperty(propData);
+        setProperty(propData as VerificationProperty);
 
         const { data: templateData } = await supabase
           .from('contract_templates')
@@ -281,19 +312,19 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
     }
 
     // No custom template — generate a default contract text
-    return `CONTRAT DE LOCATION COURTE DUREE
+    return `CONTRAT DE LOCATION COURTE DURÉE
 
-Propriete : ${property.name}
+Propriété : ${property.name}
 Adresse : ${property.address}, ${property.city}
-Arrivee : ${new Date(reservation.check_in_date).toLocaleDateString('fr-FR')}
-Depart : ${new Date(reservation.check_out_date).toLocaleDateString('fr-FR')}
-Invites : ${reservation.number_of_guests}
-Reference : ${reservation.booking_reference}
+Arrivée : ${new Date(reservation.check_in_date).toLocaleDateString('fr-FR')}
+Départ : ${new Date(reservation.check_out_date).toLocaleDateString('fr-FR')}
+Invités : ${reservation.number_of_guests}
+Référence : ${reservation.booking_reference}
 
-Regles :
+Règles :
 - Respect du voisinage
-- Interdiction de fumer a l'interieur
-- Pas de fetes ni evenements
+- Interdiction de fumer à l'intérieur
+- Pas de fêtes ni événements
 - Maintenir les lieux propres
 
 Date : ${new Date().toLocaleDateString('fr-FR')}`;
@@ -378,11 +409,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       img.onerror = () => {
         if (isHeicLike(file)) {
           safeReject(new Error(
-            "Format HEIC/HEIF non pris en charge par ce navigateur. Sur iPhone, activez Reglages -> Appareil photo -> Formats -> Le plus compatible, ou envoyez la photo en JPEG/PNG.",
+            "Format HEIC/HEIF non pris en charge par ce navigateur. Sur iPhone, activez Réglages -> Appareil photo -> Formats -> Le plus compatible, ou envoyez la photo en JPEG/PNG.",
           ));
         } else {
           safeReject(new Error(
-            "Impossible de lire l'image. Le fichier est peut-etre corrompu ou dans un format non supporte.",
+            "Impossible de lire l'image. Le fichier est peut-être corrompu ou dans un format non supporté.",
           ));
         }
       };
@@ -391,8 +422,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   };
 
   const uploadFile = async (file: File, folder: string, label: string): Promise<string | null> => {
+    if (!reservation) {
+      return null;
+    }
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      alert(`Le fichier "${label}" depasse la taille maximale autorisee (${MAX_FILE_SIZE_MB} Mo).`);
+      alert(`Le fichier "${label}" dépasse la taille maximale autorisée (${MAX_FILE_SIZE_MB} Mo).`);
       return null;
     }
     // Accept common mobile-camera variants. Some Android browsers advertise
@@ -405,7 +439,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
     const ext = (file.name.split('.').pop() || '').toLowerCase();
     const extOk = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf'].includes(ext);
     if (!allowedTypes.includes(file.type) && !extOk) {
-      alert(`Type de fichier non accepte pour "${label}". Formats acceptes: JPEG, PNG, WebP, HEIC, PDF.`);
+      alert(`Type de fichier non accepté pour "${label}". Formats acceptés : JPEG, PNG, WebP, HEIC, PDF.`);
       return null;
     }
 
@@ -447,6 +481,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
     }
 
     if (!idType || !idFrontFile || !reservation) return;
+    const currentReservation = reservation;
     const trimmedName = (declaredName || '').trim();
     if (!trimmedName) {
       alert("Veuillez renseigner votre nom complet.");
@@ -464,12 +499,12 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       try {
         const guestUpdate: Record<string, string> = { full_name: trimmedName };
         if (trimmedEmail) guestUpdate.email = trimmedEmail;
-        if (reservation.guest_id) {
-          await supabase.from('guests').update(guestUpdate).eq('id', reservation.guest_id);
+        if (currentReservation.guest_id) {
+          await supabase.from('guests').update(guestUpdate).eq('id', currentReservation.guest_id);
         }
         // Mirror locally so downstream code (contract render, audit payloads)
         // immediately sees the updated name/email.
-        setReservation((prev: any) => prev ? {
+        setReservation((prev) => prev ? {
           ...prev,
           guests: { ...(prev.guests || {}), full_name: trimmedName, email: trimmedEmail || prev.guests?.email || null },
         } : prev);
@@ -481,7 +516,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       const backUrl = idBackFile ? await uploadFile(idBackFile, 'id_back', 'ID back') : null;
 
       if (!frontUrl) {
-        alert("Erreur lors de l'envoi du document. Veuillez reessayer.");
+        alert("Erreur lors de l'envoi du document. Veuillez réessayer.");
         setKycLoading(false);
         return;
       }
@@ -499,7 +534,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         },
         body: JSON.stringify({
           reservation_id: reservation.id,
-          guest_id: reservation.guest_id,
+          guest_id: currentReservation.guest_id,
           id_document_url: frontUrl,
           id_back_url: backUrl,
           declared_name: trimmedName,
@@ -524,17 +559,17 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         let message: string;
         if (kycResponse.status === 400) {
           message = serverReason
-            ? `Donnees incompletes : ${serverReason}. Verifiez votre nom et la photo du document.`
-            : "Donnees incompletes. Verifiez votre nom et la photo du document.";
+            ? `Données incomplètes : ${serverReason}. Vérifiez votre nom et la photo du document.`
+            : "Données incomplètes. Vérifiez votre nom et la photo du document.";
         } else if (kycResponse.status === 413 || kycResponse.status === 414) {
-          message = "La photo du document est trop volumineuse. Essayez avec une photo plus petite ou mieux cadree.";
+          message = "La photo du document est trop volumineuse. Essayez avec une photo plus petite ou mieux cadrée.";
         } else if (kycResponse.status >= 500) {
           message = serverReason
-            ? `Erreur du service : ${serverReason}. Veuillez reessayer dans quelques instants.`
-            : "Le service de verification est momentanement indisponible. Veuillez reessayer dans quelques instants.";
+            ? `Erreur du service : ${serverReason}. Veuillez réessayer dans quelques instants.`
+            : "Le service de vérification est momentanément indisponible. Veuillez réessayer dans quelques instants.";
         } else {
           message = serverReason
-            || "Le service de verification a refuse la demande. Veuillez reessayer.";
+            || "Le service de vérification a refusé la demande. Veuillez réessayer.";
         }
 
         console.error('KYC verification HTTP error:', {
@@ -575,11 +610,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       }
 
       await logAuditEvent({
-        reservationId: reservation.id,
+        reservationId: currentReservation.id,
         eventType: 'identity_submitted',
         signerRole: 'guest',
-        signerEmail: reservation.guests?.email,
-        signerName: reservation.guests?.full_name,
+        signerEmail: currentReservation.guests?.email || undefined,
+        signerName: currentReservation.guests?.full_name || undefined,
         metadata: {
           id_type: idType,
           kyc_confidence: kycData.confidence,
@@ -597,7 +632,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         confidence: 0,
         is_valid_document: false,
         rejection_reason:
-          "Erreur reseau pendant la verification. Veuillez reessayer.",
+          "Erreur réseau pendant la vérification. Veuillez réessayer.",
       });
     } finally {
       setKycLoading(false);
@@ -610,6 +645,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       return;
     }
 
+    if (!reservation) return;
+    const currentReservation = reservation;
     if (!consentChecked) return;
     setSubmitting(true);
     try {
@@ -629,22 +666,22 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       // Fix #9: Guard against signing an empty contract — this would
       // produce a legally worthless document.
       if (!renderedContract.trim()) {
-        alert("Le contrat n'a pas pu etre charge. Veuillez rafraichir la page et reessayer.");
+        alert("Le contrat n'a pas pu être chargé. Veuillez rafraîchir la page et réessayer.");
         setSubmitting(false);
         return;
       }
 
       const consentText =
-        "Je certifie que les informations fournies sont exactes. J'accepte que ma signature electronique, mon adresse IP, et l'horodatage soient enregistres conformement a la loi marocaine n° 53-05 du 30 novembre 2007 relative a l'echange electronique de donnees juridiques.";
+        "Je certifie que les informations fournies sont exactes. J'accepte que ma signature électronique, mon adresse IP, et l'horodatage soient enregistrés conformément à la loi marocaine n° 53-05 du 30 novembre 2007 relative à l'échange électronique de données juridiques.";
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       await logAuditEvent({
-        reservationId: reservation.id,
+        reservationId: currentReservation.id,
         eventType: 'consent_given',
         signerRole: 'guest',
-        signerEmail: reservation.guests?.email,
-        signerName: reservation.guests?.full_name,
+        signerEmail: currentReservation.guests?.email || undefined,
+        signerName: currentReservation.guests?.full_name || undefined,
         consentText,
         metadata: {
           timestamp: new Date().toISOString(),
@@ -661,7 +698,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
           'Authorization': `Bearer ${anonKey}`,
         },
         body: JSON.stringify({
-          reservation_id: reservation.id,
+          reservation_id: currentReservation.id,
           unique_link: uniqueLink,
           guest_signature_url: signatureDataUrl,
           contract_content: renderedContract,
@@ -690,7 +727,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       const contractId = contractData.contract_id as string | undefined;
 
       if (!contractId) {
-        alert("Le contrat n'a pas pu etre enregistre. Veuillez reessayer.");
+        alert("Le contrat n'a pas pu être enregistré. Veuillez réessayer.");
         setSubmitting(false);
         return;
       }
@@ -698,11 +735,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       if (contractId) {
         await logAuditEvent({
           contractId,
-          reservationId: reservation.id,
+          reservationId: currentReservation.id,
           eventType: 'contract_signed',
           signerRole: 'guest',
-          signerEmail: reservation.guests?.email,
-          signerName: reservation.guests?.full_name,
+          signerEmail: currentReservation.guests?.email || undefined,
+          signerName: currentReservation.guests?.full_name || undefined,
           metadata: {
             signature_method: 'canvas_draw',
             contract_has_content: !!renderedContract,
@@ -720,7 +757,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
           },
           body: JSON.stringify({
             contract_id: contractId,
-            reservation_id: reservation.id,
+            reservation_id: currentReservation.id,
           }),
         })
           .then(async (pdfResp) => {
@@ -737,7 +774,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       setStep(4);
     } catch (error) {
       console.error('Error submitting verification:', error);
-      alert('Erreur lors de la soumission. Veuillez reessayer.');
+      alert('Erreur lors de la soumission. Veuillez réessayer.');
     } finally {
       setSubmitting(false);
     }
@@ -745,10 +782,10 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
   if (loadState === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
-          <p className="text-lg">Chargement de votre reservation...</p>
+          <p className="text-lg">Chargement de votre réservation...</p>
         </div>
       </div>
     );
@@ -756,15 +793,15 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
   if (loadState === 'not_found') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Lien invalide</h1>
           <p className="text-gray-600">
-            Ce lien de check-in n'est pas valide ou la reservation n'existe plus.
-            Contactez votre hote pour obtenir un nouveau lien.
+            Ce lien de check-in n'est pas valide ou la réservation n'existe plus.
+            Contactez votre hôte pour obtenir un nouveau lien.
           </p>
         </div>
       </div>
@@ -773,20 +810,20 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
   if (loadState === 'error') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-orange-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Erreur de chargement</h1>
           <p className="text-gray-600 mb-6">
-            Impossible de charger votre reservation. Verifiez votre connexion internet.
+            Impossible de charger votre réservation. Vérifiez votre connexion internet.
           </p>
           <button
             onClick={fetchReservation}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
           >
-            Reessayer
+            Réessayer
           </button>
         </div>
       </div>
@@ -795,30 +832,30 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
   if (step === 4) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check className="w-8 h-8 text-green-600" />
+          <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check className="w-8 h-8 text-slate-800" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Check-in termine !</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Check-in terminé !</h1>
           <p className="text-gray-600 mb-4">
-            Merci d'avoir complete votre check-in. Votre hote a ete notifie.
+            Merci d'avoir complété votre check-in. Votre hôte a été notifié.
           </p>
           {kycResult && (
             <div className="mb-4 flex items-center justify-center gap-2">
               {kycResult.confidence >= 0.7 ? (
-                <ShieldCheck className="w-5 h-5 text-green-600" />
+                <ShieldCheck className="w-5 h-5 text-slate-800" />
               ) : (
                 <ShieldCheck className="w-5 h-5 text-amber-500" />
               )}
               <span className="text-sm text-gray-600">
-                Verification d'identite : {Math.round(kycResult.confidence * 100)}% de confiance
+                Vérification d'identité : {Math.round(kycResult.confidence * 100)} % de confiance
               </span>
             </div>
           )}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              Conservez ce lien au cas ou vous auriez besoin de le consulter.
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+            <p className="text-sm text-slate-700">
+              Conservez ce lien au cas où vous auriez besoin de le consulter.
             </p>
           </div>
           {reservation?.smart_lock_code ? (
@@ -835,7 +872,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             </div>
           ) : null}
           <p className="text-[11px] text-gray-400 mt-4">
-            Votre adresse IP, navigateur et horodatage ont ete enregistres conformement a la loi marocaine n° 53-05 du 30 novembre 2007 relative a l'echange electronique de donnees juridiques.
+            Votre adresse IP, navigateur et horodatage ont été enregistrés conformément à la loi marocaine n° 53-05 du 30 novembre 2007 relative à l'échange électronique de données juridiques.
           </p>
         </div>
       </div>
@@ -845,47 +882,47 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   const contractContent = renderContractContent();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-4">
       <div className="max-w-lg mx-auto py-4 sm:py-8">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-5 text-white">
+          <div className="bg-gradient-to-r from-slate-900 to-slate-700 p-5 text-white">
             <div className="flex items-center gap-3 mb-3">
               <Building2 className="w-7 h-7" />
               <h1 className="text-xl font-bold">HostCheckIn</h1>
             </div>
             <h2 className="text-lg font-semibold">{property?.name}</h2>
-            <p className="text-blue-100 text-sm mt-1">
-              Ref: {reservation?.booking_reference}
+            <p className="text-slate-200 text-sm mt-1">
+              Réf. : {reservation?.booking_reference}
             </p>
-            <div className="flex gap-4 mt-3 text-sm text-blue-100">
-              <span>Du {new Date(reservation?.check_in_date).toLocaleDateString('fr-FR')}</span>
-              <span>au {new Date(reservation?.check_out_date).toLocaleDateString('fr-FR')}</span>
+            <div className="flex gap-4 mt-3 text-sm text-slate-200">
+              <span>Du {reservation ? new Date(reservation.check_in_date).toLocaleDateString('fr-FR') : '—'}</span>
+              <span>au {reservation ? new Date(reservation.check_out_date).toLocaleDateString('fr-FR') : '—'}</span>
             </div>
           </div>
 
           <div className="px-4 py-3 bg-gray-50 border-b">
             <div className="flex items-center justify-between">
               {[
-                { num: 1, label: 'Identite' },
+                { num: 1, label: 'Identité' },
                 { num: 2, label: 'Selfie' },
                 { num: 3, label: 'Contrat' },
               ].map((s, i) => (
                 <div key={s.num} className="flex items-center">
                   {i > 0 && (
-                    <div className={`w-8 sm:w-12 h-0.5 mx-1 ${step >= s.num ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                    <div className={`w-8 sm:w-12 h-0.5 mx-1 ${step >= s.num ? 'bg-slate-700' : 'bg-gray-300'}`} />
                   )}
                   <div className="flex items-center gap-1.5">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                       step > s.num
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-slate-700 text-white'
                         : step === s.num
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-slate-900 text-white'
                         : 'bg-gray-300 text-gray-600'
                     }`}>
                       {step > s.num ? <Check className="w-4 h-4" /> : s.num}
                     </div>
                     <span className={`text-xs font-medium hidden sm:inline ${
-                      step >= s.num ? 'text-blue-600' : 'text-gray-400'
+                      step >= s.num ? 'text-slate-700' : 'text-gray-400'
                     }`}>
                       {s.label}
                     </span>
@@ -900,7 +937,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
               <div className="space-y-5">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 mb-1">Vos informations</h3>
-                  <p className="text-sm text-gray-600">Confirmez votre identite avant la verification du document</p>
+                  <p className="text-sm text-gray-600">Confirmez votre identité avant la vérification du document</p>
                 </div>
 
                 <div>
@@ -911,8 +948,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     type="text"
                     value={declaredName}
                     onChange={(e) => setDeclaredName(e.target.value)}
-                    placeholder="Tel qu'indique sur votre piece d'identite"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base"
+                    placeholder="Tel qu'indiqué sur votre pièce d'identité"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-500 outline-none text-base"
                     autoComplete="name"
                   />
                 </div>
@@ -926,14 +963,14 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     value={declaredEmail}
                     onChange={(e) => setDeclaredEmail(e.target.value)}
                     placeholder="email@exemple.com"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-500 outline-none text-base"
                     autoComplete="email"
                   />
                 </div>
 
                 <div className="pt-2 border-t border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Piece d'identite</h3>
-                  <p className="text-sm text-gray-600">Votre document sera verifie automatiquement</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Pièce d'identité</h3>
+                  <p className="text-sm text-gray-600">Votre document sera vérifié automatiquement</p>
                 </div>
 
                 <div>
@@ -943,13 +980,13 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   <select
                     value={idType}
                     onChange={(e) => { setIdType(e.target.value); setKycResult(null); }}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-500 outline-none text-base"
                   >
-                    <option value="">Selectionner</option>
-                    <option value="cin">Carte d'identite nationale</option>
+                    <option value="">Sélectionner</option>
+                    <option value="cin">Carte d'identité nationale</option>
                     <option value="passport">Passeport</option>
                     <option value="driver_license">Permis de conduire</option>
-                    <option value="sejour">Titre de sejour</option>
+                    <option value="sejour">Titre de séjour</option>
                   </select>
                 </div>
 
@@ -960,13 +997,13 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   <label
                     htmlFor="id-front"
                     className={`block border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                      idFrontFile ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400'
+                      idFrontFile ? 'border-slate-400 bg-slate-100' : 'border-gray-300 hover:border-slate-400'
                     }`}
                   >
                     {idFrontPreview ? (
                       <div className="space-y-2">
-                        <img src={idFrontPreview} alt="Apercu" className="max-h-32 mx-auto rounded-lg object-contain" />
-                        <div className="flex items-center justify-center gap-2 text-green-700">
+                        <img src={idFrontPreview} alt="Aperçu" className="max-h-32 mx-auto rounded-lg object-contain" />
+                        <div className="flex items-center justify-center gap-2 text-slate-700">
                           <Check className="w-4 h-4" />
                           <span className="text-sm font-medium">{idFrontFile?.name}</span>
                         </div>
@@ -981,7 +1018,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     ) : (
                       <>
                         <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                        <span className="text-blue-600 font-medium text-sm">
+                        <span className="text-slate-700 font-medium text-sm">
                           Prendre une photo ou choisir un fichier
                         </span>
                       </>
@@ -1003,11 +1040,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   <label
                     htmlFor="id-back"
                     className={`block border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                      idBackFile ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400'
+                      idBackFile ? 'border-slate-400 bg-slate-100' : 'border-gray-300 hover:border-slate-400'
                     }`}
                   >
                     {idBackFile ? (
-                      <div className="flex items-center justify-center gap-2 text-green-700">
+                      <div className="flex items-center justify-center gap-2 text-slate-700">
                         <Check className="w-5 h-5" />
                         <span className="font-medium text-sm">{idBackFile.name}</span>
                       </div>
@@ -1029,9 +1066,9 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     <div className="flex items-start gap-3">
                       <ShieldX className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-semibold text-red-800 text-sm">Document rejete</p>
+                        <p className="font-semibold text-red-800 text-sm">Document rejeté</p>
                         <p className="text-sm text-red-700 mt-1">
-                          {kycResult.rejection_reason || "Le document soumis n'a pas pu etre verifie. Veuillez reessayer avec une photo plus nette."}
+                          {kycResult.rejection_reason || "Le document soumis n'a pas pu être vérifié. Veuillez réessayer avec une photo plus nette."}
                         </p>
                         <p className="text-xs text-red-500 mt-2">
                           Score de confiance : {Math.round(kycResult.confidence * 100)}%
@@ -1044,16 +1081,16 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 <button
                   onClick={handleStep1Continue}
                   disabled={(!isDemoMode && (!idType || !idFrontFile || !declaredName.trim())) || kycLoading}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
                 >
                   {kycLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Verification en cours...
+                      Vérification en cours...
                     </>
                   ) : kycResult?.status === 'rejected' ? (
                     <>
-                      Reessayer la verification
+                      Réessayer la vérification
                       <ChevronRight className="w-5 h-5" />
                     </>
                   ) : (
@@ -1070,19 +1107,19 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
               <div className="space-y-5">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 mb-1">Photo selfie</h3>
-                  <p className="text-sm text-gray-600">Optionnel - pour confirmer votre identite par comparaison faciale</p>
+                  <p className="text-sm text-gray-600">Optionnel - pour confirmer votre identité par comparaison faciale</p>
                 </div>
 
                 <label
                   htmlFor="selfie"
                   className={`block border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                    selfieFile ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400'
+                    selfieFile ? 'border-slate-400 bg-slate-100' : 'border-gray-300 hover:border-slate-400'
                   }`}
                 >
                   {selfiePreview ? (
                     <div className="space-y-2">
                       <img src={selfiePreview} alt="Selfie" className="max-h-40 mx-auto rounded-lg object-contain" />
-                      <div className="flex items-center justify-center gap-2 text-green-700">
+                      <div className="flex items-center justify-center gap-2 text-slate-700">
                         <Check className="w-5 h-5" />
                         <span className="font-medium text-sm">{selfieFile?.name}</span>
                       </div>
@@ -1097,7 +1134,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   ) : (
                     <>
                       <Camera className="w-14 h-14 text-gray-400 mx-auto mb-3" />
-                      <span className="text-blue-600 font-medium">Prendre un selfie</span>
+                      <span className="text-slate-700 font-medium">Prendre un selfie</span>
                       <p className="text-xs text-gray-500 mt-1">ou choisir une photo existante</p>
                     </>
                   )}
@@ -1121,18 +1158,19 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   </button>
                   <button
                     onClick={() => {
+                      if (!reservation) return;
                       if (!isDemoMode) {
                         void logAuditEvent({
                           reservationId: reservation.id,
                           eventType: 'contract_viewed',
                           signerRole: 'guest',
-                          signerEmail: reservation.guests?.email,
-                          signerName: reservation.guests?.full_name,
+                          signerEmail: reservation.guests?.email || undefined,
+                          signerName: reservation.guests?.full_name || undefined,
                         });
                       }
                       setStep(3);
                     }}
-                    className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="flex-1 flex items-center justify-center gap-1 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800 transition-colors font-medium"
                   >
                     {selfieFile ? 'Continuer' : 'Passer'}
                     <ChevronRight className="w-5 h-5" />
@@ -1153,18 +1191,18 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     <pre className="whitespace-pre-wrap font-sans leading-relaxed">{contractContent}</pre>
                   ) : (
                     <div className="space-y-3">
-                      <h4 className="font-bold text-base">CONTRAT DE LOCATION COURTE DUREE</h4>
-                      <p><strong>Propriete :</strong> {property?.name}</p>
+                      <h4 className="font-bold text-base">CONTRAT DE LOCATION COURTE DURÉE</h4>
+                      <p><strong>Propriété :</strong> {property?.name}</p>
                       <p><strong>Adresse :</strong> {property?.address}, {property?.city}</p>
-                      <p><strong>Arrivee :</strong> {new Date(reservation?.check_in_date).toLocaleDateString('fr-FR')}</p>
-                      <p><strong>Depart :</strong> {new Date(reservation?.check_out_date).toLocaleDateString('fr-FR')}</p>
-                      <p><strong>Invites :</strong> {reservation?.number_of_guests}</p>
+                      <p><strong>Arrivée :</strong> {reservation ? new Date(reservation.check_in_date).toLocaleDateString('fr-FR') : '—'}</p>
+                      <p><strong>Départ :</strong> {reservation ? new Date(reservation.check_out_date).toLocaleDateString('fr-FR') : '—'}</p>
+                      <p><strong>Invités :</strong> {reservation?.number_of_guests}</p>
                       <div className="mt-3 space-y-1">
-                        <p className="font-semibold">Regles :</p>
+                        <p className="font-semibold">Règles :</p>
                         <ul className="list-disc list-inside space-y-0.5 ml-2 text-gray-600">
                           <li>Respect du voisinage</li>
-                          <li>Interdiction de fumer a l'interieur</li>
-                          <li>Pas de fetes ni evenements</li>
+                          <li>Interdiction de fumer à l'intérieur</li>
+                          <li>Pas de fêtes ni événements</li>
                           <li>Maintenir les lieux propres</li>
                         </ul>
                       </div>
@@ -1172,18 +1210,18 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   )}
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={consentChecked}
                       onChange={(e) => setConsentChecked(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="mt-0.5 w-4 h-4 text-slate-700 border-gray-300 rounded focus:ring-slate-400"
                     />
-                    <span className="text-xs text-blue-800 leading-relaxed">
-                      Je certifie que les informations fournies sont exactes. J'accepte que ma signature electronique,
-                      mon adresse IP et l'horodatage soient enregistres conformement a la loi marocaine n° 53-05
-                      du 30 novembre 2007 relative a l'echange electronique de donnees juridiques.
+                    <span className="text-xs text-slate-700 leading-relaxed">
+                      Je certifie que les informations fournies sont exactes. J'accepte que ma signature électronique,
+                      mon adresse IP et l'horodatage soient enregistrés conformément à la loi marocaine n° 53-05
+                      du 30 novembre 2007 relative à l'échange électronique de données juridiques.
                     </span>
                   </label>
                 </div>
@@ -1217,8 +1255,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 <div className="flex items-start gap-2 text-[11px] text-gray-400">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>
-                    En signant, votre adresse IP, navigateur, et l'horodatage exact seront enregistres
-                    dans une piste d'audit securisee pour garantir la conformite legale de ce document.
+                    En signant, votre adresse IP, navigateur, et l'horodatage exact seront enregistrés
+                    dans une piste d'audit sécurisée pour garantir la conformité légale de ce document.
                   </span>
                 </div>
 
@@ -1233,7 +1271,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   <button
                     onClick={handleSubmit}
                     disabled={submitting || (!consentChecked && !isDemoMode)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
+                    className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 font-medium"
                   >
                     {submitting ? (
                       <>

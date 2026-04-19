@@ -48,9 +48,11 @@ export function Sidebar({ currentPage, onNavigate, onLogout, hostName }: Sidebar
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? fr.sidebar.closeMenuAria : fr.sidebar.openMenuAria}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2.5 bg-slate-900 text-white rounded-lg shadow-lg active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+        className={`fixed top-4 left-4 z-50 lg:hidden p-2.5 bg-slate-900 text-white rounded-lg shadow-lg active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
+          isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
       >
-        {isOpen ? <X size={22} /> : <Menu size={22} />}
+        <Menu size={22} />
       </button>
 
       <aside
@@ -62,8 +64,16 @@ export function Sidebar({ currentPage, onNavigate, onLogout, hostName }: Sidebar
         `}
       >
         <div className="h-full flex flex-col">
-          <div className="p-6 border-b border-slate-700">
-            <h1 className="text-2xl font-bold text-white">HostCheckIn</h1>
+          <div className="relative p-6 border-b border-slate-700">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              aria-label={fr.sidebar.closeMenuAria}
+              className="absolute right-4 top-4 lg:hidden rounded-lg p-1.5 text-slate-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            >
+              <X size={20} />
+            </button>
+            <h1 className="text-2xl font-bold text-white">{fr.app.brand}</h1>
             <p className="text-slate-300 text-sm mt-2">
               {hostName || fr.app.hostFallbackName}
             </p>

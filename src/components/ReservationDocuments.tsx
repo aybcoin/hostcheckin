@@ -213,7 +213,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
 
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+              <Loader2 className="w-8 h-8 text-slate-700 animate-spin" />
             </div>
           ) : !hasIdentityDocs && !hasContract && auditTrail.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
@@ -265,7 +265,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         <div className="flex flex-wrap items-center gap-3">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
                             verification.status === 'approved'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-emerald-100 text-emerald-800'
                               : verification.status === 'rejected'
                               ? 'bg-red-100 text-red-800'
                               : 'bg-yellow-100 text-yellow-800'
@@ -291,7 +291,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium text-gray-700">Score de confiance KYC</span>
                               <span className={`text-sm font-bold ${
-                                confidencePercent >= 70 ? 'text-green-600' : confidencePercent >= 40 ? 'text-amber-600' : 'text-red-600'
+                                confidencePercent >= 70 ? 'text-emerald-700' : confidencePercent >= 40 ? 'text-amber-600' : 'text-red-600'
                               }`}>
                                 {confidencePercent}%
                               </span>
@@ -299,7 +299,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                             <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all duration-500 ${
-                                  confidencePercent >= 70 ? 'bg-green-500' : confidencePercent >= 40 ? 'bg-amber-500' : 'bg-red-500'
+                                  confidencePercent >= 70 ? 'bg-emerald-500' : confidencePercent >= 40 ? 'bg-amber-500' : 'bg-red-500'
                                 }`}
                                 style={{ width: `${confidencePercent}%` }}
                               />
@@ -422,7 +422,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         <div className="flex flex-wrap items-center gap-3">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
                             contract.signed_by_guest
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-slate-100 text-slate-700'
                           }`}>
                             {contract.signed_by_guest
@@ -437,13 +437,13 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         </div>
 
                         {contract.pdf_storage_path && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+                          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <FileText className="w-8 h-8 text-blue-600" />
+                              <FileText className="w-8 h-8 text-slate-700" />
                               <div>
-                                <p className="text-sm font-medium text-blue-900">Contrat PDF disponible</p>
+                                <p className="text-sm font-medium text-slate-900">Contrat PDF disponible</p>
                                 {contract.content_hash && (
-                                  <p className="text-[11px] text-blue-600 flex items-center gap-1 mt-0.5">
+                                  <p className="text-[11px] text-slate-600 flex items-center gap-1 mt-0.5">
                                     <Hash size={10} />
                                     SHA-256: {contract.content_hash.substring(0, 16)}...
                                   </p>
@@ -453,7 +453,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                             <button
                               onClick={handleDownloadPdf}
                               disabled={downloadingPdf}
-                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+                              className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium disabled:opacity-50"
                             >
                               {downloadingPdf ? (
                                 <Loader2 size={16} className="animate-spin" />
@@ -538,7 +538,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         <div className="space-y-4">
                           {auditTrail.map((entry) => (
                             <div key={entry.id} className="relative pl-10">
-                              <div className="absolute left-2.5 top-1.5 w-3 h-3 rounded-full bg-blue-500 ring-4 ring-white" />
+                              <div className="absolute left-2.5 top-1.5 w-3 h-3 rounded-full bg-slate-700 ring-4 ring-white" />
                               <div className="bg-gray-50 rounded-lg p-3">
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-sm font-medium text-gray-900">

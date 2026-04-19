@@ -38,6 +38,8 @@ export interface Property {
   check_in_time?: string;
   check_out_time?: string;
   verification_mode?: 'simple' | 'complete';
+  auto_link_active?: boolean;
+  auto_link_regenerated_at?: string | null;
   image_url?: string;
   created_at: string;
   updated_at: string;

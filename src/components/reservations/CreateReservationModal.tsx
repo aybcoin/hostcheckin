@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { X, Plus, QrCode, PenLine } from 'lucide-react';
 import { Property, APP_BASE_URL, Reservation, ReservationCreateInput } from '../../lib/supabase';
 import { supabase } from '../../lib/supabase';
+import { fr } from '../../lib/i18n/fr';
 
 interface ReservationMutationError {
   message: string;
@@ -373,7 +374,7 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                         setBlacklistWarning(computeBlacklistMatch(formData.guest_name, formData.guest_email, nextValue));
                       }}
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
-                      placeholder="+33 6 12 34 56 78"
+                      placeholder={fr.profile.phonePlaceholder}
                     />
                   </div>
                   <div>

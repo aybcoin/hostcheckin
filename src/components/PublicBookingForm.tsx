@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { CalendarDays, Loader2, ShieldCheck } from 'lucide-react';
 import { APP_BASE_URL } from '../lib/supabase';
 import { fr } from '../lib/i18n/fr';
+import { ctaTokens } from '../lib/design-tokens';
 
 interface PublicBookingFormProps {
   propertyToken: string;
@@ -12,6 +13,7 @@ interface PropertyPreview {
   name: string;
   city: string;
   country: string;
+  image_url?: string | null;
 }
 
 interface BookingFormState {
@@ -80,7 +82,11 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
       try {
         const response = await fetch(getApiUrl(propertyToken), { method: 'GET' });
         if (!response.ok) {
-          setError('Ce lien de réservation est invalide ou expiré.');
+          if (response.status === 410) {
+            setError(fr.publicBooking.inactiveLink);
+          } else {
+            setError(fr.publicBooking.invalidLink);
+          }
           setLoading(false);
           return;
         }
@@ -88,7 +94,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
         setProperty(payload.property as PropertyPreview);
         setError(null);
       } catch {
-        setError('Impossible de charger ce lien de réservation pour le moment.');
+        setError(fr.publicBooking.unavailable);
       } finally {
         setLoading(false);
       }
@@ -127,9 +133,9 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
         const payload = await response.json().catch(() => ({}));
         if (payload.require_captcha) {
           setCaptchaRequired(true);
-          setError('Veuillez valider le CAPTCHA pour continuer.');
+          setError(fr.publicBooking.captchaRequired);
         } else {
-          setError(payload.error || 'Impossible de créer la réservation.');
+          setError(payload.error || fr.publicBooking.createError);
         }
         setSubmitting(false);
         return;
@@ -139,7 +145,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
       const link = payload.unique_link as string;
       window.location.href = `${APP_BASE_URL}/checkin/${link}`;
     } catch {
-      setError('Une erreur réseau est survenue. Veuillez réessayer.');
+      setError(fr.publicBooking.networkError);
       setSubmitting(false);
       return;
     } finally {
@@ -154,7 +160,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
     return (
       <div className="min-h-screen bg-slate-100 p-4">
         <div className="mx-auto mt-10 max-w-xl rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-          Chargement de la réservation…
+          {fr.publicBooking.loading}
         </div>
       </div>
     );
@@ -173,17 +179,27 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       <div className="mx-auto max-w-xl space-y-5 py-6">
-        <header className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h1 className="text-2xl font-bold text-slate-900">Réservation en ligne</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {property.name} · {property.city}, {property.country}
-          </p>
+        <header className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-sm">
+          {property.image_url ? (
+            <img
+              src={property.image_url}
+              alt={property.name}
+              className="absolute inset-0 h-full w-full object-cover opacity-20"
+            />
+          ) : null}
+          <div className="relative z-10">
+            <p className="text-xs uppercase tracking-wide text-slate-200">{fr.app.brand}</p>
+            <h1 className="text-2xl font-bold">{fr.publicBooking.pageTitle}</h1>
+            <p className="mt-1 text-sm text-slate-200">
+              {property.name} · {property.city}, {property.country}
+            </p>
+          </div>
         </header>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="mb-4 flex items-center gap-2 text-sm text-slate-600">
-            <ShieldCheck size={16} className="text-slate-700" />
-            Vos informations sont traitées de manière sécurisée.
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+            <ShieldCheck size={14} className="text-slate-700" />
+            {fr.publicBooking.secureBadge}
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -227,6 +243,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
                   value={form.phone}
                   onChange={(event) => setForm((previous) => ({ ...previous, phone: event.target.value }))}
                   className={inputClassName}
+                  placeholder={fr.profile.phonePlaceholder}
                   required
                 />
               </div>
@@ -283,7 +300,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
             {captchaRequired ? (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
                 <p className="text-xs text-amber-800">
-                  CAPTCHA requis. Collez ici le jeton hCaptcha après validation.
+                  {fr.publicBooking.captchaHint}
                 </p>
                 <label htmlFor="public-booking-captcha" className="mt-2 block text-xs font-medium text-amber-800">
                   {fr.publicBooking.captchaToken}
@@ -308,12 +325,13 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
             <button
               type="submit"
               disabled={!isValid || submitting}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${ctaTokens.primary}`}
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
-              Continuer vers le check-in
+              {fr.publicBooking.continue}
             </button>
           </form>
+          <p className="mt-4 text-center text-xs text-slate-500">{fr.publicBooking.secureFooter}</p>
         </section>
       </div>
     </div>

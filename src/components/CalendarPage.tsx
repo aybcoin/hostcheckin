@@ -4,6 +4,7 @@ import { Reservation, Property } from '../lib/supabase';
 import { supabase } from '../lib/supabase';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { CalendarStats } from './calendar/CalendarStats';
+import { fr } from '../lib/i18n/fr';
 
 interface CalendarPageProps {
   reservations: Reservation[];
@@ -12,17 +13,17 @@ interface CalendarPageProps {
 }
 
 const MONTH_NAMES = [
-  'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ];
 
 const FILTER_TABS = [
-  { key: 'all', label: 'Tous' },
-  { key: 'confirmed', label: 'Confirmes' },
-  { key: 'pending', label: 'En attente' },
-  { key: 'checkin', label: 'Check-in' },
-  { key: 'checkout', label: 'Check-out' },
-  { key: 'cancelled', label: 'Annules' },
+  { key: 'all', label: fr.calendar.tabs.all },
+  { key: 'confirmed', label: fr.calendar.tabs.confirmed },
+  { key: 'pending', label: fr.calendar.tabs.pending },
+  { key: 'checkin', label: fr.calendar.tabs.checkin },
+  { key: 'checkout', label: fr.calendar.tabs.checkout },
+  { key: 'cancelled', label: fr.calendar.tabs.cancelled },
 ];
 
 function formatDate(date: string) {
@@ -34,7 +35,7 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
   const [filter, setFilter] = useState('all');
   const [propertyFilter, setPropertyFilter] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
-  const [guests, setGuests] = useState<Record<string, { full_name: string; email: string }>>({});
+  const [guests, setGuests] = useState<Record<string, { full_name: string; email: string | null }>>({});
 
   useEffect(() => {
     if (reservations.length > 0) {
@@ -45,8 +46,10 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
         .in('id', guestIds)
         .then(({ data }) => {
           if (data) {
-            const map: Record<string, { full_name: string; email: string }> = {};
-            data.forEach((g: any) => { map[g.id] = g; });
+            const map: Record<string, { full_name: string; email: string | null }> = {};
+            data.forEach((guest: { id: string; full_name: string; email: string | null }) => {
+              map[guest.id] = guest;
+            });
             setGuests(map);
           }
         });
@@ -69,7 +72,8 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
 
   const monthInputValue = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
 
-  const getPropertyName = (id: string) => properties.find((p) => p.id === id)?.name || 'Inconnu';
+  const getPropertyName = (id: string) =>
+    properties.find((p) => p.id === id)?.name || fr.calendar.unknownProperty;
 
   return (
     <div className="space-y-5">
@@ -78,24 +82,32 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
           {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h1>
         <div className="flex items-center gap-2">
-          <button onClick={goToPrevMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200">
+          <button
+            onClick={goToPrevMonth}
+            aria-label="Mois précédent"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+          >
             <ChevronLeft size={18} />
           </button>
           <input
             type="month"
             value={monthInputValue}
             onChange={(e) => handleMonthInput(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
           />
-          <button onClick={goToNextMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200">
+          <button
+            onClick={goToNextMonth}
+            aria-label="Mois suivant"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+          >
             <ChevronRight size={18} />
           </button>
           <select
             value={propertyFilter}
             onChange={(e) => setPropertyFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
           >
-            <option value="">Toutes les proprietes</option>
+            <option value="">{fr.calendar.allProperties}</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -110,7 +122,7 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
             onClick={() => setFilter(tab.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === tab.key
-                ? 'bg-blue-600 text-white'
+                ? 'bg-slate-900 text-white'
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -140,37 +152,41 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedReservation(null)}>
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Détails de la réservation</h2>
-              <button onClick={() => setSelectedReservation(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <h2 className="text-lg font-bold text-gray-900">{fr.calendar.detailsTitle}</h2>
+              <button
+                onClick={() => setSelectedReservation(null)}
+                aria-label="Fermer le détail de la réservation"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
                 <X size={20} />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-gray-500">Référence</p>
+                  <p className="text-xs text-gray-500">{fr.calendar.fields.reference}</p>
                   <p className="text-sm font-bold text-gray-900">{selectedReservation.booking_reference}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Propriété</p>
+                  <p className="text-xs text-gray-500">{fr.calendar.fields.property}</p>
                   <p className="text-sm font-medium text-gray-900">{getPropertyName(selectedReservation.property_id)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Arrivée</p>
+                  <p className="text-xs text-gray-500">{fr.calendar.fields.checkIn}</p>
                   <p className="text-sm font-medium text-gray-900">{formatDate(selectedReservation.check_in_date)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Départ</p>
+                  <p className="text-xs text-gray-500">{fr.calendar.fields.checkOut}</p>
                   <p className="text-sm font-medium text-gray-900">{formatDate(selectedReservation.check_out_date)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Voyageurs</p>
+                  <p className="text-xs text-gray-500">{fr.calendar.fields.guests}</p>
                   <p className="text-sm font-medium text-gray-900">{selectedReservation.number_of_guests}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Statut</p>
+                  <p className="text-xs text-gray-500">{fr.calendar.fields.status}</p>
                   <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                    selectedReservation.status === 'checked_in' ? 'bg-green-100 text-green-800'
+                    selectedReservation.status === 'checked_in' ? 'bg-slate-200 text-slate-800'
                     : selectedReservation.status === 'completed' ? 'bg-gray-100 text-gray-700'
                     : selectedReservation.status === 'cancelled' ? 'bg-red-100 text-red-700'
                     : 'bg-amber-100 text-amber-800'
@@ -184,17 +200,17 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
               </div>
               {guests[selectedReservation.guest_id] && (
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 mb-1">Invité</p>
+                  <p className="text-xs text-gray-500 mb-1">{fr.calendar.fields.guest}</p>
                   <p className="text-sm font-medium text-gray-900">{guests[selectedReservation.guest_id].full_name}</p>
                   <p className="text-xs text-gray-500">{guests[selectedReservation.guest_id].email}</p>
                 </div>
               )}
               <button
                 onClick={() => { setSelectedReservation(null); onNavigateToReservation(); }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium"
               >
                 <ExternalLink size={14} />
-                Ouvrir les détails
+                {fr.calendar.openDetails}
               </button>
             </div>
           </div>

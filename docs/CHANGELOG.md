@@ -1,5 +1,39 @@
 # CHANGELOG
 
+## 2026-04-19 — V2 polish (LOT A + LOT B)
+
+### LOT A — Critique
+- A1. Audit complet de l'accentuation française : aucun texte UX hardcodé sans accent.
+  Tous les libellés produits sont centralisés dans `src/lib/i18n/fr.ts` avec namespaces
+  `contracts`, `calendar`, `checkin`, `profile`, `blacklist`, `reservations`, `pricing`,
+  `common`, `support`, `security`, `publicBooking`, `app`, `sidebar`.
+- A2. Logo sidebar : bouton de fermeture repositionné en haut/droite absolu, le libellé
+  "HostCheckIn" s'affiche intégralement à toutes les tailles.
+- A3. Module Support permanent : `SupportButton` placé en bas de sidebar, dropdown
+  WhatsApp / e-mail / documentation, variables `VITE_SUPPORT_WHATSAPP` et
+  `VITE_SUPPORT_EMAIL`.
+- A4. Design tokens CTA centralisés (`src/lib/design-tokens.ts`) : `cta-primary`,
+  `cta-secondary`, `cta-success`, `cta-danger`, `cta-danger-soft`. Refactor de
+  AutoLinkGenerator, PublicBookingForm, BlacklistPage, ProfilePage, ShareLinkModal,
+  RatingModal, ReservationFilters, HelpPage.
+- A5. Placeholders téléphone alignés sur le marché Maroc : `Ex : 06 12 34 56 78`
+  (centralisé dans `fr.profile.phonePlaceholder`).
+
+### LOT B — Haute
+- B1. Élévation de `/book/{token}` : bandeau dégradé navy/teal cohérent avec
+  `/checkin/`, badge "Réservation 100% sécurisée", footer RGPD, carte centrale
+  arrondie + ombre douce.
+- B2. `BlacklistPage` : bouton d'ajout `cta-primary` activé dès qu'au moins un
+  identifiant est renseigné, sinon désactivé avec tooltip "Renseignez au moins un
+  identifiant".
+- B3. Régénération + désactivation du lien permanent :
+  - `AutoLinkGenerator` : actions "Régénérer" et "Désactiver" avec confirmations.
+  - Edge function `public-booking` (v2) : refus si `auto_link_active === false`.
+  - Migration `20260419090000_add_auto_link_active_to_properties.sql` : colonnes
+    `auto_link_active` (bool) et `auto_link_regenerated_at` (timestamptz) sur
+    `properties`, index sur `auto_link_active`.
+- B4. Templates de message : ajout de l'espagnol (FR / EN / AR / ES).
+
 ## 2026-04-18
 
 ### Sprint 1 — Lot 1 (base produit)
