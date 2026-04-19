@@ -1,68 +1,127 @@
-import { useState, useEffect, useCallback } from 'react';
+/**
+ * ReservationsPage.tsx — Refonte V3
+ * ────────────────────────────────────
+ * En-tête : 4 chips de filtre rapide + recherche par nom/logement.
+ * Corps    : cartes de réservation avec pastilles de statut et CTA contextuel.
+ * Tri      : par priorité (to_handle > in_progress > upcoming > past),
+ *            puis par date d'arrivée la plus proche.
+ * Pagination: "charger plus" par tranches de PAGE_SIZE (pas de fetch N+1 —
+ *             les données sont déjà en mémoire).
+ */
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Calendar, Plus, Search, X } from 'lucide-react';
 import {
-  Calendar, Copy, Check, Clock, Plus, ChevronDown, ChevronUp, Trash2,
-  Link2, Star, ClipboardList, FileSearch, Share2, Eye, Lock, Users, Shield
-} from 'lucide-react';
-import { Reservation, Property, APP_BASE_URL, ReservationCreateInput } from '../lib/supabase';
-import { supabase } from '../lib/supabase';
+  Reservation, Property, ReservationCreateInput, supabase,
+} from '../lib/supabase';
+import {
+  computeReservationSteps,
+  computeReservationCta,
+  getReservationCategory,
+  compareByPriority,
+  type ReservationCategory,
+  type VerificationSummary,
+  type ContractSummary,
+} from '../lib/reservations-status';
+import {
+  ReservationCard,
+  type GuestInfo,
+  type VerificationInfo,
+  type ContractInfo,
+} from './reservations/ReservationCard';
 import { ReservationDocuments } from './ReservationDocuments';
-import { ReservationFilters, FilterValues, EMPTY_FILTERS } from './reservations/ReservationFilters';
 import { ShareLinkModal } from './reservations/ShareLinkModal';
 import { RatingModal } from './reservations/RatingModal';
 import { CreateReservationModal } from './reservations/CreateReservationModal';
-import { SecurityNotice } from './SecurityNotice';
+import { Button } from './ui/Button';
 import { fr } from '../lib/i18n/fr';
-import { ctaTokens, statusTokens } from '../lib/design-tokens';
-import { Card } from './ui/Card';
+import { chipTokens } from '../lib/design-tokens';
 
-interface GuestInfo {
-  id: string;
-  full_name: string;
-  email: string;
-  phone?: string;
-}
+// ── Constantes ────────────────────────────────────────────────────────────────
 
-interface VerificationInfo {
-  id: string;
-  reservation_id: string;
-  status: string;
-  id_type: string;
-  id_document_url: string;
-  id_back_url?: string;
-  selfie_url?: string;
-  document_confidence?: number;
-  detected_document_type?: string;
-  rejection_reason?: string;
-}
+/** Nombre de cartes rendues par "page" (load-more). */
+const PAGE_SIZE = 20;
 
-interface ContractInfo {
-  id: string;
-  reservation_id: string;
-  signed_by_guest: boolean;
-  guest_signature_url?: string;
-  contract_content?: string;
-  pdf_storage_path?: string;
-}
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface ReservationsPageProps {
   reservations: Reservation[];
   properties: Property[];
   focusedReservationId?: string | null;
-  onUpdate: (id: string, updates: Partial<Reservation>) => Promise<{ error: { message: string } | null }>;
-  onAdd: (reservation: ReservationCreateInput) => Promise<{ data: Reservation[] | null; error: { message: string; details?: string; hint?: string; code?: string } | null }>;
+  onUpdate: (
+    id: string,
+    updates: Partial<Reservation>
+  ) => Promise<{ error: { message: string } | null }>;
+  onAdd: (
+    reservation: ReservationCreateInput
+  ) => Promise<{
+    data: Reservation[] | null;
+    error: { message: string; details?: string; hint?: string; code?: string } | null;
+  }>;
   onDelete: (id: string) => Promise<{ error: { message: string } | null }>;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Check }> = {
-  pending: { label: fr.reservations.statusPending, color: statusTokens.pending, icon: Clock },
-  checked_in: { label: fr.reservations.statusCheckedIn, color: statusTokens.success, icon: Check },
-  completed: { label: fr.reservations.statusCompleted, color: statusTokens.neutral, icon: ClipboardList },
-  cancelled: { label: fr.reservations.statusCancelled, color: statusTokens.danger, icon: Trash2 },
-};
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+/** Paire (chip label, valeur de filtre). */
+interface QuickFilter {
+  label: string;
+  value: ReservationCategory | 'all';
+  count?: number;
 }
+
+// ── Chips de filtre rapide ────────────────────────────────────────────────────
+
+function QuickFilterChips({
+  chips,
+  active,
+  onChange,
+}: {
+  chips: QuickFilter[];
+  active: ReservationCategory | 'all';
+  onChange: (v: ReservationCategory | 'all') => void;
+}) {
+  return (
+    <div
+      className="flex flex-wrap gap-2"
+      role="group"
+      aria-label="Filtre rapide des réservations"
+    >
+      {chips.map((chip) => {
+        const isActive = chip.value === active;
+        return (
+          <button
+            key={chip.value}
+            type="button"
+            onClick={() => onChange(chip.value)}
+            aria-pressed={isActive}
+            className={`
+              inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5
+              text-sm font-medium transition-colors
+              focus-visible:outline-none focus-visible:ring-2
+              focus-visible:ring-slate-400 focus-visible:ring-offset-1
+              ${isActive ? chipTokens.active : chipTokens.primary}
+            `}
+          >
+            {chip.label}
+            {chip.count !== undefined && (
+              <span
+                aria-label={`${chip.count} réservations`}
+                className={`
+                  inline-flex items-center justify-center rounded-full
+                  min-w-[1.25rem] h-5 px-1 text-xs font-semibold
+                  ${isActive ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'}
+                `}
+              >
+                {chip.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Page principale ───────────────────────────────────────────────────────────
 
 export function ReservationsPage({
   reservations,
@@ -72,84 +131,173 @@ export function ReservationsPage({
   onAdd,
   onDelete,
 }: ReservationsPageProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<FilterValues>(EMPTY_FILTERS);
-  const [showFilters, setShowFilters] = useState(false);
+  // ── État UI ───────────────────────────────────────────────────────────────
+  const [quickFilter, setQuickFilter] = useState<ReservationCategory | 'all'>('all');
+  const [search, setSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewingDocuments, setViewingDocuments] = useState<{ id: string; ref: string } | null>(null);
   const [shareModal, setShareModal] = useState<{ link: string; guestName: string; propertyName: string } | null>(null);
   const [ratingModal, setRatingModal] = useState<{ id: string; ref: string; rating?: number } | null>(null);
+
+  // ── Données secondaires (batch-load sans N+1) ─────────────────────────────
   const [guests, setGuests] = useState<Record<string, GuestInfo>>({});
   const [verifications, setVerifications] = useState<Record<string, VerificationInfo>>({});
   const [contracts, setContracts] = useState<Record<string, ContractInfo>>({});
 
-  const fetchGuestsAndVerifications = useCallback(async () => {
+  const fetchSecondaryData = useCallback(async () => {
+    if (reservations.length === 0) return;
     const guestIds = [...new Set(reservations.map((r) => r.guest_id))];
     const resIds = reservations.map((r) => r.id);
 
-    try {
-      const [guestRes, verRes, contractRes] = await Promise.all([
-        supabase.from('guests').select('id, full_name, email, phone').in('id', guestIds),
-        supabase.from('identity_verification').select('id, reservation_id, status, id_type, id_document_url, id_back_url, selfie_url, document_confidence, detected_document_type, rejection_reason').in('reservation_id', resIds).order('created_at', { ascending: true }),
-        supabase.from('contracts').select('id, reservation_id, signed_by_guest, guest_signature_url, contract_content, pdf_storage_path').in('reservation_id', resIds).order('created_at', { ascending: true }),
-      ]);
+    const [guestRes, verRes, contractRes] = await Promise.all([
+      supabase.from('guests').select('id, full_name, email, phone').in('id', guestIds),
+      supabase
+        .from('identity_verification')
+        .select('id, reservation_id, status, id_type, id_document_url, id_back_url, selfie_url, document_confidence, detected_document_type, rejection_reason, verified_at')
+        .in('reservation_id', resIds)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('contracts')
+        .select('id, reservation_id, signed_by_guest, guest_signature_url, contract_content, pdf_storage_path, signed_at')
+        .in('reservation_id', resIds)
+        .order('created_at', { ascending: true }),
+    ]);
 
-      if (guestRes.error) console.error('Failed to fetch guests:', guestRes.error);
-      if (verRes.error) console.error('Failed to fetch verifications:', verRes.error);
-      if (contractRes.error) console.error('Failed to fetch contracts:', contractRes.error);
+    if (guestRes.error) console.error('[ReservationsPage] guests:', guestRes.error);
+    if (verRes.error) console.error('[ReservationsPage] verifications:', verRes.error);
+    if (contractRes.error) console.error('[ReservationsPage] contracts:', contractRes.error);
 
-      if (guestRes.data) {
-        const map: Record<string, GuestInfo> = {};
-        guestRes.data.forEach((g: GuestInfo) => { map[g.id] = g; });
-        setGuests(map);
-      }
-      if (verRes.data) {
-        const map: Record<string, VerificationInfo> = {};
-        (verRes.data as VerificationInfo[]).forEach((verification) => {
-          map[verification.reservation_id] = verification;
-        });
-        setVerifications(map);
-      }
-      if (contractRes.data) {
-        const map: Record<string, ContractInfo> = {};
-        (contractRes.data as ContractInfo[]).forEach((contract) => {
-          map[contract.reservation_id] = contract;
-        });
-        setContracts(map);
-      }
-    } catch (err) {
-      console.error('Failed to load reservation details:', err);
+    if (guestRes.data) {
+      const map: Record<string, GuestInfo> = {};
+      (guestRes.data as GuestInfo[]).forEach((g) => { map[g.id] = g; });
+      setGuests(map);
+    }
+    if (verRes.data) {
+      const map: Record<string, VerificationInfo> = {};
+      (verRes.data as VerificationInfo[]).forEach((v) => { map[v.reservation_id] = v; });
+      setVerifications(map);
+    }
+    if (contractRes.data) {
+      const map: Record<string, ContractInfo> = {};
+      (contractRes.data as ContractInfo[]).forEach((c) => { map[c.reservation_id] = c; });
+      setContracts(map);
     }
   }, [reservations]);
 
-  useEffect(() => {
-    if (reservations.length > 0) {
-      void fetchGuestsAndVerifications();
-    }
-  }, [fetchGuestsAndVerifications, reservations.length]);
+  useEffect(() => { void fetchSecondaryData(); }, [fetchSecondaryData]);
 
+  // ── Focus depuis navigation externe ──────────────────────────────────────
   useEffect(() => {
     if (!focusedReservationId) return;
-    setExpandedId(focusedReservationId);
     requestAnimationFrame(() => {
-      const target = document.querySelector<HTMLElement>(`[data-testid="reservation-card-${focusedReservationId}"]`);
-      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const el = document.querySelector<HTMLElement>(
+        `[data-testid="reservation-card-${focusedReservationId}"]`
+      );
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }, [focusedReservationId]);
 
-  const getPropertyName = (propertyId: string) => properties.find((p) => p.id === propertyId)?.name || fr.reservations.unknownProperty;
+  // ── Calcul des métadonnées enrichies (mémoïsé) ───────────────────────────
+  const now = useMemo(() => new Date(), []);
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+  const enriched = useMemo(() => {
+    return reservations.map((r) => {
+      const rawVer = verifications[r.id];
+      const rawCon = contracts[r.id];
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(fr.reservations.deleteReservationConfirm)) return;
-    await onDelete(id);
-  };
+      const verSummary: VerificationSummary | undefined = rawVer
+        ? {
+            status: rawVer.status as VerificationSummary['status'],
+            verified_at: (rawVer as VerificationInfo & { verified_at?: string }).verified_at,
+          }
+        : undefined;
+
+      const contractSummary: ContractSummary | undefined = rawCon
+        ? { signed_by_guest: rawCon.signed_by_guest, signed_at: rawCon.signed_at }
+        : undefined;
+
+      const steps = computeReservationSteps(r, verSummary, contractSummary, now);
+      const category = getReservationCategory(r, steps, now);
+      const cta = computeReservationCta(r, steps);
+
+      return { reservation: r, steps, category, cta };
+    });
+  }, [reservations, verifications, contracts, now]);
+
+  // ── Comptages par catégorie ───────────────────────────────────────────────
+  const categoryCounts = useMemo(
+    () =>
+      enriched.reduce<Record<ReservationCategory, number>>(
+        (acc, item) => { acc[item.category] = (acc[item.category] ?? 0) + 1; return acc; },
+        { to_handle: 0, upcoming: 0, in_progress: 0, past: 0 }
+      ),
+    [enriched]
+  );
+
+  const chips: QuickFilter[] = [
+    { label: 'Toutes', value: 'all', count: reservations.length },
+    { label: 'À traiter', value: 'to_handle', count: categoryCounts.to_handle },
+    { label: 'À venir', value: 'upcoming', count: categoryCounts.upcoming },
+    { label: 'En cours', value: 'in_progress', count: categoryCounts.in_progress },
+    { label: 'Passées', value: 'past', count: categoryCounts.past },
+  ];
+
+  // ── Filtrage + tri ────────────────────────────────────────────────────────
+  const searchLower = search.toLowerCase().trim();
+
+  const filtered = useMemo(() => {
+    const result = enriched.filter((item) => {
+      if (quickFilter !== 'all' && item.category !== quickFilter) return false;
+      if (searchLower) {
+        const guest = guests[item.reservation.guest_id];
+        const property = properties.find((p) => p.id === item.reservation.property_id);
+        const haystack = [
+          guest?.full_name ?? '',
+          guest?.email ?? '',
+          property?.name ?? '',
+          item.reservation.booking_reference,
+        ].join(' ').toLowerCase();
+        if (!haystack.includes(searchLower)) return false;
+      }
+      return true;
+    });
+    return [...result].sort(compareByPriority);
+  }, [enriched, quickFilter, searchLower, guests, properties]);
+
+  // Reset pagination au changement de filtre/recherche
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [quickFilter, search]);
+
+  const visibleItems = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleDelete = useCallback(
+    async (id: string) => { await onDelete(id); },
+    [onDelete]
+  );
+
+  const handleBlacklist = useCallback(
+    async (reservation: Reservation, guest: GuestInfo | undefined) => {
+      if (!guest) return;
+      const property = properties.find((p) => p.id === reservation.property_id);
+      if (!property?.host_id) { alert(fr.reservations.blacklistMissingHostAlert); return; }
+      const reason = window.prompt(
+        fr.reservations.blacklistReasonPrompt,
+        fr.reservations.blacklistReasonDefault
+      );
+      if (!reason?.trim()) return;
+      const { error } = await supabase.from('blacklisted_guests').insert({
+        host_id: property.host_id,
+        full_name: guest.full_name,
+        email: guest.email ?? null,
+        phone: guest.phone ?? null,
+        reason: reason.trim(),
+      });
+      alert(error ? fr.reservations.blacklistAddFailed : fr.reservations.blacklistAddSuccess);
+    },
+    [properties]
+  );
 
   const handleRate = async (rating: number) => {
     if (!ratingModal) return;
@@ -157,370 +305,124 @@ export function ReservationsPage({
     setRatingModal(null);
   };
 
-  const handleBlacklistGuest = async (reservation: Reservation, guest: GuestInfo | undefined) => {
-    if (!guest) return;
-    const property = properties.find((item) => item.id === reservation.property_id);
-    if (!property?.host_id) {
-      alert(fr.reservations.blacklistMissingHostAlert);
-      return;
-    }
-
-    const reason = window.prompt(fr.reservations.blacklistReasonPrompt, fr.reservations.blacklistReasonDefault);
-    if (!reason || !reason.trim()) return;
-
-    const payload = {
-      host_id: property.host_id,
-      full_name: guest.full_name,
-      email: guest.email || null,
-      phone: guest.phone || null,
-      reason: reason.trim(),
-    };
-
-    const { error } = await supabase.from('blacklisted_guests').insert(payload);
-    if (error) {
-      alert(fr.reservations.blacklistAddFailed);
-      return;
-    }
-    alert(fr.reservations.blacklistAddSuccess);
-  };
-
-  const filtered = reservations.filter((r) => {
-    if (filters.checkInDate && r.check_in_date < filters.checkInDate) return false;
-    if (filters.checkOutDate && r.check_out_date > filters.checkOutDate) return false;
-    if (filters.propertyId && r.property_id !== filters.propertyId) return false;
-    if (filters.status !== 'all' && r.status !== filters.status) return false;
-    if (filters.verification !== 'all') {
-      const v = verifications[r.id];
-      if (filters.verification === 'checked_in' && v?.status !== 'approved') return false;
-      if (filters.verification === 'pending' && v?.status !== 'pending') return false;
-      if (filters.verification === 'not_started' && v) return false;
-    }
-    return true;
-  });
-
+  // ── Rendu ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
+
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{fr.reservations.title}</h1>
-          <p className="text-gray-600 mt-1">{fr.reservations.totalCount(reservations.length)}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+            {fr.reservations.title}
+          </h1>
+          <p className="text-slate-500 mt-1 text-sm">
+            {fr.reservations.totalCount(reservations.length)}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-              showFilters ? ctaTokens.subtle : ctaTokens.secondary
-            }`}
-          >
-            <Eye size={16} />
-            {fr.reservations.filtersButton}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCreateModal(true)}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${ctaTokens.primary}`}
-          >
-            <Plus size={16} />
-            {fr.reservations.newReservation}
-          </button>
+        <Button
+          variant="primary"
+          onClick={() => setShowCreateModal(true)}
+          aria-label={fr.reservations.newReservation}
+        >
+          <Plus size={16} aria-hidden="true" />
+          {fr.reservations.newReservation}
+        </Button>
+      </div>
+
+      {/* Chips + barre de recherche */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <QuickFilterChips chips={chips} active={quickFilter} onChange={setQuickFilter} />
+        <div className="relative w-full sm:w-64">
+          <Search
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Voyageur, logement…"
+            aria-label="Rechercher une réservation"
+            className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              aria-label="Effacer la recherche"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 
-      {showFilters && (
-        <ReservationFilters
-          properties={properties}
-          filters={filters}
-          onApply={setFilters}
-          onReset={() => setFilters(EMPTY_FILTERS)}
-        />
-      )}
-
+      {/* Liste */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center shadow-sm border">
-            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 font-medium">{fr.reservations.empty}</p>
+          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+            <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
+            <p className="text-slate-500 font-medium">
+              {search
+                ? 'Aucun résultat pour cette recherche'
+                : quickFilter === 'to_handle'
+                ? 'Aucune réservation à traiter'
+                : quickFilter === 'upcoming'
+                ? 'Aucune réservation à venir'
+                : quickFilter === 'in_progress'
+                ? 'Aucune réservation en cours'
+                : quickFilter === 'past'
+                ? 'Aucune réservation passée'
+                : fr.reservations.empty}
+            </p>
           </div>
         ) : (
-          filtered.map((reservation) => {
-            const isExpanded = expandedId === reservation.id;
-            const status = STATUS_CONFIG[reservation.status] || STATUS_CONFIG.pending;
-            const StatusIcon = status.icon;
-            const guest = guests[reservation.guest_id];
-            const verification = verifications[reservation.id];
-            const contract = contracts[reservation.id];
-            const checkinLink = `${APP_BASE_URL}/checkin/${reservation.unique_link}`;
-            const verificationMode = reservation.verification_mode || reservation.verification_type || 'simple';
-
-            return (
-              <Card
+          <>
+            {visibleItems.map(({ reservation, steps, cta }) => (
+              <ReservationCard
                 key={reservation.id}
-                variant="default"
-                padding="sm"
-                interactive
-                className="overflow-hidden p-0"
-                data-testid={`reservation-card-${reservation.id}`}
-              >
-                <div
-                  className="p-4 sm:p-5 cursor-pointer"
-                  onClick={() => setExpandedId(isExpanded ? null : reservation.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      setExpandedId(isExpanded ? null : reservation.id);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={isExpanded}
-                  aria-controls={`reservation-panel-${reservation.id}`}
+                reservation={reservation}
+                property={properties.find((p) => p.id === reservation.property_id)}
+                guest={guests[reservation.guest_id]}
+                verification={verifications[reservation.id]}
+                contract={contracts[reservation.id]}
+                steps={steps}
+                cta={cta}
+                initiallyExpanded={focusedReservationId === reservation.id}
+                onUpdate={onUpdate}
+                onDelete={handleDelete}
+                onBlacklist={handleBlacklist}
+                onOpenDocuments={(id, ref) => setViewingDocuments({ id, ref })}
+                onOpenShare={(link, guestName, propertyName) =>
+                  setShareModal({ link, guestName, propertyName })
+                }
+                onOpenRating={(id, ref, rating) => setRatingModal({ id, ref, rating })}
+              />
+            ))}
+
+            {/* Compteur + load-more */}
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-xs text-slate-400" aria-live="polite">
+                {Math.min(visibleCount, filtered.length)} / {filtered.length}{' '}
+                réservation{filtered.length > 1 ? 's' : ''}
+              </p>
+              {hasMore && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0">
-                        <span className="font-bold text-gray-900 text-sm sm:text-base">{reservation.booking_reference}</span>
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                          <StatusIcon size={12} />
-                          {status.label}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full font-medium">
-                          {verificationMode === 'complete' ? fr.reservations.verificationTypeComplete : fr.reservations.verificationTypeSimple}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-4 shrink-0 ml-2">
-                      <span className="text-sm text-gray-600 hidden sm:block">{getPropertyName(reservation.property_id)}</span>
-                      {isExpanded ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setRatingModal({ id: reservation.id, ref: reservation.booking_reference, rating: reservation.guest_rating }); }}
-                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.pending}`}
-                    >
-                      <Star size={12} />
-                      {reservation.guest_rating ? `${reservation.guest_rating}/5` : fr.reservations.rateGuest}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShareModal({ link: checkinLink, guestName: guest?.full_name || fr.app.guestFallbackName, propertyName: getPropertyName(reservation.property_id) });
-                      }}
-                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.neutral}`}
-                    >
-                      <Share2 size={12} />
-                      {fr.reservations.verificationLink}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setViewingDocuments({ id: reservation.id, ref: reservation.booking_reference }); }}
-                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.neutral}`}
-                    >
-                      <FileSearch size={12} />
-                      {fr.reservations.details}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setExpandedId(isExpanded ? null : reservation.id); }}
-                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.neutral}`}
-                    >
-                      <ClipboardList size={12} />
-                      {fr.reservations.summary}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(reservation.id); }}
-                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.danger}`}
-                    >
-                      <Trash2 size={12} />
-                      {fr.reservations.deleteAction}
-                    </button>
-                  </div>
-                </div>
-
-                {isExpanded && (
-                  <div
-                    id={`reservation-panel-${reservation.id}`}
-                    data-testid={`reservation-panel-${reservation.id}`}
-                    className="border-t border-gray-100 bg-gray-50/50 p-4 sm:p-5 space-y-5 animate-[fadeIn_0.2s_ease-out]"
-                  >
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-500 mb-0.5">{fr.reservations.checkInDateLabel}</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatDate(reservation.check_in_date)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-0.5">{fr.reservations.checkOutDateLabel}</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatDate(reservation.check_out_date)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-0.5">{fr.reservations.guestsLabel}</p>
-                        <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                          <Users size={14} />
-                          {reservation.number_of_guests}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-0.5">{fr.reservations.verificationLabel}</p>
-                        <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                          <Shield size={14} />
-                          {verificationMode === 'complete' ? fr.reservations.verificationTypeComplete : fr.reservations.verificationTypeSimple}
-                        </p>
-                      </div>
-                    </div>
-
-                    {reservation.smart_lock_code && (
-                      <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                        <Lock size={16} className="text-amber-600" />
-                        <span className="text-sm text-amber-800">{fr.reservations.smartLockCodeLabel} : <strong>{reservation.smart_lock_code}</strong></span>
-                      </div>
-                    )}
-
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1.5">{fr.reservations.uniqueCheckinLink}</p>
-                      <div className="flex items-center gap-2 bg-white rounded-lg p-2.5 border border-gray-200">
-                        <Link2 size={14} className="text-gray-400 shrink-0" />
-                        <input type="text" value={checkinLink} readOnly className="flex-1 bg-transparent text-sm text-gray-600 outline-none min-w-0" />
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(checkinLink, reservation.id)}
-                          aria-label={fr.reservations.copyCheckinLinkAria}
-                          className="shrink-0 rounded p-1.5 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                        >
-                          {copiedId === reservation.id ? <Check size={14} className="text-slate-700" /> : <Copy size={14} className="text-gray-400" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {contract && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-3">
-                        <p className="text-xs font-medium text-gray-700 mb-2">{fr.reservations.guestContractTitle}</p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${contract.signed_by_guest ? 'bg-slate-200 text-slate-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {contract.signed_by_guest ? fr.reservations.signed : fr.reservations.unsigned}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setViewingDocuments({ id: reservation.id, ref: reservation.booking_reference })}
-                            className="text-xs text-slate-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 rounded"
-                          >
-                            {fr.reservations.preview}
-                          </button>
-                          {contract.pdf_storage_path && (
-                            <span className="text-xs text-slate-700 font-medium">{fr.reservations.pdfAvailable}</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {guest && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-3">
-                        <p className="text-xs font-medium text-gray-700 mb-2">{fr.reservations.guestInfoTitle}</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                          <div>
-                            <span className="text-gray-500">{fr.reservations.guestNameLabel} :</span>{' '}
-                            <span className="font-medium text-gray-900">{guest.full_name}</span>
-                          </div>
-                          {verification && (
-                            <div>
-                              <span className="text-gray-500">{fr.reservations.guestDocumentLabel} :</span>{' '}
-                              <span className="font-medium text-gray-900">
-                                {verification.id_type === 'passport' ? fr.reservations.docPassport : verification.id_type === 'cin' ? fr.reservations.docCin : verification.id_type}
-                              </span>
-                            </div>
-                          )}
-                          <div>
-                            <span className="text-gray-500">{fr.reservations.guestVerificationLabel} :</span>{' '}
-                            <span className={`font-medium ${verification?.status === 'approved' ? 'text-slate-800' : verification?.status === 'rejected' ? 'text-red-600' : verification?.status === 'pending' ? 'text-amber-700' : 'text-gray-500'}`}>
-                              {verification?.status === 'approved' ? fr.reservations.statusCheckedIn : verification?.status === 'rejected' ? fr.reservations.rejectedStatus : verification?.status === 'pending' ? fr.reservations.statusPending : fr.reservations.statusNotStarted}
-                            </span>
-                            {verification?.document_confidence != null && (
-                              <span className="ml-2 text-xs text-gray-400">
-                                ({Math.round(verification.document_confidence * 100)}%)
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void handleBlacklistGuest(reservation, guest);
-                          }}
-                          className={`mt-3 inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${ctaTokens.dangerSoft}`}
-                        >
-                          {fr.reservations.blockGuestAction}
-                        </button>
-                      </div>
-                    )}
-
-                    {verification && (verification.id_document_url?.startsWith('http') || verification.selfie_url?.startsWith('http')) && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-3">
-                        <p className="text-xs font-medium text-gray-700 mb-2">{fr.reservations.identitySectionTitle}</p>
-                        <SecurityNotice className="mb-3" />
-                        <div className="flex gap-3 flex-wrap">
-                          {verification.id_document_url?.startsWith('http') && (
-                            <div className="relative group secure-document-preview">
-                              <img
-                                src={verification.id_document_url}
-                                alt="ID recto"
-                                className="w-28 h-20 object-cover rounded-lg border border-gray-200"
-                              />
-                            </div>
-                          )}
-                          {verification.id_back_url?.startsWith('http') && (
-                            <div className="relative group secure-document-preview">
-                              <img
-                                src={verification.id_back_url}
-                                alt="ID verso"
-                                className="w-28 h-20 object-cover rounded-lg border border-gray-200"
-                              />
-                            </div>
-                          )}
-                          {verification.selfie_url?.startsWith('http') && (
-                            <div className="relative group secure-document-preview">
-                              <img
-                                src={verification.selfie_url}
-                                alt="Selfie"
-                                className="w-28 h-20 object-cover rounded-lg border border-gray-200"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2 pt-1">
-                      {reservation.status === 'pending' && (
-                        <button
-                          type="button"
-                          onClick={() => onUpdate(reservation.id, { status: 'checked_in' })}
-                          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${ctaTokens.secondary}`}
-                        >
-                          {fr.reservations.approveCheckin}
-                        </button>
-                      )}
-                      {reservation.status === 'checked_in' && (
-                        <button
-                          type="button"
-                          onClick={() => onUpdate(reservation.id, { status: 'completed' })}
-                          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${ctaTokens.secondary}`}
-                        >
-                          {fr.reservations.markComplete}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </Card>
-            );
-          })
+                  Charger {Math.min(PAGE_SIZE, filtered.length - visibleCount)} de plus
+                </Button>
+              )}
+            </div>
+          </>
         )}
       </div>
 
+      {/* Modales */}
       {showCreateModal && (
         <CreateReservationModal
           properties={properties}
@@ -528,7 +430,6 @@ export function ReservationsPage({
           onClose={() => setShowCreateModal(false)}
         />
       )}
-
       {viewingDocuments && (
         <ReservationDocuments
           reservationId={viewingDocuments.id}
@@ -536,7 +437,6 @@ export function ReservationsPage({
           onClose={() => setViewingDocuments(null)}
         />
       )}
-
       {shareModal && (
         <ShareLinkModal
           link={shareModal.link}
@@ -545,7 +445,6 @@ export function ReservationsPage({
           onClose={() => setShareModal(null)}
         />
       )}
-
       {ratingModal && (
         <RatingModal
           bookingReference={ratingModal.ref}
