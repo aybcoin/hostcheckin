@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { CalendarDays, Loader2, ShieldCheck } from 'lucide-react';
 import { APP_BASE_URL } from '../lib/supabase';
 import { fr } from '../lib/i18n/fr';
-import { ctaTokens } from '../lib/design-tokens';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 interface PublicBookingFormProps {
   propertyToken: string;
@@ -159,9 +160,9 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-100 p-4">
-        <div className="mx-auto mt-10 max-w-xl rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
+        <Card className="mx-auto mt-10 max-w-xl text-sm text-slate-500" padding="lg">
           {fr.publicBooking.loading}
-        </div>
+        </Card>
       </div>
     );
   }
@@ -169,9 +170,9 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
   if (!property) {
     return (
       <div className="min-h-screen bg-slate-100 p-4">
-        <div className="mx-auto mt-10 max-w-xl rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        <Card variant="danger" padding="lg" className="mx-auto mt-10 max-w-xl text-sm text-red-700">
           {error || 'Lien de réservation introuvable.'}
-        </div>
+        </Card>
       </div>
     );
   }
@@ -196,7 +197,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <Card as="section" variant="default" padding="md">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
             <ShieldCheck size={14} className="text-slate-700" />
             {fr.publicBooking.secureBadge}
@@ -322,17 +323,18 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
               </p>
             ) : null}
 
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              fullWidth
               disabled={!isValid || submitting}
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${ctaTokens.primary}`}
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
               {fr.publicBooking.continue}
-            </button>
+            </Button>
           </form>
           <p className="mt-4 text-center text-xs text-slate-500">{fr.publicBooking.secureFooter}</p>
-        </section>
+        </Card>
       </div>
     </div>
   );

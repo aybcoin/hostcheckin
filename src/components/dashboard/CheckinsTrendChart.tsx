@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Reservation } from '../../lib/supabase';
+import { Card } from '../ui/Card';
 
 interface CheckinsTrendChartProps {
   reservations: Reservation[];
@@ -61,15 +62,15 @@ export function CheckinsTrendChart({ reservations }: CheckinsTrendChartProps) {
 
   if (points.length === 0) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <Card as="section" variant="default" padding="md">
         <h3 className="text-lg font-semibold text-slate-900">Check-ins sur 30 jours</h3>
         <p className="mt-3 text-sm text-slate-500">Aucune donnée disponible pour le moment.</p>
-      </section>
+      </Card>
     );
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <Card as="section" variant="default" padding="md">
       <div className="mb-4 flex items-end justify-between">
         <div>
           <h3 className="text-lg font-semibold text-slate-900">Check-ins sur 30 jours</h3>
@@ -88,6 +89,6 @@ export function CheckinsTrendChart({ reservations }: CheckinsTrendChartProps) {
         <span>{points[0]?.label}</span>
         <span>{points[points.length - 1]?.label}</span>
       </div>
-    </section>
+    </Card>
   );
 }

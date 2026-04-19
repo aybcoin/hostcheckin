@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Filter, RotateCcw } from 'lucide-react';
 import { Property } from '../../lib/supabase';
 import { fr } from '../../lib/i18n/fr';
-import { ctaTokens } from '../../lib/design-tokens';
+import { inputTokens } from '../../lib/design-tokens';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 
 export interface FilterValues {
   checkInDate: string;
@@ -38,32 +40,35 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-4">
+    <Card variant="default" padding="sm">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">{fr.reservationsFilters.checkIn}</label>
+          <label htmlFor="filter-checkin" className="mb-1 block text-xs font-medium text-slate-600">{fr.reservationsFilters.checkIn}</label>
           <input
+            id="filter-checkin"
             type="date"
             value={local.checkInDate}
             onChange={(e) => setLocal({ ...local, checkInDate: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+            className={inputTokens.base}
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">{fr.reservationsFilters.checkOut}</label>
+          <label htmlFor="filter-checkout" className="mb-1 block text-xs font-medium text-slate-600">{fr.reservationsFilters.checkOut}</label>
           <input
+            id="filter-checkout"
             type="date"
             value={local.checkOutDate}
             onChange={(e) => setLocal({ ...local, checkOutDate: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+            className={inputTokens.base}
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">{fr.reservationsFilters.property}</label>
+          <label htmlFor="filter-property" className="mb-1 block text-xs font-medium text-slate-600">{fr.reservationsFilters.property}</label>
           <select
+            id="filter-property"
             value={local.propertyId}
             onChange={(e) => setLocal({ ...local, propertyId: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+            className={inputTokens.base}
           >
             <option value="">{fr.reservationsFilters.all}</option>
             {properties.map((p) => (
@@ -72,11 +77,12 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">{fr.reservationsFilters.status}</label>
+          <label htmlFor="filter-status" className="mb-1 block text-xs font-medium text-slate-600">{fr.reservationsFilters.status}</label>
           <select
+            id="filter-status"
             value={local.status}
             onChange={(e) => setLocal({ ...local, status: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+            className={inputTokens.base}
           >
             <option value="all">{fr.reservationsFilters.all}</option>
             <option value="pending">{fr.reservations.statusPending}</option>
@@ -86,11 +92,12 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">{fr.reservationsFilters.verification}</label>
+          <label htmlFor="filter-verification" className="mb-1 block text-xs font-medium text-slate-600">{fr.reservationsFilters.verification}</label>
           <select
+            id="filter-verification"
             value={local.verification}
             onChange={(e) => setLocal({ ...local, verification: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+            className={inputTokens.base}
           >
             <option value="all">{fr.reservationsFilters.allFeminine}</option>
             <option value="checked_in">{fr.reservations.statusCheckedIn}</option>
@@ -100,21 +107,23 @@ export function ReservationFilters({ properties, filters, onApply, onReset }: Re
         </div>
       </div>
       <div className="flex gap-2 mt-3">
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={handleApply}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${ctaTokens.primary}`}
         >
           <Filter size={14} />
           {fr.reservationsFilters.apply}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={handleReset}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${ctaTokens.secondary}`}
         >
           <RotateCcw size={14} />
           {fr.common.reset}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

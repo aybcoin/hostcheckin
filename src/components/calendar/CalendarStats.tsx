@@ -1,6 +1,7 @@
 import { Star, TrendingUp, CheckCircle, Clock, CalendarDays } from 'lucide-react';
 import { Reservation } from '../../lib/supabase';
 import { fr } from '../../lib/i18n/fr';
+import { Card } from '../ui/Card';
 
 interface CalendarStatsProps {
   reservations: Reservation[];
@@ -71,7 +72,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
   const dashOffset = circumference - (occupancyRate / 100) * circumference;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-5 space-y-5">
+    <Card variant="default" padding="md" className="space-y-5">
       <h3 className="font-semibold text-gray-900 text-sm">{fr.calendar.fields.monthStats}</h3>
 
       <div className="flex flex-col items-center">
@@ -143,6 +144,6 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

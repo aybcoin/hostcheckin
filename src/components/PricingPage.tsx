@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PricingToggle } from './pricing/PricingToggle';
 import { PricingCard } from './pricing/PricingCard';
+import { Card } from './ui/Card';
 
 interface PricingPlan {
   name: string;
@@ -109,9 +110,9 @@ export function PricingPage() {
         ))}
       </div>
 
-      <footer className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm text-slate-600">
+      <Card as="footer" variant="default" padding="sm" className="text-center text-sm text-slate-600">
         14 jours d’essai gratuit · Aucune carte requise · Annulation à tout moment
-      </footer>
+      </Card>
     </div>
   );
 }

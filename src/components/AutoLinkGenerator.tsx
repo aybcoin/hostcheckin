@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Copy, Download, Link2, Printer } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { APP_BASE_URL, Property, PropertyAutoLink, supabase } from '../lib/supabase';
-import { ctaTokens } from '../lib/design-tokens';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 interface AutoLinkGeneratorProps {
   property: Property | null;
@@ -253,14 +254,14 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={onBack}
-        className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.secondary}`}
       >
         <ArrowLeft size={16} aria-hidden="true" />
         Retour aux propriétés
-      </button>
+      </Button>
 
       <header>
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Réservations automatiques</h1>
@@ -270,41 +271,41 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
       </header>
 
       {!property ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <Card variant="danger" padding="md" className="text-sm text-red-700">
           Propriété introuvable. Revenez à la liste des propriétés puis réessayez.
-        </div>
+        </Card>
       ) : null}
 
       {property && loading ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <Card variant="default" padding="md">
           <div className="animate-pulse space-y-3">
             <div className="h-4 w-1/3 rounded bg-slate-200" />
             <div className="h-10 w-full rounded bg-slate-100" />
             <div className="h-9 w-40 rounded bg-slate-200" />
           </div>
-        </div>
+        </Card>
       ) : property && error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <Card variant="danger" padding="md" className="text-sm text-red-700">
           {error}
-        </div>
+        </Card>
       ) : property && !autoLink ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <Card variant="default" padding="lg">
           <p className="text-sm text-slate-600">
             Aucun lien automatique n'est encore généré pour cette propriété.
           </p>
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={handleCreate}
             disabled={creating}
-            className={`mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ctaTokens.primary}`}
+            className="mt-4"
           >
             <Link2 size={16} aria-hidden="true" />
             {creating ? 'Génération…' : 'Générer le lien permanent'}
-          </button>
-        </div>
+          </Button>
+        </Card>
       ) : property && autoLink ? (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.2fr_1fr]">
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <Card as="section" variant="default" padding="md">
             <h2 className="text-lg font-semibold text-slate-900">Lien permanent</h2>
             <p className="mt-1 text-xs text-slate-500">
               Statut : {autoLink.is_active ? 'Actif' : 'Désactivé'}
@@ -313,39 +314,39 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
               <p className="break-all text-sm text-slate-700">{bookingLink}</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={handleCopy}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.secondary}`}
                 aria-live="polite"
               >
                 <Copy size={16} aria-hidden="true" />
                 {copied ? 'Copié' : 'Copier le lien'}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={handleRegenerateLink}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.secondary}`}
               >
                 Régénérer le lien
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="dangerSoft"
+                size="sm"
                 onClick={handleDeactivateLink}
                 disabled={!autoLink.is_active}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ctaTokens.dangerSoft}`}
               >
                 Désactiver le lien
-              </button>
+              </Button>
             </div>
             {regeneratedAt ? (
               <p className="mt-2 text-xs text-slate-500">
                 Dernière régénération : {new Date(regeneratedAt).toLocaleString('fr-FR')}
               </p>
             ) : null}
-          </section>
+          </Card>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <Card as="section" variant="default" padding="md">
             <h2 className="text-lg font-semibold text-slate-900">QR code</h2>
             <div className="relative mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
               <div className="mx-auto flex h-64 w-64 items-center justify-center rounded-lg bg-white">
@@ -368,22 +369,20 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
             </div>
 
             <div className="mt-3 flex flex-col gap-2">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={handleDownloadQr}
-                className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.secondary}`}
               >
                 <Download size={16} aria-hidden="true" />
                 Télécharger le QR code (PNG)
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="primary"
                 onClick={handlePrintPoster}
-                className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${ctaTokens.primary}`}
               >
                 <Printer size={16} aria-hidden="true" />
                 Télécharger l'affiche imprimable
-              </button>
+              </Button>
             </div>
 
             {actionError ? (
@@ -391,7 +390,7 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
                 {actionError}
               </p>
             ) : null}
-          </section>
+          </Card>
         </div>
       ) : null}
     </div>

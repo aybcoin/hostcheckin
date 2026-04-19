@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Calendar, Copy, Check, Clock, Plus, ChevronDown, ChevronUp, Trash2,
   Link2, Star, ClipboardList, FileSearch, Share2, Eye, Lock, Users, Shield
@@ -12,6 +12,8 @@ import { RatingModal } from './reservations/RatingModal';
 import { CreateReservationModal } from './reservations/CreateReservationModal';
 import { SecurityNotice } from './SecurityNotice';
 import { fr } from '../lib/i18n/fr';
+import { ctaTokens, statusTokens } from '../lib/design-tokens';
+import { Card } from './ui/Card';
 
 interface GuestInfo {
   id: string;
@@ -45,23 +47,31 @@ interface ContractInfo {
 interface ReservationsPageProps {
   reservations: Reservation[];
   properties: Property[];
+  focusedReservationId?: string | null;
   onUpdate: (id: string, updates: Partial<Reservation>) => Promise<{ error: { message: string } | null }>;
   onAdd: (reservation: ReservationCreateInput) => Promise<{ data: Reservation[] | null; error: { message: string; details?: string; hint?: string; code?: string } | null }>;
   onDelete: (id: string) => Promise<{ error: { message: string } | null }>;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Check }> = {
-  pending: { label: fr.reservations.statusPending, color: 'bg-amber-100 text-amber-800', icon: Clock },
-  checked_in: { label: fr.reservations.statusCheckedIn, color: 'bg-slate-200 text-slate-800', icon: Check },
-  completed: { label: fr.reservations.statusCompleted, color: 'bg-gray-100 text-gray-700', icon: ClipboardList },
-  cancelled: { label: fr.reservations.statusCancelled, color: 'bg-red-100 text-red-700', icon: Trash2 },
+  pending: { label: fr.reservations.statusPending, color: statusTokens.pending, icon: Clock },
+  checked_in: { label: fr.reservations.statusCheckedIn, color: statusTokens.success, icon: Check },
+  completed: { label: fr.reservations.statusCompleted, color: statusTokens.neutral, icon: ClipboardList },
+  cancelled: { label: fr.reservations.statusCancelled, color: statusTokens.danger, icon: Trash2 },
 };
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export function ReservationsPage({ reservations, properties, onUpdate, onAdd, onDelete }: ReservationsPageProps) {
+export function ReservationsPage({
+  reservations,
+  properties,
+  focusedReservationId = null,
+  onUpdate,
+  onAdd,
+  onDelete,
+}: ReservationsPageProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterValues>(EMPTY_FILTERS);
@@ -74,13 +84,7 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
   const [verifications, setVerifications] = useState<Record<string, VerificationInfo>>({});
   const [contracts, setContracts] = useState<Record<string, ContractInfo>>({});
 
-  useEffect(() => {
-    if (reservations.length > 0) {
-      fetchGuestsAndVerifications();
-    }
-  }, [reservations]);
-
-  const fetchGuestsAndVerifications = async () => {
+  const fetchGuestsAndVerifications = useCallback(async () => {
     const guestIds = [...new Set(reservations.map((r) => r.guest_id))];
     const resIds = reservations.map((r) => r.id);
 
@@ -117,9 +121,24 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
     } catch (err) {
       console.error('Failed to load reservation details:', err);
     }
-  };
+  }, [reservations]);
 
-  const getPropertyName = (propertyId: string) => properties.find((p) => p.id === propertyId)?.name || 'Inconnu';
+  useEffect(() => {
+    if (reservations.length > 0) {
+      void fetchGuestsAndVerifications();
+    }
+  }, [fetchGuestsAndVerifications, reservations.length]);
+
+  useEffect(() => {
+    if (!focusedReservationId) return;
+    setExpandedId(focusedReservationId);
+    requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(`[data-testid="reservation-card-${focusedReservationId}"]`);
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }, [focusedReservationId]);
+
+  const getPropertyName = (propertyId: string) => properties.find((p) => p.id === propertyId)?.name || fr.reservations.unknownProperty;
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -128,7 +147,7 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette réservation ?')) return;
+    if (!confirm(fr.reservations.deleteReservationConfirm)) return;
     await onDelete(id);
   };
 
@@ -142,11 +161,11 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
     if (!guest) return;
     const property = properties.find((item) => item.id === reservation.property_id);
     if (!property?.host_id) {
-      alert('Impossible de retrouver le propriétaire de cette réservation.');
+      alert(fr.reservations.blacklistMissingHostAlert);
       return;
     }
 
-    const reason = window.prompt('Raison du blocage (obligatoire) :', 'Refus de séjour');
+    const reason = window.prompt(fr.reservations.blacklistReasonPrompt, fr.reservations.blacklistReasonDefault);
     if (!reason || !reason.trim()) return;
 
     const payload = {
@@ -159,10 +178,10 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
 
     const { error } = await supabase.from('blacklisted_guests').insert(payload);
     if (error) {
-      alert("Impossible d'ajouter cet invité à la liste noire.");
+      alert(fr.reservations.blacklistAddFailed);
       return;
     }
-    alert("Invité ajouté à la liste noire.");
+    alert(fr.reservations.blacklistAddSuccess);
   };
 
   const filtered = reservations.filter((r) => {
@@ -188,17 +207,19 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
         </div>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              showFilters ? 'bg-slate-100 text-slate-800' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+            className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+              showFilters ? ctaTokens.subtle : ctaTokens.secondary
             }`}
           >
             <Eye size={16} />
-            Filtres
+            {fr.reservations.filtersButton}
           </button>
           <button
+            type="button"
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium"
+            className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${ctaTokens.primary}`}
           >
             <Plus size={16} />
             {fr.reservations.newReservation}
@@ -233,10 +254,27 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
             const verificationMode = reservation.verification_mode || reservation.verification_type || 'simple';
 
             return (
-              <div key={reservation.id} className="bg-white rounded-xl shadow-sm border overflow-hidden transition-shadow hover:shadow-md">
+              <Card
+                key={reservation.id}
+                variant="default"
+                padding="sm"
+                interactive
+                className="overflow-hidden p-0"
+                data-testid={`reservation-card-${reservation.id}`}
+              >
                 <div
                   className="p-4 sm:p-5 cursor-pointer"
                   onClick={() => setExpandedId(isExpanded ? null : reservation.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setExpandedId(isExpanded ? null : reservation.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  aria-controls={`reservation-panel-${reservation.id}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -259,66 +297,75 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
 
                   <div className="flex flex-wrap gap-2 mt-3">
                     <button
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); setRatingModal({ id: reservation.id, ref: reservation.booking_reference, rating: reservation.guest_rating }); }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors border border-amber-200"
+                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.pending}`}
                     >
                       <Star size={12} />
-                      {reservation.guest_rating ? `${reservation.guest_rating}/5` : 'Noter'}
+                      {reservation.guest_rating ? `${reservation.guest_rating}/5` : fr.reservations.rateGuest}
                     </button>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setShareModal({ link: checkinLink, guestName: guest?.full_name || fr.app.guestFallbackName, propertyName: getPropertyName(reservation.property_id) });
                       }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
+                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.neutral}`}
                     >
                       <Share2 size={12} />
                       {fr.reservations.verificationLink}
                     </button>
                     <button
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); setViewingDocuments({ id: reservation.id, ref: reservation.booking_reference }); }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.neutral}`}
                     >
                       <FileSearch size={12} />
                       {fr.reservations.details}
                     </button>
                     <button
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); setExpandedId(isExpanded ? null : reservation.id); }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.neutral}`}
                     >
                       <ClipboardList size={12} />
                       {fr.reservations.summary}
                     </button>
                     <button
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); handleDelete(reservation.id); }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
+                      className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${statusTokens.danger}`}
                     >
                       <Trash2 size={12} />
-                      Supprimer
+                      {fr.reservations.deleteAction}
                     </button>
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-gray-100 bg-gray-50/50 p-4 sm:p-5 space-y-5 animate-[fadeIn_0.2s_ease-out]">
+                  <div
+                    id={`reservation-panel-${reservation.id}`}
+                    data-testid={`reservation-panel-${reservation.id}`}
+                    className="border-t border-gray-100 bg-gray-50/50 p-4 sm:p-5 space-y-5 animate-[fadeIn_0.2s_ease-out]"
+                  >
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-xs text-gray-500 mb-0.5">Date d'arrivée</p>
+                        <p className="text-xs text-gray-500 mb-0.5">{fr.reservations.checkInDateLabel}</p>
                         <p className="text-sm font-semibold text-gray-900">{formatDate(reservation.check_in_date)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-0.5">Date de départ</p>
+                        <p className="text-xs text-gray-500 mb-0.5">{fr.reservations.checkOutDateLabel}</p>
                         <p className="text-sm font-semibold text-gray-900">{formatDate(reservation.check_out_date)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-0.5">Voyageurs</p>
+                        <p className="text-xs text-gray-500 mb-0.5">{fr.reservations.guestsLabel}</p>
                         <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
                           <Users size={14} />
                           {reservation.number_of_guests}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-0.5">Vérification</p>
+                        <p className="text-xs text-gray-500 mb-0.5">{fr.reservations.verificationLabel}</p>
                         <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
                           <Shield size={14} />
                           {verificationMode === 'complete' ? fr.reservations.verificationTypeComplete : fr.reservations.verificationTypeSimple}
@@ -329,19 +376,20 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
                     {reservation.smart_lock_code && (
                       <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
                         <Lock size={16} className="text-amber-600" />
-                        <span className="text-sm text-amber-800">Code de serrure connectée : <strong>{reservation.smart_lock_code}</strong></span>
+                        <span className="text-sm text-amber-800">{fr.reservations.smartLockCodeLabel} : <strong>{reservation.smart_lock_code}</strong></span>
                       </div>
                     )}
 
                     <div>
-                      <p className="text-xs text-gray-500 mb-1.5">Lien de check-in unique</p>
+                      <p className="text-xs text-gray-500 mb-1.5">{fr.reservations.uniqueCheckinLink}</p>
                       <div className="flex items-center gap-2 bg-white rounded-lg p-2.5 border border-gray-200">
                         <Link2 size={14} className="text-gray-400 shrink-0" />
                         <input type="text" value={checkinLink} readOnly className="flex-1 bg-transparent text-sm text-gray-600 outline-none min-w-0" />
                         <button
+                          type="button"
                           onClick={() => copyToClipboard(checkinLink, reservation.id)}
-                          aria-label="Copier le lien de check-in"
-                          className="shrink-0 p-1.5 hover:bg-gray-100 rounded transition-colors"
+                          aria-label={fr.reservations.copyCheckinLinkAria}
+                          className="shrink-0 rounded p-1.5 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                         >
                           {copiedId === reservation.id ? <Check size={14} className="text-slate-700" /> : <Copy size={14} className="text-gray-400" />}
                         </button>
@@ -350,19 +398,20 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
 
                     {contract && (
                       <div className="bg-white rounded-lg border border-gray-200 p-3">
-                        <p className="text-xs font-medium text-gray-700 mb-2">Contrat signé par l'invité</p>
+                        <p className="text-xs font-medium text-gray-700 mb-2">{fr.reservations.guestContractTitle}</p>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${contract.signed_by_guest ? 'bg-slate-200 text-slate-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {contract.signed_by_guest ? 'Signé' : 'Non signé'}
+                            {contract.signed_by_guest ? fr.reservations.signed : fr.reservations.unsigned}
                           </span>
                           <button
+                            type="button"
                             onClick={() => setViewingDocuments({ id: reservation.id, ref: reservation.booking_reference })}
-                            className="text-xs text-slate-700 hover:underline"
+                            className="text-xs text-slate-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 rounded"
                           >
-                            Prévisualiser
+                            {fr.reservations.preview}
                           </button>
                           {contract.pdf_storage_path && (
-                            <span className="text-xs text-slate-700 font-medium">PDF disponible</span>
+                            <span className="text-xs text-slate-700 font-medium">{fr.reservations.pdfAvailable}</span>
                           )}
                         </div>
                       </div>
@@ -370,24 +419,24 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
 
                     {guest && (
                       <div className="bg-white rounded-lg border border-gray-200 p-3">
-                        <p className="text-xs font-medium text-gray-700 mb-2">Informations de l'invité</p>
+                        <p className="text-xs font-medium text-gray-700 mb-2">{fr.reservations.guestInfoTitle}</p>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                           <div>
-                            <span className="text-gray-500">Nom :</span>{' '}
+                            <span className="text-gray-500">{fr.reservations.guestNameLabel} :</span>{' '}
                             <span className="font-medium text-gray-900">{guest.full_name}</span>
                           </div>
                           {verification && (
                             <div>
-                              <span className="text-gray-500">Document :</span>{' '}
+                              <span className="text-gray-500">{fr.reservations.guestDocumentLabel} :</span>{' '}
                               <span className="font-medium text-gray-900">
-                                {verification.id_type === 'passport' ? 'Passeport' : verification.id_type === 'cin' ? 'CIN' : verification.id_type}
+                                {verification.id_type === 'passport' ? fr.reservations.docPassport : verification.id_type === 'cin' ? fr.reservations.docCin : verification.id_type}
                               </span>
                             </div>
                           )}
                           <div>
-                            <span className="text-gray-500">Vérification :</span>{' '}
+                            <span className="text-gray-500">{fr.reservations.guestVerificationLabel} :</span>{' '}
                             <span className={`font-medium ${verification?.status === 'approved' ? 'text-slate-800' : verification?.status === 'rejected' ? 'text-red-600' : verification?.status === 'pending' ? 'text-amber-700' : 'text-gray-500'}`}>
-                              {verification?.status === 'approved' ? fr.reservations.statusCheckedIn : verification?.status === 'rejected' ? 'Rejetée' : verification?.status === 'pending' ? fr.reservations.statusPending : fr.reservations.statusNotStarted}
+                              {verification?.status === 'approved' ? fr.reservations.statusCheckedIn : verification?.status === 'rejected' ? fr.reservations.rejectedStatus : verification?.status === 'pending' ? fr.reservations.statusPending : fr.reservations.statusNotStarted}
                             </span>
                             {verification?.document_confidence != null && (
                               <span className="ml-2 text-xs text-gray-400">
@@ -401,16 +450,16 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
                           onClick={() => {
                             void handleBlacklistGuest(reservation, guest);
                           }}
-                          className="mt-3 inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+                          className={`mt-3 inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${ctaTokens.dangerSoft}`}
                         >
-                          Bloquer cet invité
+                          {fr.reservations.blockGuestAction}
                         </button>
                       </div>
                     )}
 
                     {verification && (verification.id_document_url?.startsWith('http') || verification.selfie_url?.startsWith('http')) && (
                       <div className="bg-white rounded-lg border border-gray-200 p-3">
-                        <p className="text-xs font-medium text-gray-700 mb-2">Identité</p>
+                        <p className="text-xs font-medium text-gray-700 mb-2">{fr.reservations.identitySectionTitle}</p>
                         <SecurityNotice className="mb-3" />
                         <div className="flex gap-3 flex-wrap">
                           {verification.id_document_url?.startsWith('http') && (
@@ -447,24 +496,26 @@ export function ReservationsPage({ reservations, properties, onUpdate, onAdd, on
                     <div className="flex gap-2 pt-1">
                       {reservation.status === 'pending' && (
                         <button
+                          type="button"
                           onClick={() => onUpdate(reservation.id, { status: 'checked_in' })}
-                          className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium"
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${ctaTokens.secondary}`}
                         >
-                          Valider le check-in
+                          {fr.reservations.approveCheckin}
                         </button>
                       )}
                       {reservation.status === 'checked_in' && (
                         <button
+                          type="button"
                           onClick={() => onUpdate(reservation.id, { status: 'completed' })}
-                          className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm font-medium"
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${ctaTokens.secondary}`}
                         >
-                          Marquer comme terminé
+                          {fr.reservations.markComplete}
                         </button>
                       )}
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })
         )}

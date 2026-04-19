@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Languages, PencilLine } from "lucide-react";
 import { fr } from "../lib/i18n/fr";
+import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
 import {
   interpolateMessageTemplate,
   messageTemplateLocales,
@@ -65,14 +67,14 @@ export function CheckinMessageTemplates({
 
   if (!checkinLink) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+      <Card variant="ghost" padding="sm" className="text-sm text-slate-600">
         Lien de check-in indisponible.
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+    <Card variant="default" padding="md" className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">
@@ -119,7 +121,7 @@ export function CheckinMessageTemplates({
               }}
               className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
                 active
-                  ? "border-slate-900 bg-slate-900 text-white"
+                  ? "border-slate-900 bg-white text-slate-900"
                   : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
               }`}
             >
@@ -166,25 +168,23 @@ export function CheckinMessageTemplates({
       {copyError ? <p className="text-xs text-red-600">{copyError}</p> : null}
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={handleCopy}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
         >
           {copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
           <span>{fr.checkins.copyMessage}</span>
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="secondary"
           onClick={() => setIsEditing((previous) => !previous)}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
         >
           <PencilLine size={16} aria-hidden="true" />
           <span>
             {isEditing ? fr.checkins.cancelCustomize : fr.checkins.customize}
           </span>
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

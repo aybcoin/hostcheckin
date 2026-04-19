@@ -1,3 +1,5 @@
+import { Card } from '../ui/Card';
+
 interface PricingToggleProps {
   billingCycle: 'monthly' | 'yearly';
   onChange: (cycle: 'monthly' | 'yearly') => void;
@@ -5,7 +7,7 @@ interface PricingToggleProps {
 
 export function PricingToggle({ billingCycle, onChange }: PricingToggleProps) {
   return (
-    <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+    <Card variant="default" padding="sm" className="inline-flex items-center gap-1">
       <button
         type="button"
         onClick={() => onChange('monthly')}
@@ -31,6 +33,6 @@ export function PricingToggle({ billingCycle, onChange }: PricingToggleProps) {
       <span className="ml-2 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
         Économisez 20 %
       </span>
-    </div>
+    </Card>
   );
 }

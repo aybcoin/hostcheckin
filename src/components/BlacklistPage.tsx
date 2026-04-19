@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Ban, Plus, Trash2 } from 'lucide-react';
 import { supabase, BlacklistedGuest } from '../lib/supabase';
 import { fr } from '../lib/i18n/fr';
-import { ctaTokens } from '../lib/design-tokens';
+import { inputTokens } from '../lib/design-tokens';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 interface BlacklistPageProps {
   hostId: string | null;
@@ -130,7 +132,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
         </p>
       </header>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <Card as="section" variant="default" padding="md">
         <h2 className="text-lg font-semibold text-slate-900">Ajouter un invité</h2>
         <p className="mt-1 text-sm text-slate-600">
           Renseignez au moins un identifiant : e-mail, téléphone ou numéro de document.
@@ -146,7 +148,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
               type="text"
               value={form.full_name}
               onChange={(event) => setForm((previous) => ({ ...previous, full_name: event.target.value }))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className={inputTokens.base}
             />
           </div>
           <div className="space-y-1">
@@ -158,7 +160,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
               type="email"
               value={form.email}
               onChange={(event) => setForm((previous) => ({ ...previous, email: event.target.value }))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className={inputTokens.base}
             />
           </div>
           <div className="space-y-1">
@@ -170,7 +172,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
               type="text"
               value={form.phone}
               onChange={(event) => setForm((previous) => ({ ...previous, phone: event.target.value }))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className={inputTokens.base}
               placeholder={fr.profile.phonePlaceholder}
             />
           </div>
@@ -183,7 +185,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
               type="text"
               value={form.document_number}
               onChange={(event) => setForm((previous) => ({ ...previous, document_number: event.target.value }))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className={inputTokens.base}
             />
           </div>
           <div className="space-y-1 sm:col-span-2">
@@ -195,30 +197,30 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
               value={form.reason}
               onChange={(event) => setForm((previous) => ({ ...previous, reason: event.target.value }))}
               rows={3}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className={inputTokens.base}
             />
           </div>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={handleAdd}
           disabled={!isFormValid || saving}
           title={!isFormValid ? fr.blacklist.addHint : undefined}
-          className={`mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ctaTokens.primary}`}
+          className="mt-4"
         >
           <Plus size={16} />
           {saving ? 'Ajout…' : fr.blacklist.addButton}
-        </button>
+        </Button>
 
         {error ? (
           <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </p>
         ) : null}
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <Card as="section" variant="default" padding="md">
         <h2 className="text-lg font-semibold text-slate-900">Invités blacklistés</h2>
 
         {loading ? (
@@ -230,20 +232,20 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
         ) : (
           <div className="mt-4 space-y-3">
             {items.map((item) => (
-              <article key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <Card key={item.id} as="article" variant="ghost" padding="sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-900">{item.full_name}</p>
                     <p className="text-xs text-slate-500">Ajouté le {formatDate(item.created_at)}</p>
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="tertiary"
                     onClick={() => handleDelete(item.id)}
                     aria-label="Retirer cet invité de la liste noire"
-                    className="rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-100"
+                    className="p-1.5 text-red-600 no-underline hover:no-underline"
                   >
                     <Trash2 size={16} />
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="mt-2 grid gap-1 text-sm text-slate-600 sm:grid-cols-2">
@@ -252,18 +254,18 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
                   <p><strong>Document :</strong> {item.document_number || '—'}</p>
                   <p><strong>Raison :</strong> {item.reason}</p>
                 </div>
-              </article>
+              </Card>
             ))}
           </div>
         )}
-      </section>
+      </Card>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <Card variant="danger" padding="sm">
         <div className="flex items-center gap-2">
           <Ban size={16} />
           La correspondance est vérifiée lors de la création d’une réservation.
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

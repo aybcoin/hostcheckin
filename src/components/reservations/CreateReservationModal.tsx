@@ -3,6 +3,7 @@ import { X, Plus, QrCode, PenLine } from 'lucide-react';
 import { Property, APP_BASE_URL, Reservation, ReservationCreateInput } from '../../lib/supabase';
 import { supabase } from '../../lib/supabase';
 import { fr } from '../../lib/i18n/fr';
+import { ctaTokens, iconButtonToken, inputTokens, modalTokens, statusTokens } from '../../lib/design-tokens';
 
 interface ReservationMutationError {
   message: string;
@@ -23,6 +24,7 @@ interface CreateReservationModalProps {
 }
 
 export function CreateReservationModal({ properties, onAdd, onClose }: CreateReservationModalProps) {
+  const modalTitleId = 'create-reservation-title';
   const [mode, setMode] = useState<'auto' | 'manual'>('manual');
   const [loading, setLoading] = useState(false);
   const [blacklistWarning, setBlacklistWarning] = useState<string | null>(null);
@@ -132,7 +134,7 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
     const match = computeBlacklistMatch(formData.guest_name, formData.guest_email, formData.guest_phone);
     if (match) {
       setBlacklistWarning(match);
-      alert("Création bloquée : cet invité correspond à un profil blacklisté.");
+      alert(fr.reservationCreate.blacklistBlockedAlert);
       return;
     }
     setLoading(true);
@@ -155,7 +157,7 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
       if (guestError) {
         console.error('Supabase error (guests):', guestError);
         alert(
-          `Erreur lors de la création de l'invité :\n` +
+          `${fr.reservationCreate.guestCreateErrorPrefix} :\n` +
           `${guestError.message}` +
           (guestError.details ? `\nDétails : ${guestError.details}` : '') +
           (guestError.hint ? `\nIndice : ${guestError.hint}` : '') +
@@ -182,7 +184,7 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
         const resError = addResult.error;
         console.error('Supabase error (reservations):', resError);
         alert(
-          `Erreur lors de la création de la réservation :\n` +
+          `${fr.reservationCreate.reservationCreateErrorPrefix} :\n` +
           `${resError.message}` +
           (resError.details ? `\nDétails : ${resError.details}` : '') +
           (resError.hint ? `\nIndice : ${resError.hint}` : '') +
@@ -203,7 +205,7 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
       };
       const supaMsg = errorLike.message || errorLike.error_description || errorLike.error || JSON.stringify(err);
       alert(
-        `Erreur lors de la création de la réservation :\n${supaMsg}` +
+        `${fr.reservationCreate.reservationCreateErrorPrefix} :\n${supaMsg}` +
         (errorLike.details ? `\nDétails : ${errorLike.details}` : '') +
         (errorLike.hint ? `\nIndice : ${errorLike.hint}` : '') +
         (errorLike.code ? `\nCode: ${errorLike.code}` : '')
@@ -214,11 +216,17 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity duration-200" onClick={onClose}>
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl transition-transform duration-200 animate-[fadeIn_0.2s_ease-out]" onClick={(e) => e.stopPropagation()}>
-        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Nouvelle réservation</h2>
-          <button onClick={onClose} aria-label="Fermer la création de réservation" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+    <div className={`${modalTokens.overlay} transition-opacity duration-200`} onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={modalTitleId}
+        className={`${modalTokens.panel} max-w-2xl transition-transform duration-200 animate-[fadeIn_0.2s_ease-out]`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 p-5">
+          <h2 id={modalTitleId} className="text-xl font-bold text-slate-900">{fr.reservationCreate.title}</h2>
+          <button type="button" onClick={onClose} aria-label={fr.reservationCreate.closeAria} className={iconButtonToken}>
             <X size={20} />
           </button>
         </div>
@@ -226,22 +234,24 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
         <div className="p-5">
           <div className="flex gap-2 mb-5">
             <button
+              type="button"
               onClick={() => setMode('auto')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'auto' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                mode === 'auto' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
               <QrCode size={16} />
-              Réservations automatiques
+              {fr.reservationCreate.autoModeLabel}
             </button>
             <button
+              type="button"
               onClick={() => setMode('manual')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'manual' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                mode === 'manual' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
               <PenLine size={16} />
-              Réservation manuelle
+              {fr.reservationCreate.manualModeLabel}
             </button>
           </div>
 
@@ -249,38 +259,40 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
             <div className="space-y-4">
               <div className="bg-slate-50 border-l-4 border-slate-900 p-4 rounded">
                 <p className="text-sm text-slate-700">
-                  Les réservations automatiques génèrent un lien réutilisable par propriété avec un QR code. Partagez ce lien avec vos invités pour qu'ils complètent automatiquement leur check-in.
+                  {fr.reservationCreate.autoHelp}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Propriété</label>
+                <label htmlFor="auto-property-id" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.propertyLabel}</label>
                 <select
+                  id="auto-property-id"
                   value={formData.property_id}
                   onChange={(e) => {
                     syncVerificationMode(e.target.value);
                     void loadBlacklistForProperty(e.target.value);
                   }}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+                  className={inputTokens.base}
                 >
-                  <option value="">Sélectionner une propriété</option>
+                  <option value="">{fr.reservationCreate.selectProperty}</option>
                   {properties.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
               </div>
               {selectedProp && (
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
-                  <div className="w-40 h-40 mx-auto bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center mb-3">
-                    <QrCode size={80} className="text-gray-400" />
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 text-center">
+                  <div className="w-40 h-40 mx-auto bg-white border-2 border-slate-300 rounded-lg flex items-center justify-center mb-3">
+                    <QrCode size={80} className="text-slate-400" />
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">QR Code pour "{selectedProp.name}"</p>
-                  <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200 max-w-md mx-auto">
-                    <span className="text-xs text-gray-500 truncate flex-1">{APP_BASE_URL}/auto/{selectedProp.id}</span>
+                  <p className="text-sm text-slate-600 mb-2">{fr.reservationCreate.qrForProperty(selectedProp.name)}</p>
+                  <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-slate-200 max-w-md mx-auto">
+                    <span className="text-xs text-slate-500 truncate flex-1">{APP_BASE_URL}/auto/{selectedProp.id}</span>
                     <button
+                      type="button"
                       onClick={() => navigator.clipboard.writeText(`${APP_BASE_URL}/auto/${selectedProp.id}`)}
-                      className="shrink-0 px-2 py-1 text-xs bg-slate-900 text-white rounded hover:bg-slate-800"
+                      className={`shrink-0 rounded px-2 py-1 text-xs ${ctaTokens.primary}`}
                     >
-                      Copier
+                      {fr.reservationCreate.copyLink}
                     </button>
                   </div>
                 </div>
@@ -289,17 +301,18 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Propriété</label>
+                <label htmlFor="reservation-property-id" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.propertyLabel}</label>
                 <select
+                  id="reservation-property-id"
                   value={formData.property_id}
                   onChange={(e) => {
                     syncVerificationMode(e.target.value);
                     void loadBlacklistForProperty(e.target.value);
                   }}
                   required
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+                  className={inputTokens.base}
                 >
-                  <option value="">Sélectionner une propriété</option>
+                  <option value="">{fr.reservationCreate.selectProperty}</option>
                   {properties.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
@@ -308,33 +321,36 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date d'arrivée</label>
+                  <label htmlFor="reservation-checkin" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.checkInDateLabel}</label>
                   <input
+                    id="reservation-checkin"
                     type="date"
                     value={formData.check_in_date}
                     onChange={(e) => setFormData({ ...formData, check_in_date: e.target.value })}
                     required
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+                    className={inputTokens.base}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de départ</label>
+                  <label htmlFor="reservation-checkout" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.checkOutDateLabel}</label>
                   <input
+                    id="reservation-checkout"
                     type="date"
                     value={formData.check_out_date}
                     onChange={(e) => setFormData({ ...formData, check_out_date: e.target.value })}
                     required
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+                    className={inputTokens.base}
                   />
                 </div>
               </div>
 
               <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-3 text-sm">Informations de l'invité</h3>
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">{fr.reservationCreate.guestInfoSection}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+                    <label htmlFor="guest-name" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.fullNameLabel}</label>
                     <input
+                      id="guest-name"
                       type="text"
                       value={formData.guest_name}
                       onChange={(e) => {
@@ -343,15 +359,16 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                         setBlacklistWarning(computeBlacklistMatch(nextValue, formData.guest_email, formData.guest_phone));
                       }}
                       required
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
-                      placeholder="Jean Dupont"
+                      className={inputTokens.base}
+                      placeholder={fr.reservationCreate.fullNamePlaceholder}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email <span className="text-gray-400 font-normal">(optionnel)</span>
+                    <label htmlFor="guest-email" className="block text-sm font-medium text-slate-700 mb-1">
+                      {fr.reservationCreate.emailLabel} <span className="font-normal text-slate-400">{fr.reservationCreate.optionalLabel}</span>
                     </label>
                     <input
+                      id="guest-email"
                       type="email"
                       value={formData.guest_email}
                       onChange={(e) => {
@@ -359,13 +376,14 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                         setFormData({ ...formData, guest_email: nextValue });
                         setBlacklistWarning(computeBlacklistMatch(formData.guest_name, nextValue, formData.guest_phone));
                       }}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
-                      placeholder="email@exemple.com"
+                      className={inputTokens.base}
+                      placeholder={fr.reservationCreate.emailPlaceholder}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                    <label htmlFor="guest-phone" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.phoneLabel}</label>
                     <input
+                      id="guest-phone"
                       type="tel"
                       value={formData.guest_phone}
                       onChange={(e) => {
@@ -373,24 +391,25 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                         setFormData({ ...formData, guest_phone: nextValue });
                         setBlacklistWarning(computeBlacklistMatch(formData.guest_name, formData.guest_email, nextValue));
                       }}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+                      className={inputTokens.base}
                       placeholder={fr.profile.phonePlaceholder}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de voyageurs</label>
+                    <label htmlFor="guests-count" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.guestsCountLabel}</label>
                     <input
+                      id="guests-count"
                       type="number"
                       min="1"
                       value={formData.number_of_guests}
                       onChange={(e) => setFormData({ ...formData, number_of_guests: parseInt(e.target.value) || 1 })}
                       required
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+                      className={inputTokens.base}
                     />
                   </div>
                 </div>
                 {blacklistWarning ? (
-                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <p className={`mt-3 rounded-lg px-3 py-2 text-sm ${statusTokens.danger}`}>
                     {blacklistWarning}
                   </p>
                 ) : null}
@@ -398,21 +417,23 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Code de serrure connectée</label>
+                  <label htmlFor="smart-lock-code" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.lockCodeLabel}</label>
                   <input
+                    id="smart-lock-code"
                     type="text"
                     value={formData.smart_lock_code}
                     onChange={(e) => setFormData({ ...formData, smart_lock_code: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
-                    placeholder="Ex : 1234#"
+                    className={inputTokens.base}
+                    placeholder={fr.reservationCreate.lockCodePlaceholder}
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Ce code sera affiché automatiquement à votre invité après sa vérification d'identité réussie.
+                  <p className="mt-1 text-xs text-slate-500">
+                    {fr.reservationCreate.lockCodeHelp}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mode de vérification</label>
+                  <label htmlFor="verification-mode" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.verificationModeLabel}</label>
                   <select
+                    id="verification-mode"
                     value={formData.verification_type}
                     onChange={(e) => {
                       const nextMode = e.target.value as 'simple' | 'complete';
@@ -422,10 +443,10 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                         verification_mode: nextMode,
                       });
                     }}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+                    className={inputTokens.base}
                   >
-                    <option value="simple">Simple</option>
-                    <option value="complete">Complète</option>
+                    <option value="simple">{fr.reservationCreate.verificationSimple}</option>
+                    <option value="complete">{fr.reservationCreate.verificationComplete}</option>
                   </select>
                 </div>
               </div>
@@ -434,17 +455,17 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium disabled:opacity-50"
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium transition-colors disabled:opacity-50 ${ctaTokens.primary}`}
                 >
                   <Plus size={16} />
-                  {loading ? 'Création...' : 'Créer la réservation'}
+                  {loading ? fr.reservationCreate.submitLoading : fr.reservationCreate.submitLabel}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  className={`flex-1 rounded-lg py-3 text-sm font-medium transition-colors ${ctaTokens.subtle}`}
                 >
-                  Annuler
+                  {fr.reservationCreate.cancelLabel}
                 </button>
               </div>
             </form>

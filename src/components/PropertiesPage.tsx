@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, CreditCard as Edit, Trash2, MapPin, Users, Link as LinkIcon, QrCode, X } from 'lucide-react';
 import { Property, PropertyCreateInput } from '../lib/supabase';
+import { inputTokens } from '../lib/design-tokens';
 import { VerificationModeCard } from './properties/VerificationModeCard';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 interface PropertiesPageProps {
   properties: Property[];
@@ -142,38 +145,40 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
         </div>
         {canAddMore && (
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="secondary"
               onClick={() => setShowAirbnbImport(true)}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-white border-2 border-slate-900 text-slate-900 rounded-lg hover:bg-slate-50 transition-all text-sm"
+              className="border-2 border-slate-900 text-slate-900"
             >
               <LinkIcon size={18} />
               <span className="hidden sm:inline">Importer Airbnb</span>
               <span className="sm:hidden">Airbnb</span>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all text-sm"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">Ajouter manuellement</span>
               <span className="sm:hidden">Ajouter</span>
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {showAirbnbImport && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+          <Card variant="highlight" padding="sm" className="max-w-lg w-full shadow-2xl">
             <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Importer depuis Airbnb</h2>
-              <button
+              <Button
+                variant="tertiary"
                 onClick={() => setShowAirbnbImport(false)}
                 aria-label="Fermer la fenêtre d’import Airbnb"
-                className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+                className="p-2 no-underline hover:no-underline"
               >
                 <X size={24} />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 sm:p-6 space-y-4">
@@ -197,35 +202,37 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                   value={airbnbUrl}
                   onChange={(e) => setAirbnbUrl(e.target.value)}
                   placeholder="https://www.airbnb.com/rooms/..."
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                  className={inputTokens.base}
                 />
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
+                  variant="primary"
+                  fullWidth
                   onClick={handleAirbnbImport}
                   disabled={!airbnbUrl || importing}
-                  className="flex-1 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {importing ? 'Importation...' : 'Importer'}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  fullWidth
                   onClick={() => {
                     setShowAirbnbImport(false);
                     setAirbnbUrl('');
                   }}
-                  className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 transition-all"
                 >
                   Annuler
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {showForm && (
-        <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <Card variant="default" padding="lg" className="p-4 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
@@ -234,7 +241,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={inputTokens.base}
               />
               <input
                 type="text"
@@ -242,7 +249,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 required
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={inputTokens.base}
               />
               <input
                 type="text"
@@ -250,7 +257,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 required
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={inputTokens.base}
               />
               <input
                 type="text"
@@ -258,7 +265,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 required
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={inputTokens.base}
               />
               <input
                 type="number"
@@ -266,7 +273,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                 placeholder="Chambres"
                 value={formData.rooms_count}
                 onChange={(e) => setFormData({ ...formData, rooms_count: parseInt(e.target.value) })}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={inputTokens.base}
               />
               <input
                 type="number"
@@ -274,7 +281,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                 placeholder="Salles de bain"
                 value={formData.bathrooms_count}
                 onChange={(e) => setFormData({ ...formData, bathrooms_count: parseInt(e.target.value) })}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={inputTokens.base}
               />
               <input
                 type="number"
@@ -282,7 +289,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                 placeholder="Nombre max d'hôtes"
                 value={formData.max_guests}
                 onChange={(e) => setFormData({ ...formData, max_guests: parseInt(e.target.value) })}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={inputTokens.base}
               />
               <select
                 value={formData.verification_mode}
@@ -292,7 +299,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                     verification_mode: e.target.value as 'simple' | 'complete',
                   })
                 }
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={inputTokens.base}
               >
                 <option value="simple">Vérification simple</option>
                 <option value="complete">Vérification complète</option>
@@ -302,34 +309,36 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
               placeholder="Description (optionnel)"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-base"
+              className={inputTokens.base}
               rows={3}
             />
             <div className="flex gap-3">
-              <button
+              <Button
                 type="submit"
-                className="flex-1 bg-slate-900 text-white py-2.5 rounded-lg hover:bg-slate-800 transition-all"
+                variant="primary"
+                fullWidth
               >
                 {editingId ? 'Mettre à jour' : 'Ajouter'}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => {
                   setShowForm(false);
                   setEditingId(null);
                 }}
-                className="flex-1 bg-gray-200 text-gray-800 py-2.5 rounded-lg hover:bg-gray-300 transition-all"
+                variant="secondary"
+                fullWidth
               >
                 Annuler
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {properties.map((property) => (
-          <div key={property.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+          <Card key={property.id} variant="highlight" padding="sm" interactive className="overflow-hidden p-0">
             {property.image_url && (
               <img src={property.image_url} alt={property.name} className="w-full h-36 sm:h-48 object-cover" />
             )}
@@ -355,7 +364,9 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
               )}
 
               <div className="flex gap-2 mt-4">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => {
                     setEditingId(property.id);
                     setFormData({
@@ -371,25 +382,29 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                   });
                   setShowForm(true);
                 }}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 border border-slate-900 text-slate-900 rounded-lg hover:bg-slate-50 transition-all text-sm"
+                  className="flex-1 justify-center border-slate-900 text-slate-900"
                 >
                   <Edit size={16} />
                   <span>Éditer</span>
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => onOpenAutoLink(property.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm"
+                  className="flex-1 justify-center"
                 >
                   <QrCode size={16} />
                   <span>Lien auto</span>
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="dangerSoft"
+                  size="sm"
                   onClick={() => onDelete(property.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-all text-sm"
+                  className="flex-1 justify-center"
                 >
                   <Trash2 size={16} />
                   <span>Supprimer</span>
-                </button>
+                </Button>
               </div>
 
               <VerificationModeCard
@@ -400,14 +415,14 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                 }}
               />
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {!canAddMore && properties.length === 3 && (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center text-slate-700">
+        <Card variant="ghost" padding="sm" className="text-center text-slate-700">
           Vous avez atteint le maximum de 3 propriétés
-        </div>
+        </Card>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarPlus2, CheckCircle2, FileSignature } from 'lucide-react';
 import { Reservation, supabase } from '../../lib/supabase';
+import { Card } from '../ui/Card';
 
 interface RecentActivitiesProps {
   reservations: Reservation[];
@@ -108,7 +109,7 @@ export function RecentActivities({ reservations }: RecentActivitiesProps) {
   }, [contracts, reservations]);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <Card as="section" variant="default" padding="md">
       <h3 className="text-lg font-semibold text-slate-900">Activités récentes</h3>
       <p className="text-sm text-slate-600">Les 5 derniers événements importants.</p>
 
@@ -148,6 +149,6 @@ export function RecentActivities({ reservations }: RecentActivitiesProps) {
           })}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }

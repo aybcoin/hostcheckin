@@ -1,4 +1,5 @@
 import { Reservation } from '../../lib/supabase';
+import { Card } from '../ui/Card';
 
 interface CalendarGridProps {
   currentMonth: Date;
@@ -72,7 +73,7 @@ export function CalendarGrid({ currentMonth, reservations, guests, filter, onRes
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <Card variant="default" padding="sm" className="overflow-hidden p-0">
       <div className="grid grid-cols-7">
         {WEEKDAYS.map((d) => (
           <div key={d} className="p-2 text-center text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200">
@@ -123,6 +124,6 @@ export function CalendarGrid({ currentMonth, reservations, guests, filter, onRes
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

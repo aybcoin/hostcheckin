@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { MessageCircleMore, MessageSquareText, Mail, BookOpen } from "lucide-react";
 import { fr } from "../lib/i18n/fr";
 
@@ -12,6 +12,7 @@ const getSupportConfig = () => {
 export function SupportButton() {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const menuId = useId();
   const { whatsapp, email } = getSupportConfig();
 
   useEffect(() => {
@@ -48,9 +49,9 @@ export function SupportButton() {
         aria-label={fr.sidebar.supportAria}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-controls="support-menu"
+        aria-controls={menuId}
         onClick={() => setOpen((prev) => !prev)}
-        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800/70 text-slate-100 hover:bg-slate-700 transition-colors border border-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        className="w-full flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-800/70 px-4 py-3 text-slate-100 transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
       >
         <MessageCircleMore size={18} />
         <span className="text-sm font-medium">{fr.support.title}</span>
@@ -58,9 +59,9 @@ export function SupportButton() {
 
       {open && (
         <div
-          id="support-menu"
+          id={menuId}
           role="menu"
-          className="absolute left-0 right-0 bottom-14 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50"
+          className="absolute bottom-14 left-0 right-0 z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
         >
           {whatsappHref ? (
             <a
@@ -69,7 +70,8 @@ export function SupportButton() {
               rel="noopener noreferrer"
               role="menuitem"
               aria-label={fr.support.whatsappHelp}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+              onClick={() => setOpen(false)}
             >
               <MessageSquareText size={16} className="text-slate-700" />
               <span>{fr.support.whatsapp}</span>
@@ -90,7 +92,8 @@ export function SupportButton() {
               href={emailHref}
               role="menuitem"
               aria-label={fr.support.emailHelp}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors border-t border-slate-100"
+              className="w-full flex items-center gap-3 border-t border-slate-100 px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+              onClick={() => setOpen(false)}
             >
               <Mail size={16} className="text-slate-700" />
               <span>{fr.support.email}</span>
@@ -110,7 +113,8 @@ export function SupportButton() {
             href="/help"
             role="menuitem"
             aria-label={fr.support.documentationHelp}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors border-t border-slate-100"
+            className="w-full flex items-center gap-3 border-t border-slate-100 px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            onClick={() => setOpen(false)}
           >
             <BookOpen size={16} className="text-slate-700" />
             <span>{fr.support.documentation}</span>

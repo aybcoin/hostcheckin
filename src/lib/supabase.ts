@@ -141,3 +141,22 @@ export interface Contract {
   content_hash?: string;
   created_at: string;
 }
+
+export interface OnboardingStep {
+  id: string;
+  host_id: string;
+  step_key: string;
+  icon_name: string;
+  title: string;
+  description: string;
+  estimate_label: string;
+  position: number;
+  cta_label?: string | null;
+  cta_page?: string | null;
+  cta_external_url?: string | null;
+  depends_on_step_key?: string | null;
+  is_enabled: boolean;
+  completed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}

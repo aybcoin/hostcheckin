@@ -1,4 +1,6 @@
 import { Check } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 
 interface PricingCardProps {
   name: string;
@@ -25,18 +27,18 @@ export function PricingCard({
   const suffix = billingCycle === 'monthly' ? '/mois' : '/an';
 
   return (
-    <article
-      className={`rounded-2xl border bg-white p-6 shadow-sm transition-shadow hover:shadow-md ${
-        recommended
-          ? 'border-slate-900 ring-1 ring-slate-900'
-          : 'border-slate-200'
-      }`}
+    <Card
+      as="article"
+      variant={recommended ? 'highlight' : 'default'}
+      padding="lg"
+      interactive
+      className={recommended ? 'border-slate-900 ring-1 ring-slate-900' : ''}
     >
       <div className="mb-5">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-semibold text-slate-900">{name}</h3>
           {recommended ? (
-            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
+            <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
               Recommandé
             </span>
           ) : null}
@@ -64,16 +66,9 @@ export function PricingCard({
         </ul>
       )}
 
-      <button
-        type="button"
-        className={`mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-          recommended
-            ? 'bg-slate-900 text-white hover:bg-slate-800'
-            : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-        }`}
-      >
+      <Button type="button" variant={recommended ? 'primary' : 'secondary'} className="mt-6 w-full justify-center">
         Choisir ce plan
-      </button>
-    </article>
+      </Button>
+    </Card>
   );
 }
