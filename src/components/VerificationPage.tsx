@@ -4,6 +4,18 @@ import {
   ShieldCheck, ShieldX, Loader2, Info
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { clsx } from '../lib/clsx';
+import {
+  borderTokens,
+  ctaTokens,
+  inputTokens,
+  stateFillTokens,
+  statusTokens,
+  surfaceTokens,
+  textTokens,
+} from '../lib/design-tokens';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 interface VerificationPageProps {
   uniqueLink: string;
@@ -163,7 +175,7 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
         guest_id: 'demo-guest',
         smart_lock_code: '1234#',
         guests: {
-          full_name: 'Invité Démo',
+          full_name: 'Voyageur Démo',
           email: 'demo@hostcheckin.app',
           phone: '+212600000000',
         },
@@ -314,11 +326,11 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
     // No custom template — generate a default contract text
     return `CONTRAT DE LOCATION COURTE DURÉE
 
-Propriété : ${property.name}
+Logement : ${property.name}
 Adresse : ${property.address}, ${property.city}
 Arrivée : ${new Date(reservation.check_in_date).toLocaleDateString('fr-FR')}
 Départ : ${new Date(reservation.check_out_date).toLocaleDateString('fr-FR')}
-Invités : ${reservation.number_of_guests}
+Voyageurs : ${reservation.number_of_guests}
 Référence : ${reservation.booking_reference}
 
 Règles :
@@ -484,7 +496,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
     const currentReservation = reservation;
     const trimmedName = (declaredName || '').trim();
     if (!trimmedName) {
-      alert("Veuillez renseigner votre nom complet.");
+      alert("Renseignez votre nom complet.");
       return;
     }
     setKycLoading(true);
@@ -516,7 +528,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       const backUrl = idBackFile ? await uploadFile(idBackFile, 'id_back', 'ID back') : null;
 
       if (!frontUrl) {
-        alert("Erreur lors de l'envoi du document. Veuillez réessayer.");
+        alert("Erreur lors de l'envoi du document. Réessayez.");
         setKycLoading(false);
         return;
       }
@@ -565,11 +577,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
           message = "La photo du document est trop volumineuse. Essayez avec une photo plus petite ou mieux cadrée.";
         } else if (kycResponse.status >= 500) {
           message = serverReason
-            ? `Erreur du service : ${serverReason}. Veuillez réessayer dans quelques instants.`
-            : "Le service de vérification est momentanément indisponible. Veuillez réessayer dans quelques instants.";
+            ? `Erreur du service : ${serverReason}. Réessayez dans quelques instants.`
+            : "Le service de vérification est momentanément indisponible. Réessayez dans quelques instants.";
         } else {
           message = serverReason
-            || "Le service de vérification a refusé la demande. Veuillez réessayer.";
+            || "Le service de vérification a refusé la demande. Réessayez.";
         }
 
         console.error('KYC verification HTTP error:', {
@@ -632,7 +644,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         confidence: 0,
         is_valid_document: false,
         rejection_reason:
-          "Erreur réseau pendant la vérification. Veuillez réessayer.",
+          "Erreur réseau pendant la vérification. Réessayez.",
       });
     } finally {
       setKycLoading(false);
@@ -666,7 +678,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       // Fix #9: Guard against signing an empty contract — this would
       // produce a legally worthless document.
       if (!renderedContract.trim()) {
-        alert("Le contrat n'a pas pu être chargé. Veuillez rafraîchir la page et réessayer.");
+        alert("Le contrat n'a pas pu être chargé. Rafraîchissez la page puis réessayez.");
         setSubmitting(false);
         return;
       }
@@ -727,7 +739,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       const contractId = contractData.contract_id as string | undefined;
 
       if (!contractId) {
-        alert("Le contrat n'a pas pu être enregistré. Veuillez réessayer.");
+        alert("Le contrat n'a pas pu être enregistré. Réessayez.");
         setSubmitting(false);
         return;
       }
@@ -774,7 +786,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       setStep(4);
     } catch (error) {
       console.error('Error submitting verification:', error);
-      alert('Erreur lors de la soumission. Veuillez réessayer.');
+      alert('Erreur lors de la soumission. Réessayez.');
     } finally {
       setSubmitting(false);
     }
@@ -794,16 +806,16 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   if (loadState === 'not_found') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-600" />
+        <Card variant="highlight" padding="lg" className="w-full max-w-md text-center">
+          <div className={clsx("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", stateFillTokens.danger)}>
+            <AlertCircle className={clsx("w-8 h-8", textTokens.danger)} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Lien invalide</h1>
-          <p className="text-gray-600">
+          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>Lien invalide</h1>
+          <p className={textTokens.muted}>
             Ce lien de check-in n'est pas valide ou la réservation n'existe plus.
             Contactez votre hôte pour obtenir un nouveau lien.
           </p>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -811,21 +823,18 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   if (loadState === 'error') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-orange-600" />
+        <Card variant="highlight" padding="lg" className="w-full max-w-md text-center">
+          <div className={clsx("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", stateFillTokens.warning)}>
+            <AlertCircle className={clsx("w-8 h-8", textTokens.warning)} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Erreur de chargement</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>Erreur de chargement</h1>
+          <p className={clsx("mb-6", textTokens.muted)}>
             Impossible de charger votre réservation. Vérifiez votre connexion internet.
           </p>
-          <button
-            onClick={fetchReservation}
-            className="px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
-          >
+          <Button onClick={fetchReservation} variant="primary">
             Réessayer
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -833,48 +842,48 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   if (step === 4) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check className="w-8 h-8 text-slate-800" />
+        <Card variant="highlight" padding="lg" className="w-full max-w-md text-center">
+          <div className={clsx("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", stateFillTokens.neutral)}>
+            <Check className={clsx("w-8 h-8", textTokens.body)} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Check-in terminé !</h1>
-          <p className="text-gray-600 mb-4">
+          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>Check-in terminé !</h1>
+          <p className={clsx("mb-4", textTokens.muted)}>
             Merci d'avoir complété votre check-in. Votre hôte a été notifié.
           </p>
           {kycResult && (
             <div className="mb-4 flex items-center justify-center gap-2">
               {kycResult.confidence >= 0.7 ? (
-                <ShieldCheck className="w-5 h-5 text-slate-800" />
+                <ShieldCheck className={clsx("w-5 h-5", textTokens.body)} />
               ) : (
-                <ShieldCheck className="w-5 h-5 text-amber-500" />
+                <ShieldCheck className={clsx("w-5 h-5", textTokens.warning)} />
               )}
-              <span className="text-sm text-gray-600">
+              <span className={clsx("text-sm", textTokens.muted)}>
                 Vérification d'identité : {Math.round(kycResult.confidence * 100)} % de confiance
               </span>
             </div>
           )}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-            <p className="text-sm text-slate-700">
+          <div className={clsx("border rounded-lg p-4", surfaceTokens.subtle, borderTokens.default)}>
+            <p className={clsx("text-sm", textTokens.body)}>
               Conservez ce lien au cas où vous auriez besoin de le consulter.
             </p>
           </div>
           {reservation?.smart_lock_code ? (
-            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-left">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <div className={clsx("mt-4 rounded-lg border p-4 text-left", borderTokens.default, surfaceTokens.subtle)}>
+              <p className={clsx("text-xs font-medium uppercase tracking-wide", textTokens.subtle)}>
                 Félicitations, voici votre code d’accès
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
+              <p className={clsx("mt-2 text-2xl font-bold", textTokens.title)}>
                 {reservation.smart_lock_code}
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className={clsx("mt-1 text-xs", textTokens.subtle)}>
                 Ce code est activé pour la période de votre séjour.
               </p>
             </div>
           ) : null}
-          <p className="text-[11px] text-gray-400 mt-4">
+          <p className={clsx("text-[11px] mt-4", textTokens.subtle)}>
             Votre adresse IP, navigateur et horodatage ont été enregistrés conformément à la loi marocaine n° 53-05 du 30 novembre 2007 relative à l'échange électronique de données juridiques.
           </p>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -884,23 +893,23 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-4">
       <div className="max-w-lg mx-auto py-4 sm:py-8">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <Card variant="highlight" padding="sm" className="overflow-hidden p-0">
           <div className="bg-gradient-to-r from-slate-900 to-slate-700 p-5 text-white">
             <div className="flex items-center gap-3 mb-3">
               <Building2 className="w-7 h-7" />
               <h1 className="text-xl font-bold">HostCheckIn</h1>
             </div>
             <h2 className="text-lg font-semibold">{property?.name}</h2>
-            <p className="text-slate-200 text-sm mt-1">
+            <p className="text-white/80 text-sm mt-1">
               Réf. : {reservation?.booking_reference}
             </p>
-            <div className="flex gap-4 mt-3 text-sm text-slate-200">
+            <div className="flex gap-4 mt-3 text-sm text-white/80">
               <span>Du {reservation ? new Date(reservation.check_in_date).toLocaleDateString('fr-FR') : '—'}</span>
               <span>au {reservation ? new Date(reservation.check_out_date).toLocaleDateString('fr-FR') : '—'}</span>
             </div>
           </div>
 
-          <div className="px-4 py-3 bg-gray-50 border-b">
+          <div className={clsx("px-4 py-3 border-b", surfaceTokens.subtle, borderTokens.default)}>
             <div className="flex items-center justify-between">
               {[
                 { num: 1, label: 'Identité' },
@@ -909,21 +918,20 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
               ].map((s, i) => (
                 <div key={s.num} className="flex items-center">
                   {i > 0 && (
-                    <div className={`w-8 sm:w-12 h-0.5 mx-1 ${step >= s.num ? 'bg-slate-700' : 'bg-gray-300'}`} />
+                    <div className={clsx("w-8 sm:w-12 h-0.5 mx-1", step >= s.num ? stateFillTokens.neutral : surfaceTokens.muted)} />
                   )}
                   <div className="flex items-center gap-1.5">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                    <div className={clsx(
+                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
                       step > s.num
-                        ? 'bg-slate-700 text-white'
+                        ? `${stateFillTokens.neutral} ${textTokens.inverse}`
                         : step === s.num
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-gray-300 text-gray-600'
-                    }`}>
+                          ? ctaTokens.primary
+                          : `${surfaceTokens.muted} ${textTokens.muted}`,
+                    )}>
                       {step > s.num ? <Check className="w-4 h-4" /> : s.num}
                     </div>
-                    <span className={`text-xs font-medium hidden sm:inline ${
-                      step >= s.num ? 'text-slate-700' : 'text-gray-400'
-                    }`}>
+                    <span className={clsx("text-xs font-medium hidden sm:inline", step >= s.num ? textTokens.body : textTokens.subtle)}>
                       {s.label}
                     </span>
                   </div>
@@ -936,51 +944,51 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             {step === 1 && (
               <div className="space-y-5">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Vos informations</h3>
-                  <p className="text-sm text-gray-600">Confirmez votre identité avant la vérification du document</p>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>Vos informations</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>Confirmez votre identité avant la vérification du document</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Nom complet <span className="text-red-500">*</span>
+                  <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                    Nom complet <span className={textTokens.danger}>*</span>
                   </label>
                   <input
                     type="text"
                     value={declaredName}
                     onChange={(e) => setDeclaredName(e.target.value)}
                     placeholder="Tel qu'indiqué sur votre pièce d'identité"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-500 outline-none text-base"
+                    className={clsx(inputTokens.base, "text-base")}
                     autoComplete="name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Email <span className="text-gray-400 font-normal">(optionnel)</span>
+                  <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                    Email <span className={clsx("font-normal", textTokens.subtle)}>(optionnel)</span>
                   </label>
                   <input
                     type="email"
                     value={declaredEmail}
                     onChange={(e) => setDeclaredEmail(e.target.value)}
                     placeholder="email@exemple.com"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-500 outline-none text-base"
+                    className={clsx(inputTokens.base, "text-base")}
                     autoComplete="email"
                   />
                 </div>
 
-                <div className="pt-2 border-t border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Pièce d'identité</h3>
-                  <p className="text-sm text-gray-600">Votre document sera vérifié automatiquement</p>
+                <div className={clsx("pt-2 border-t", borderTokens.default)}>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>Pièce d'identité</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>Votre document sera vérifié automatiquement</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
                     Type de document
                   </label>
                   <select
                     value={idType}
                     onChange={(e) => { setIdType(e.target.value); setKycResult(null); }}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-500 outline-none text-base"
+                    className={clsx(inputTokens.base, "text-base")}
                   >
                     <option value="">Sélectionner</option>
                     <option value="cin">Carte d'identité nationale</option>
@@ -991,34 +999,37 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
                     Photo recto
                   </label>
                   <label
                     htmlFor="id-front"
-                    className={`block border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                      idFrontFile ? 'border-slate-400 bg-slate-100' : 'border-gray-300 hover:border-slate-400'
-                    }`}
+                    className={clsx(
+                      "block border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+                      idFrontFile
+                        ? `${borderTokens.strong} ${surfaceTokens.muted}`
+                        : `${borderTokens.strong} hover:opacity-90`,
+                    )}
                   >
                     {idFrontPreview ? (
                       <div className="space-y-2">
                         <img src={idFrontPreview} alt="Aperçu" className="max-h-32 mx-auto rounded-lg object-contain" />
-                        <div className="flex items-center justify-center gap-2 text-slate-700">
+                        <div className={clsx("flex items-center justify-center gap-2", textTokens.body)}>
                           <Check className="w-4 h-4" />
                           <span className="text-sm font-medium">{idFrontFile?.name}</span>
                         </div>
                         <button
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdFrontFile(null); setKycResult(null); }}
-                          className="text-xs text-red-500 hover:text-red-700"
+                          className={clsx("text-xs hover:opacity-90", textTokens.danger)}
                         >
                           Supprimer
                         </button>
                       </div>
                     ) : (
                       <>
-                        <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                        <span className="text-slate-700 font-medium text-sm">
+                        <Upload className={clsx("w-10 h-10 mx-auto mb-2", textTokens.subtle)} />
+                        <span className={clsx("font-medium text-sm", textTokens.body)}>
                           Prendre une photo ou choisir un fichier
                         </span>
                       </>
@@ -1034,22 +1045,25 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Photo verso <span className="text-gray-400 font-normal">(optionnel)</span>
+                  <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                    Photo verso <span className={clsx("font-normal", textTokens.subtle)}>(optionnel)</span>
                   </label>
                   <label
                     htmlFor="id-back"
-                    className={`block border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                      idBackFile ? 'border-slate-400 bg-slate-100' : 'border-gray-300 hover:border-slate-400'
-                    }`}
+                    className={clsx(
+                      "block border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+                      idBackFile
+                        ? `${borderTokens.strong} ${surfaceTokens.muted}`
+                        : `${borderTokens.strong} hover:opacity-90`,
+                    )}
                   >
                     {idBackFile ? (
-                      <div className="flex items-center justify-center gap-2 text-slate-700">
+                      <div className={clsx("flex items-center justify-center gap-2", textTokens.body)}>
                         <Check className="w-5 h-5" />
                         <span className="font-medium text-sm">{idBackFile.name}</span>
                       </div>
                     ) : (
-                      <span className="text-gray-500 text-sm">Ajouter le verso si applicable</span>
+                      <span className={clsx("text-sm", textTokens.subtle)}>Ajouter le verso si applicable</span>
                     )}
                     <input
                       type="file"
@@ -1062,15 +1076,15 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 </div>
 
                 {kycResult && kycResult.status === 'rejected' && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className={clsx("rounded-lg p-4", statusTokens.danger)}>
                     <div className="flex items-start gap-3">
-                      <ShieldX className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                      <ShieldX className={clsx("w-5 h-5 shrink-0 mt-0.5", textTokens.danger)} />
                       <div>
-                        <p className="font-semibold text-red-800 text-sm">Document rejeté</p>
-                        <p className="text-sm text-red-700 mt-1">
-                          {kycResult.rejection_reason || "Le document soumis n'a pas pu être vérifié. Veuillez réessayer avec une photo plus nette."}
+                        <p className={clsx("font-semibold text-sm", textTokens.danger)}>Document rejeté</p>
+                        <p className={clsx("text-sm mt-1", textTokens.danger)}>
+                          {kycResult.rejection_reason || "Le document soumis n'a pas pu être vérifié. Réessayez avec une photo plus nette."}
                         </p>
-                        <p className="text-xs text-red-500 mt-2">
+                        <p className={clsx("text-xs mt-2", textTokens.danger)}>
                           Score de confiance : {Math.round(kycResult.confidence * 100)}%
                         </p>
                       </div>
@@ -1081,7 +1095,10 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 <button
                   onClick={handleStep1Continue}
                   disabled={(!isDemoMode && (!idType || !idFrontFile || !declaredName.trim())) || kycLoading}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+                  className={clsx(
+                    "w-full flex items-center justify-center gap-2 py-3 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium",
+                    ctaTokens.primary,
+                  )}
                 >
                   {kycLoading ? (
                     <>
@@ -1106,36 +1123,39 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             {step === 2 && (
               <div className="space-y-5">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Photo selfie</h3>
-                  <p className="text-sm text-gray-600">Optionnel - pour confirmer votre identité par comparaison faciale</p>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>Photo selfie</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>Optionnel - pour confirmer votre identité par comparaison faciale</p>
                 </div>
 
                 <label
                   htmlFor="selfie"
-                  className={`block border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                    selfieFile ? 'border-slate-400 bg-slate-100' : 'border-gray-300 hover:border-slate-400'
-                  }`}
+                  className={clsx(
+                    "block border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+                    selfieFile
+                      ? `${borderTokens.strong} ${surfaceTokens.muted}`
+                      : `${borderTokens.strong} hover:opacity-90`,
+                  )}
                 >
                   {selfiePreview ? (
                     <div className="space-y-2">
                       <img src={selfiePreview} alt="Selfie" className="max-h-40 mx-auto rounded-lg object-contain" />
-                      <div className="flex items-center justify-center gap-2 text-slate-700">
+                      <div className={clsx("flex items-center justify-center gap-2", textTokens.body)}>
                         <Check className="w-5 h-5" />
                         <span className="font-medium text-sm">{selfieFile?.name}</span>
                       </div>
                       <button
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelfieFile(null); }}
-                        className="text-xs text-red-500 hover:text-red-700"
+                        className={clsx("text-xs hover:opacity-90", textTokens.danger)}
                       >
                         Supprimer
                       </button>
                     </div>
                   ) : (
                     <>
-                      <Camera className="w-14 h-14 text-gray-400 mx-auto mb-3" />
-                      <span className="text-slate-700 font-medium">Prendre un selfie</span>
-                      <p className="text-xs text-gray-500 mt-1">ou choisir une photo existante</p>
+                      <Camera className={clsx("w-14 h-14 mx-auto mb-3", textTokens.subtle)} />
+                      <span className={clsx("font-medium", textTokens.body)}>Prendre un selfie</span>
+                      <p className={clsx("text-xs mt-1", textTokens.subtle)}>ou choisir une photo existante</p>
                     </>
                   )}
                   <input
@@ -1151,7 +1171,10 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 <div className="flex gap-3">
                   <button
                     onClick={() => setStep(1)}
-                    className="flex-1 flex items-center justify-center gap-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                    className={clsx(
+                      "flex-1 flex items-center justify-center gap-1 py-3 rounded-lg transition-colors font-medium",
+                      ctaTokens.secondary,
+                    )}
                   >
                     <ChevronLeft className="w-5 h-5" />
                     Retour
@@ -1170,7 +1193,10 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                       }
                       setStep(3);
                     }}
-                    className="flex-1 flex items-center justify-center gap-1 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800 transition-colors font-medium"
+                    className={clsx(
+                      "flex-1 flex items-center justify-center gap-1 py-3 rounded-lg transition-colors font-medium",
+                      ctaTokens.primary,
+                    )}
                   >
                     {selfieFile ? 'Continuer' : 'Passer'}
                     <ChevronRight className="w-5 h-5" />
@@ -1182,24 +1208,24 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             {step === 3 && (
               <div className="space-y-5">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Contrat de location</h3>
-                  <p className="text-sm text-gray-600">Lisez et signez le contrat ci-dessous</p>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>Contrat de location</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>Lisez et signez le contrat ci-dessous</p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto text-sm text-gray-700">
+                <div className={clsx("rounded-lg p-4 max-h-64 overflow-y-auto text-sm", surfaceTokens.subtle, textTokens.body)}>
                   {contractContent ? (
                     <pre className="whitespace-pre-wrap font-sans leading-relaxed">{contractContent}</pre>
                   ) : (
                     <div className="space-y-3">
                       <h4 className="font-bold text-base">CONTRAT DE LOCATION COURTE DURÉE</h4>
-                      <p><strong>Propriété :</strong> {property?.name}</p>
+                      <p><strong>Logement :</strong> {property?.name}</p>
                       <p><strong>Adresse :</strong> {property?.address}, {property?.city}</p>
                       <p><strong>Arrivée :</strong> {reservation ? new Date(reservation.check_in_date).toLocaleDateString('fr-FR') : '—'}</p>
                       <p><strong>Départ :</strong> {reservation ? new Date(reservation.check_out_date).toLocaleDateString('fr-FR') : '—'}</p>
-                      <p><strong>Invités :</strong> {reservation?.number_of_guests}</p>
+                      <p><strong>Voyageurs :</strong> {reservation?.number_of_guests}</p>
                       <div className="mt-3 space-y-1">
                         <p className="font-semibold">Règles :</p>
-                        <ul className="list-disc list-inside space-y-0.5 ml-2 text-gray-600">
+                        <ul className={clsx("list-disc list-inside space-y-0.5 ml-2", textTokens.muted)}>
                           <li>Respect du voisinage</li>
                           <li>Interdiction de fumer à l'intérieur</li>
                           <li>Pas de fêtes ni événements</li>
@@ -1210,15 +1236,19 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   )}
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <div className={clsx("border rounded-lg p-3", surfaceTokens.subtle, borderTokens.default)}>
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={consentChecked}
                       onChange={(e) => setConsentChecked(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 text-slate-700 border-gray-300 rounded focus:ring-slate-400"
+                      className={clsx(
+                        "mt-0.5 w-4 h-4 rounded focus:ring-slate-400",
+                        textTokens.body,
+                        borderTokens.strong,
+                      )}
                     />
-                    <span className="text-xs text-slate-700 leading-relaxed">
+                    <span className={clsx("text-xs leading-relaxed", textTokens.body)}>
                       Je certifie que les informations fournies sont exactes. J'accepte que ma signature électronique,
                       mon adresse IP et l'horodatage soient enregistrés conformément à la loi marocaine n° 53-05
                       du 30 novembre 2007 relative à l'échange électronique de données juridiques.
@@ -1227,7 +1257,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={clsx("block text-sm font-medium mb-2", textTokens.body)}>
                     Votre signature
                   </label>
                   <canvas
@@ -1241,18 +1271,18 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     onTouchStart={handlePointerDown}
                     onTouchMove={handlePointerMove}
                     onTouchEnd={handlePointerUp}
-                    className="border-2 border-gray-300 rounded-lg w-full bg-white"
+                    className={clsx("border-2 rounded-lg w-full", borderTokens.strong, surfaceTokens.panel)}
                     style={{ touchAction: 'none' }}
                   />
                   <button
                     onClick={clearSignature}
-                    className="mt-1.5 px-3 py-1.5 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                    className={clsx("mt-1.5 px-3 py-1.5 text-xs rounded", ctaTokens.secondary)}
                   >
                     Effacer la signature
                   </button>
                 </div>
 
-                <div className="flex items-start gap-2 text-[11px] text-gray-400">
+                <div className={clsx("flex items-start gap-2 text-[11px]", textTokens.subtle)}>
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>
                     En signant, votre adresse IP, navigateur, et l'horodatage exact seront enregistrés
@@ -1263,7 +1293,10 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 <div className="flex gap-3">
                   <button
                     onClick={() => setStep(2)}
-                    className="flex-1 flex items-center justify-center gap-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                    className={clsx(
+                      "flex-1 flex items-center justify-center gap-1 py-3 rounded-lg transition-colors font-medium",
+                      ctaTokens.secondary,
+                    )}
                   >
                     <ChevronLeft className="w-5 h-5" />
                     Retour
@@ -1271,7 +1304,10 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   <button
                     onClick={handleSubmit}
                     disabled={submitting || (!consentChecked && !isDemoMode)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 font-medium"
+                    className={clsx(
+                      "flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-colors disabled:opacity-50 font-medium",
+                      ctaTokens.primary,
+                    )}
                   >
                     {submitting ? (
                       <>
@@ -1289,7 +1325,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
               </div>
             )}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

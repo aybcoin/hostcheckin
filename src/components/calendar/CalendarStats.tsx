@@ -1,4 +1,6 @@
 import { Star, TrendingUp, CheckCircle, Clock, CalendarDays } from 'lucide-react';
+import { clsx } from '../../lib/clsx';
+import { surfaceTokens, textTokens } from '../../lib/design-tokens';
 import { Reservation } from '../../lib/supabase';
 import { fr } from '../../lib/i18n/fr';
 import { Card } from '../ui/Card';
@@ -73,7 +75,7 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
 
   return (
     <Card variant="default" padding="md" className="space-y-5">
-      <h3 className="font-semibold text-gray-900 text-sm">{fr.calendar.fields.monthStats}</h3>
+      <h3 className={clsx('font-semibold text-sm', textTokens.title)}>{fr.calendar.fields.monthStats}</h3>
 
       <div className="flex flex-col items-center">
         <div className="relative w-24 h-24">
@@ -88,59 +90,59 @@ export function CalendarStats({ reservations, currentMonth }: CalendarStatsProps
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xl font-bold text-gray-900">{occupancyRate}%</span>
+            <span className={clsx('text-xl font-bold', textTokens.title)}>{occupancyRate}%</span>
           </div>
         </div>
-        <p className="text-sm font-medium text-gray-700 mt-2">{fr.calendar.fields.occupancyRate}</p>
-        <p className="text-xs text-gray-500">{occupiedNights} nuits / {daysInMonth}</p>
+        <p className={clsx('text-sm font-medium mt-2', textTokens.body)}>{fr.calendar.fields.occupancyRate}</p>
+        <p className={clsx('text-xs', textTokens.subtle)}>{occupiedNights} nuits / {daysInMonth}</p>
         {rateChange !== 0 && (
-          <p className={`text-xs font-medium mt-1 ${rateChange > 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+          <p className={clsx('text-xs font-medium mt-1', rateChange > 0 ? textTokens.success : textTokens.danger)}>
             {rateChange > 0 ? '↑' : '↓'} {Math.abs(rateChange)}% {fr.calendar.fields.versusLastMonth}
           </p>
         )}
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div className={clsx('flex items-center justify-between p-3 rounded-lg', surfaceTokens.subtle)}>
           <div className="flex items-center gap-2">
-            <CalendarDays size={16} className="text-slate-700" />
-            <span className="text-sm text-gray-700">{fr.calendar.fields.bookings}</span>
+            <CalendarDays size={16} className={textTokens.muted} />
+            <span className={clsx('text-sm', textTokens.body)}>{fr.calendar.fields.bookings}</span>
           </div>
-          <span className="font-bold text-gray-900">{monthReservations.length}</span>
+          <span className={clsx('font-bold', textTokens.title)}>{monthReservations.length}</span>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div className={clsx('flex items-center justify-between p-3 rounded-lg', surfaceTokens.subtle)}>
           <div className="flex items-center gap-2">
-            <CheckCircle size={16} className="text-emerald-700" />
-            <span className="text-sm text-gray-700">{fr.calendar.fields.verificationRate}</span>
+            <CheckCircle size={16} className={textTokens.success} />
+            <span className={clsx('text-sm', textTokens.body)}>{fr.calendar.fields.verificationRate}</span>
           </div>
-          <span className="font-bold text-gray-900">{verificationRate}%</span>
+          <span className={clsx('font-bold', textTokens.title)}>{verificationRate}%</span>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div className={clsx('flex items-center justify-between p-3 rounded-lg', surfaceTokens.subtle)}>
           <div className="flex items-center gap-2">
-            <Clock size={16} className="text-slate-700" />
-            <span className="text-sm text-gray-700">{fr.calendar.fields.averageStay}</span>
+            <Clock size={16} className={textTokens.muted} />
+            <span className={clsx('text-sm', textTokens.body)}>{fr.calendar.fields.averageStay}</span>
           </div>
-          <span className="font-bold text-gray-900">{avgStay} nuits</span>
+          <span className={clsx('font-bold', textTokens.title)}>{avgStay} nuits</span>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div className={clsx('flex items-center justify-between p-3 rounded-lg', surfaceTokens.subtle)}>
           <div className="flex items-center gap-2">
-            <TrendingUp size={16} className="text-amber-600" />
-            <span className="text-sm text-gray-700">{fr.calendar.fields.upcomingArrivals}</span>
+            <TrendingUp size={16} className={textTokens.warning} />
+            <span className={clsx('text-sm', textTokens.body)}>{fr.calendar.fields.upcomingArrivals}</span>
           </div>
-          <span className="font-bold text-gray-900">{upcomingArrivals}</span>
+          <span className={clsx('font-bold', textTokens.title)}>{upcomingArrivals}</span>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div className={clsx('flex items-center justify-between p-3 rounded-lg', surfaceTokens.subtle)}>
           <div className="flex items-center gap-2">
-            <Star size={16} className="text-amber-500" />
-            <span className="text-sm text-gray-700">{fr.calendar.fields.averageRating}</span>
+            <Star size={16} className={textTokens.warning} />
+            <span className={clsx('text-sm', textTokens.body)}>{fr.calendar.fields.averageRating}</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-bold text-gray-900">{avgRating}</span>
-            {avgRating !== '-' && <Star size={12} className="text-amber-400 fill-amber-400" />}
+            <span className={clsx('font-bold', textTokens.title)}>{avgRating}</span>
+            {avgRating !== '-' && <Star size={12} className={clsx('fill-current', textTokens.warning)} />}
           </div>
         </div>
       </div>

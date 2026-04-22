@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Copy, Download, Link2, Printer } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { clsx } from '../lib/clsx';
+import { borderTokens, stateFillTokens, statusTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
 import { APP_BASE_URL, Property, PropertyAutoLink, supabase } from '../lib/supabase';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -260,38 +262,38 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
         onClick={onBack}
       >
         <ArrowLeft size={16} aria-hidden="true" />
-        Retour aux propriétés
+        Retour aux logements
       </Button>
 
       <header>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Réservations automatiques</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Lien permanent et QR code pour {property?.name || 'la propriété sélectionnée'}.
+        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>Réservations automatiques</h1>
+        <p className={clsx('mt-1 text-sm', textTokens.muted)}>
+          Lien permanent et QR code pour {property?.name || 'le logement sélectionné'}.
         </p>
       </header>
 
       {!property ? (
-        <Card variant="danger" padding="md" className="text-sm text-red-700">
-          Propriété introuvable. Revenez à la liste des propriétés puis réessayez.
+        <Card variant="danger" padding="md" className={clsx('text-sm', textTokens.danger)}>
+          Logement introuvable. Revenez à la liste des logements puis réessayez.
         </Card>
       ) : null}
 
       {property && loading ? (
         <Card variant="default" padding="md">
           <div className="animate-pulse space-y-3">
-            <div className="h-4 w-1/3 rounded bg-slate-200" />
-            <div className="h-10 w-full rounded bg-slate-100" />
-            <div className="h-9 w-40 rounded bg-slate-200" />
+            <div className={clsx('h-4 w-1/3 rounded', stateFillTokens.neutral)} />
+            <div className={clsx('h-10 w-full rounded', surfaceTokens.muted)} />
+            <div className={clsx('h-9 w-40 rounded', stateFillTokens.neutral)} />
           </div>
         </Card>
       ) : property && error ? (
-        <Card variant="danger" padding="md" className="text-sm text-red-700">
+        <Card variant="danger" padding="md" className={clsx('text-sm', textTokens.danger)}>
           {error}
         </Card>
       ) : property && !autoLink ? (
         <Card variant="default" padding="lg">
-          <p className="text-sm text-slate-600">
-            Aucun lien automatique n'est encore généré pour cette propriété.
+          <p className={clsx('text-sm', textTokens.muted)}>
+            Aucun lien automatique n'est encore généré pour ce logement.
           </p>
           <Button
             variant="primary"
@@ -306,12 +308,12 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
       ) : property && autoLink ? (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.2fr_1fr]">
           <Card as="section" variant="default" padding="md">
-            <h2 className="text-lg font-semibold text-slate-900">Lien permanent</h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <h2 className={clsx('text-lg font-semibold', textTokens.title)}>Lien permanent</h2>
+            <p className={clsx('mt-1 text-xs', textTokens.subtle)}>
               Statut : {autoLink.is_active ? 'Actif' : 'Désactivé'}
             </p>
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="break-all text-sm text-slate-700">{bookingLink}</p>
+            <div className={clsx('mt-3 rounded-lg border p-3', borderTokens.default, surfaceTokens.subtle)}>
+              <p className={clsx('break-all text-sm', textTokens.body)}>{bookingLink}</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
@@ -340,15 +342,15 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
               </Button>
             </div>
             {regeneratedAt ? (
-              <p className="mt-2 text-xs text-slate-500">
+              <p className={clsx('mt-2 text-xs', textTokens.subtle)}>
                 Dernière régénération : {new Date(regeneratedAt).toLocaleString('fr-FR')}
               </p>
             ) : null}
           </Card>
 
           <Card as="section" variant="default" padding="md">
-            <h2 className="text-lg font-semibold text-slate-900">QR code</h2>
-            <div className="relative mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <h2 className={clsx('text-lg font-semibold', textTokens.title)}>QR code</h2>
+            <div className={clsx('relative mt-3 overflow-hidden rounded-xl border p-3', borderTokens.default, surfaceTokens.subtle)}>
               <div className="mx-auto flex h-64 w-64 items-center justify-center rounded-lg bg-white">
                 <QRCodeCanvas
                   ref={qrCanvasRef}
@@ -363,7 +365,7 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
                   style={{ width: 240, height: 240 }}
                 />
               </div>
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm">
+              <div className={clsx('absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white px-2 py-1 text-[10px] font-semibold shadow-sm', textTokens.body)}>
                 HostCheckIn
               </div>
             </div>
@@ -386,7 +388,7 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
             </div>
 
             {actionError ? (
-              <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+              <p className={clsx('mt-3 rounded-lg px-3 py-2 text-sm', statusTokens.danger)} role="alert">
                 {actionError}
               </p>
             ) : null}

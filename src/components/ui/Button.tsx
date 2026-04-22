@@ -1,11 +1,13 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { ctaTokens } from '../../lib/design-tokens';
+import { clsx } from '../../lib/clsx';
 
 type ButtonVariant =
   | 'primary'
   | 'secondary'
   | 'tertiary'
   | 'destructive'
+  | 'warning'
   | 'subtle'
   | 'danger'
   | 'dangerSoft';
@@ -42,14 +44,14 @@ export function Button({
   return (
     <button
       type={type}
-      className={`
-        inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors
-        disabled:cursor-not-allowed disabled:opacity-50
-        ${sizeClasses[size]}
-        ${ctaTokens[resolvedVariant]}
-        ${fullWidth ? 'w-full' : ''}
-        ${className || ''}
-      `}
+      className={clsx(
+        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        sizeClasses[size],
+        ctaTokens[resolvedVariant],
+        fullWidth && 'w-full',
+        className,
+      )}
       {...props}
     >
       {children}

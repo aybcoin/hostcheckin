@@ -1,4 +1,6 @@
 import { BookOpen, LifeBuoy } from "lucide-react";
+import { clsx } from "../lib/clsx";
+import { surfaceTokens, textTokens } from "../lib/design-tokens";
 import { fr } from "../lib/i18n/fr";
 import { AppPage } from "../lib/navigation";
 import { Button } from "./ui/Button";
@@ -12,18 +14,18 @@ export function HelpPage({ onNavigate }: HelpPageProps) {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{fr.help.title}</h1>
-        <p className="mt-1 text-sm text-slate-600">{fr.help.subtitle}</p>
+        <h1 className={clsx("text-2xl sm:text-3xl font-bold", textTokens.title)}>{fr.help.title}</h1>
+        <p className={clsx("mt-1 text-sm", textTokens.muted)}>{fr.help.subtitle}</p>
       </header>
 
       <Card as="section" variant="default" padding="md">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-slate-100 p-2">
-            <BookOpen size={18} className="text-slate-700" aria-hidden="true" />
+          <div className={clsx("rounded-lg p-2", surfaceTokens.muted)}>
+            <BookOpen size={18} className={textTokens.body} aria-hidden="true" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-900">{fr.help.comingSoon}</p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className={clsx("text-sm font-medium", textTokens.title)}>{fr.help.comingSoon}</p>
+            <p className={clsx("mt-1 text-sm", textTokens.muted)}>
               En attendant, vous pouvez nous contacter directement depuis le bouton d’aide.
             </p>
           </div>

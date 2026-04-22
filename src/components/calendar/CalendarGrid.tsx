@@ -1,4 +1,6 @@
 import { Reservation } from '../../lib/supabase';
+import { clsx } from '../../lib/clsx';
+import { borderTokens, statusTokens, surfaceTokens, textTokens } from '../../lib/design-tokens';
 import { Card } from '../ui/Card';
 
 interface CalendarGridProps {
@@ -26,10 +28,10 @@ function getReservationColor(reservation: Reservation, date: Date): string {
   const isCheckIn = checkIn.toDateString() === date.toDateString();
   const isCheckOut = checkOut.toDateString() === date.toDateString();
 
-  if (reservation.status === 'cancelled') return 'bg-gray-200 text-gray-600';
-  if (isCheckIn) return 'bg-emerald-100 text-emerald-800 border-l-2 border-emerald-600';
-  if (isCheckOut) return 'bg-rose-100 text-rose-800 border-l-2 border-rose-500';
-  return 'bg-slate-100 text-slate-800';
+  if (reservation.status === 'cancelled') return statusTokens.neutral;
+  if (isCheckIn) return clsx(statusTokens.success, 'border-l-2');
+  if (isCheckOut) return clsx(statusTokens.warning, 'border-l-2');
+  return statusTokens.neutral;
 }
 
 export function CalendarGrid({ currentMonth, reservations, guests, filter, onReservationClick }: CalendarGridProps) {
@@ -76,7 +78,7 @@ export function CalendarGrid({ currentMonth, reservations, guests, filter, onRes
     <Card variant="default" padding="sm" className="overflow-hidden p-0">
       <div className="grid grid-cols-7">
         {WEEKDAYS.map((d) => (
-          <div key={d} className="p-2 text-center text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200">
+          <div key={d} className={clsx('p-2 text-center text-xs font-semibold border-b', textTokens.subtle, surfaceTokens.subtle, borderTokens.default)}>
             {d}
           </div>
         ))}
@@ -84,28 +86,27 @@ export function CalendarGrid({ currentMonth, reservations, guests, filter, onRes
       <div className="grid grid-cols-7">
         {cells.map((dayNum, idx) => {
           if (dayNum === null) {
-            return <div key={`empty-${idx}`} className="min-h-[100px] border-b border-r border-gray-100 bg-gray-50/30" />;
+            return <div key={`empty-${idx}`} className={clsx('min-h-[100px] border-b border-r', borderTokens.subtle, surfaceTokens.subtle)} />;
           }
           const dayReservations = getReservationsForDay(dayNum);
           const dayDate = new Date(year, month, dayNum);
           return (
             <div
               key={dayNum}
-              className={`min-h-[100px] border-b border-r border-gray-100 p-1.5 ${
-                isToday(dayNum) ? 'bg-slate-100/70' : ''
-              }`}
+              className={clsx('min-h-[100px] border-b border-r p-1.5', borderTokens.subtle, isToday(dayNum) && surfaceTokens.muted)}
             >
-              <div className={`text-xs font-medium mb-1 ${
+              <div className={clsx(
+                'text-xs font-medium mb-1',
                 isToday(dayNum)
-                  ? 'w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center'
-                  : 'text-gray-600 pl-1'
-              }`}>
+                  ? clsx('w-6 h-6 rounded-full flex items-center justify-center bg-current text-white', textTokens.title)
+                  : clsx('pl-1', textTokens.muted),
+              )}>
                 {dayNum}
               </div>
               <div className="space-y-0.5">
                 {dayReservations.slice(0, 3).map((r) => {
                   const guest = guests[r.guest_id];
-                  const name = guest?.full_name?.split(' ')[0] || 'Invité';
+                  const name = guest?.full_name?.split(' ')[0] || 'Voyageur';
                   return (
                     <button
                       key={r.id}
@@ -117,7 +118,7 @@ export function CalendarGrid({ currentMonth, reservations, guests, filter, onRes
                   );
                 })}
                 {dayReservations.length > 3 && (
-                  <span className="text-[10px] text-gray-400 pl-1">+{dayReservations.length - 3}</span>
+                  <span className={clsx('text-[10px] pl-1', textTokens.subtle)}>+{dayReservations.length - 3}</span>
                 )}
               </div>
             </div>

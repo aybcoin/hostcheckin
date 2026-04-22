@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { X, Star } from 'lucide-react';
-import { ctaTokens, iconButtonToken, modalTokens } from '../../lib/design-tokens';
+import { iconButtonToken, modalTokens } from '../../lib/design-tokens';
 import { fr } from '../../lib/i18n/fr';
+import { Button } from '../ui/Button';
 
 interface RatingModalProps {
   bookingReference: string;
@@ -53,21 +54,21 @@ export function RatingModal({ bookingReference, currentRating, onSave, onClose }
             ))}
           </div>
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Button
               onClick={() => { if (rating > 0) onSave(rating); }}
               disabled={rating === 0}
-              className={`flex-1 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium disabled:opacity-40 ${ctaTokens.primary}`}
+              variant="primary"
+              className="flex-1"
             >
               {fr.common.save}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={onClose}
-              className={`flex-1 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${ctaTokens.secondary}`}
+              variant="secondary"
+              className="flex-1"
             >
               {fr.common.cancel}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

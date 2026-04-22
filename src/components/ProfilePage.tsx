@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { User, Mail, Phone, Building2, Save } from 'lucide-react';
+import { clsx } from '../lib/clsx';
+import { borderTokens, inputTokens, textTokens } from '../lib/design-tokens';
 import { Host, Property } from '../lib/supabase';
 import { OnboardingChecklist } from './OnboardingChecklist';
 import { AppPage } from '../lib/navigation';
@@ -54,24 +56,26 @@ export function ProfilePage({
     { id: 'contracts', label: fr.profile.sections.contracts },
     { id: 'billing', label: fr.profile.sections.billing },
   ];
+  const editableInputClass = clsx(inputTokens.base, 'text-base');
+  const readOnlyInputClass = clsx(inputTokens.readOnly, 'text-base');
 
   const renderDetailsSection = () => (
     <div className="space-y-6">
       <Card variant="default" padding="lg" className="p-4 sm:p-8">
-        <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-gray-200">
-          <div className="w-14 h-14 sm:w-20 sm:h-20 bg-slate-900 rounded-full flex items-center justify-center shrink-0">
+        <div className={clsx('flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8 pb-6 sm:pb-8 border-b', borderTokens.default)}>
+          <div className={clsx('w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center shrink-0 bg-current', textTokens.title)}>
             <User className="w-7 h-7 sm:w-10 sm:h-10 text-white" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{host?.full_name}</h2>
-            <p className="text-gray-600 text-sm sm:text-base truncate">{host?.email}</p>
+            <h2 className={clsx('text-xl sm:text-2xl font-bold truncate', textTokens.title)}>{host?.full_name}</h2>
+            <p className={clsx('text-sm sm:text-base truncate', textTokens.muted)}>{host?.email}</p>
           </div>
         </div>
 
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                 <div className="flex items-center gap-2">
                   <User size={16} />
                   <span>{fr.profile.fullName}</span>
@@ -82,12 +86,12 @@ export function ProfilePage({
                 value={formData.full_name}
                 onChange={(event) => setFormData({ ...formData, full_name: event.target.value })}
                 disabled={!isEditing}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600 focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={isEditing ? editableInputClass : readOnlyInputClass}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                 <div className="flex items-center gap-2">
                   <Mail size={16} />
                   <span>Email</span>
@@ -97,12 +101,12 @@ export function ProfilePage({
                 type="email"
                 value={formData.email}
                 disabled
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 outline-none text-base"
+                className={readOnlyInputClass}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                 <div className="flex items-center gap-2">
                   <Phone size={16} />
                   <span>Téléphone</span>
@@ -113,13 +117,13 @@ export function ProfilePage({
                 value={formData.phone}
                 onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
                 disabled={!isEditing}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600 focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={isEditing ? editableInputClass : readOnlyInputClass}
                 placeholder={fr.profile.phonePlaceholder}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                 <div className="flex items-center gap-2">
                   <Building2 size={16} />
                   <span>{fr.profile.companyName}</span>
@@ -130,7 +134,7 @@ export function ProfilePage({
                 value={formData.company_name}
                 onChange={(event) => setFormData({ ...formData, company_name: event.target.value })}
                 disabled={!isEditing}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600 focus:ring-2 focus:ring-slate-300 outline-none text-base"
+                className={isEditing ? editableInputClass : readOnlyInputClass}
               />
             </div>
           </div>
@@ -190,8 +194,8 @@ export function ProfilePage({
     buttonLabel: string,
     targetPage: AppPage,
   ) => (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8">
-      <p className="text-sm sm:text-base text-slate-700">{description}</p>
+    <Card variant="default" padding="lg" className="sm:p-8">
+      <p className={clsx('text-sm sm:text-base', textTokens.body)}>{description}</p>
       <Button
         variant="primary"
         onClick={() => onNavigate(targetPage)}
@@ -199,7 +203,7 @@ export function ProfilePage({
       >
         {buttonLabel}
       </Button>
-    </div>
+    </Card>
   );
 
   const renderActiveSection = () => {
@@ -213,8 +217,8 @@ export function ProfilePage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{fr.profile.title}</h1>
-        <p className="text-gray-600 mt-1 sm:mt-2">{fr.profile.subtitle}</p>
+        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>{fr.profile.title}</h1>
+        <p className={clsx('mt-1 sm:mt-2', textTokens.muted)}>{fr.profile.subtitle}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -228,11 +232,12 @@ export function ProfilePage({
                   type="button"
                   aria-current={isActive ? 'page' : undefined}
                   onClick={() => setActiveSection(section.id)}
-                  className={`w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
+                  className={clsx(
+                    'w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300',
                     isActive
-                      ? 'text-slate-900 underline decoration-2 underline-offset-4'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                      ? clsx(textTokens.title, 'underline decoration-2 underline-offset-4')
+                      : clsx(textTokens.muted, 'hover:bg-white/70'),
+                  )}
                 >
                   {section.label}
                 </button>

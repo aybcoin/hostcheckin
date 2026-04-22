@@ -1,10 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
+import { clsx } from '../lib/clsx';
 import { Reservation, Property } from '../lib/supabase';
 import { supabase } from '../lib/supabase';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { CalendarStats } from './calendar/CalendarStats';
 import { fr } from '../lib/i18n/fr';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { borderTokens, iconButtonToken, inputTokens, modalTokens, statusTokens, textTokens } from '../lib/design-tokens';
 
 interface CalendarPageProps {
   reservations: Reservation[];
@@ -78,14 +82,14 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>
           {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h1>
         <div className="flex items-center gap-2">
           <button
             onClick={goToPrevMonth}
             aria-label="Mois précédent"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+            className={iconButtonToken}
           >
             <ChevronLeft size={18} />
           </button>
@@ -93,19 +97,19 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
             type="month"
             value={monthInputValue}
             onChange={(e) => handleMonthInput(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+            className={inputTokens.base}
           />
           <button
             onClick={goToNextMonth}
             aria-label="Mois suivant"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+            className={iconButtonToken}
           >
             <ChevronRight size={18} />
           </button>
           <select
             value={propertyFilter}
             onChange={(e) => setPropertyFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-300 outline-none"
+            className={inputTokens.base}
           >
             <option value="">{fr.calendar.allProperties}</option>
             {properties.map((p) => (
@@ -117,17 +121,14 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
 
       <div className="flex gap-2 flex-wrap">
         {FILTER_TABS.map((tab) => (
-          <button
+          <Button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === tab.key
-                ? 'bg-slate-900 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-            }`}
+            variant={filter === tab.key ? 'primary' : 'secondary'}
+            size="sm"
           >
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -149,14 +150,14 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
       </div>
 
       {selectedReservation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedReservation(null)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">{fr.calendar.detailsTitle}</h2>
+        <div className={modalTokens.overlay} onClick={() => setSelectedReservation(null)}>
+          <div className={`${modalTokens.panel} max-w-md`} onClick={(e) => e.stopPropagation()}>
+            <div className={clsx('p-5 border-b flex items-center justify-between', borderTokens.default)}>
+              <h2 className={clsx('text-lg font-bold', textTokens.title)}>{fr.calendar.detailsTitle}</h2>
               <button
                 onClick={() => setSelectedReservation(null)}
                 aria-label="Fermer le détail de la réservation"
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className={iconButtonToken}
               >
                 <X size={20} />
               </button>
@@ -164,32 +165,32 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-gray-500">{fr.calendar.fields.reference}</p>
-                  <p className="text-sm font-bold text-gray-900">{selectedReservation.booking_reference}</p>
+                  <p className={clsx('text-xs', textTokens.subtle)}>{fr.calendar.fields.reference}</p>
+                  <p className={clsx('text-sm font-bold', textTokens.title)}>{selectedReservation.booking_reference}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">{fr.calendar.fields.property}</p>
-                  <p className="text-sm font-medium text-gray-900">{getPropertyName(selectedReservation.property_id)}</p>
+                  <p className={clsx('text-xs', textTokens.subtle)}>{fr.calendar.fields.property}</p>
+                  <p className={clsx('text-sm font-medium', textTokens.title)}>{getPropertyName(selectedReservation.property_id)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">{fr.calendar.fields.checkIn}</p>
-                  <p className="text-sm font-medium text-gray-900">{formatDate(selectedReservation.check_in_date)}</p>
+                  <p className={clsx('text-xs', textTokens.subtle)}>{fr.calendar.fields.checkIn}</p>
+                  <p className={clsx('text-sm font-medium', textTokens.title)}>{formatDate(selectedReservation.check_in_date)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">{fr.calendar.fields.checkOut}</p>
-                  <p className="text-sm font-medium text-gray-900">{formatDate(selectedReservation.check_out_date)}</p>
+                  <p className={clsx('text-xs', textTokens.subtle)}>{fr.calendar.fields.checkOut}</p>
+                  <p className={clsx('text-sm font-medium', textTokens.title)}>{formatDate(selectedReservation.check_out_date)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">{fr.calendar.fields.guests}</p>
-                  <p className="text-sm font-medium text-gray-900">{selectedReservation.number_of_guests}</p>
+                  <p className={clsx('text-xs', textTokens.subtle)}>{fr.calendar.fields.guests}</p>
+                  <p className={clsx('text-sm font-medium', textTokens.title)}>{selectedReservation.number_of_guests}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">{fr.calendar.fields.status}</p>
-                  <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                    selectedReservation.status === 'checked_in' ? 'bg-slate-200 text-slate-800'
-                    : selectedReservation.status === 'completed' ? 'bg-gray-100 text-gray-700'
-                    : selectedReservation.status === 'cancelled' ? 'bg-red-100 text-red-700'
-                    : 'bg-amber-100 text-amber-800'
+                  <p className={clsx('text-xs', textTokens.subtle)}>{fr.calendar.fields.status}</p>
+                  <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${
+                    selectedReservation.status === 'checked_in' ? statusTokens.success
+                    : selectedReservation.status === 'completed' ? statusTokens.neutral
+                    : selectedReservation.status === 'cancelled' ? statusTokens.danger
+                    : statusTokens.pending
                   }`}>
                     {selectedReservation.status === 'checked_in' ? 'Vérifiée'
                     : selectedReservation.status === 'completed' ? 'Terminée'
@@ -199,19 +200,20 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
                 </div>
               </div>
               {guests[selectedReservation.guest_id] && (
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 mb-1">{fr.calendar.fields.guest}</p>
-                  <p className="text-sm font-medium text-gray-900">{guests[selectedReservation.guest_id].full_name}</p>
-                  <p className="text-xs text-gray-500">{guests[selectedReservation.guest_id].email}</p>
-                </div>
+                <Card variant="ghost" padding="sm">
+                  <p className={clsx('text-xs mb-1', textTokens.subtle)}>{fr.calendar.fields.guest}</p>
+                  <p className={clsx('text-sm font-medium', textTokens.title)}>{guests[selectedReservation.guest_id].full_name}</p>
+                  <p className={clsx('text-xs', textTokens.subtle)}>{guests[selectedReservation.guest_id].email}</p>
+                </Card>
               )}
-              <button
+              <Button
                 onClick={() => { setSelectedReservation(null); onNavigateToReservation(); }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium"
+                variant="primary"
+                className="w-full"
               >
                 <ExternalLink size={14} />
                 {fr.calendar.openDetails}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

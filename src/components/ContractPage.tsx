@@ -2,7 +2,20 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { FileText, Check, X, Trash2, Star, Eye, Save, Info, Download, Shield, Sparkles } from 'lucide-react';
 import { Reservation, Property, Contract, ContractTemplate } from '../lib/supabase';
 import { supabase } from '../lib/supabase';
+import { clsx } from '../lib/clsx';
 import { fr } from '../lib/i18n/fr';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { Badge } from './ui/Badge';
+import {
+  borderTokens,
+  iconButtonToken,
+  inputTokens,
+  modalTokens,
+  stateFillTokens,
+  surfaceTokens,
+  textTokens,
+} from '../lib/design-tokens';
 
 interface ContractPageProps {
   reservations: Reservation[];
@@ -113,18 +126,18 @@ Fait en deux exemplaires, le {{today_date}}
 Signature du bailleur :                    Signature du locataire :`;
 
 const PLACEHOLDERS = [
-  { key: '{{property_name}}', label: 'Nom propriété' },
+  { key: '{{property_name}}', label: 'Nom logement' },
   { key: '{{property_address}}', label: 'Adresse complète' },
   { key: '{{property_city}}', label: 'Ville' },
   { key: '{{property_country}}', label: 'Pays' },
-  { key: '{{guest_name}}', label: "Nom invité" },
-  { key: '{{guest_email}}', label: "E-mail invité" },
-  { key: '{{guest_phone}}', label: "Téléphone invité" },
+  { key: '{{guest_name}}', label: "Nom voyageur" },
+  { key: '{{guest_email}}', label: "E-mail voyageur" },
+  { key: '{{guest_phone}}', label: "Téléphone voyageur" },
   { key: '{{check_in_date}}', label: "Date d'arrivée" },
   { key: '{{check_out_date}}', label: 'Date de départ' },
   { key: '{{check_in_time}}', label: "Heure d'arrivée" },
   { key: '{{check_out_time}}', label: 'Heure de départ' },
-  { key: '{{number_of_guests}}', label: "Nombre d'invités" },
+  { key: '{{number_of_guests}}', label: "Nombre de voyageurs" },
   { key: '{{max_guests}}', label: 'Capacité max' },
   { key: '{{rooms_count}}', label: 'Nombre chambres' },
   { key: '{{booking_reference}}', label: 'Référence réservation' },
@@ -437,31 +450,37 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestion des Contrats</h1>
+          <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>Gestion des Contrats</h1>
           {activeCustomTemplate && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-200 text-slate-800 rounded-full text-xs font-medium">
+            <Badge variant="active" className="gap-1.5">
               <Check size={12} />
               Contrat personnalisé actif
-            </span>
+            </Badge>
           )}
         </div>
-        <p className="text-gray-600 mt-1">Gérez vos contrats de location et personnalisez-les selon vos besoins</p>
+        <p className={clsx('mt-1', textTokens.muted)}>Gérez vos contrats de location et personnalisez-les selon vos besoins</p>
       </div>
 
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className={clsx('flex gap-1 p-1 rounded-lg w-fit', surfaceTokens.muted)}>
           <button
             onClick={() => setActiveTab('templates')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'templates' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
+            className={clsx(
+              'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+              activeTab === 'templates'
+                ? clsx(surfaceTokens.panel, textTokens.title, 'shadow-sm')
+                : clsx(textTokens.muted, 'hover:bg-white/70'),
+            )}
           >
           Modèles de contrat
         </button>
         <button
           onClick={() => setActiveTab('signed')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'signed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
+          className={clsx(
+            'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+            activeTab === 'signed'
+              ? clsx(surfaceTokens.panel, textTokens.title, 'shadow-sm')
+              : clsx(textTokens.muted, 'hover:bg-white/70'),
+          )}
         >
           Contrats signés ({contracts.length})
         </button>
@@ -470,200 +489,209 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
       {activeTab === 'templates' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl shadow-sm border p-5 flex flex-col">
+            <Card variant="default" className="flex flex-col">
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="w-5 h-5 text-slate-700" />
-                <h3 className="font-semibold text-gray-900">Contrat par défaut type 1</h3>
+                <FileText className={clsx('w-5 h-5', textTokens.muted)} />
+                <h3 className={clsx('font-semibold', textTokens.title)}>Contrat par défaut type 1</h3>
               </div>
-              <p className="text-sm text-gray-500 mb-4 flex-1">Contrat standard préfiguré avec les clauses essentielles pour une location courte durée.</p>
+              <p className={clsx('text-sm mb-4 flex-1', textTokens.subtle)}>Contrat standard préfiguré avec les clauses essentielles pour une location courte durée.</p>
               <div className="flex gap-2 mt-auto">
-                <button
+                <Button
                   onClick={() => { setPreviewContent(replaceVars(DEFAULT_TEMPLATE_1, properties, reservations)); setPreviewType('default1'); setShowPreview(true); }}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  variant="secondary"
+                  size="sm"
                 >
                   <Eye size={14} />
                   Voir
-                </button>
-                <button className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                </Button>
+                <Button variant="secondary" size="sm">
                   <Download size={14} />
                   PDF
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-white rounded-xl shadow-sm border p-5 flex flex-col relative">
-              <span className="absolute top-3 right-3 px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-full flex items-center gap-1">
+            <Card variant="highlight" className="flex flex-col relative">
+              <Badge variant="neutral" className="absolute top-3 right-3 gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold">
                 <Sparkles size={10} />
                 Nouveau
-              </span>
+              </Badge>
               <div className="flex items-center gap-2 mb-3">
-                <Shield className="w-5 h-5 text-slate-700" />
-                <h3 className="font-semibold text-gray-900">Contrat par défaut type 2</h3>
+                <Shield className={clsx('w-5 h-5', textTokens.muted)} />
+                <h3 className={clsx('font-semibold', textTokens.title)}>Contrat par défaut type 2</h3>
               </div>
-              <p className="text-sm text-gray-500 mb-4 flex-1">Contrat détaillé avec clauses de sécurité, règlement intérieur complet et responsabilités.</p>
+              <p className={clsx('text-sm mb-4 flex-1', textTokens.subtle)}>Contrat détaillé avec clauses de sécurité, règlement intérieur complet et responsabilités.</p>
               <div className="flex gap-2 mt-auto">
-                <button
+                <Button
                   onClick={() => { setPreviewContent(replaceVars(DEFAULT_TEMPLATE_2, properties, reservations)); setPreviewType('default2'); setShowPreview(true); }}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  variant="secondary"
+                  size="sm"
                 >
                   <Eye size={14} />
                   Voir
-                </button>
-                <button className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                </Button>
+                <Button variant="secondary" size="sm">
                   <Download size={14} />
                   PDF
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 p-5 flex flex-col">
+            <Card variant="default" className={clsx('flex flex-col border-2 border-dashed', borderTokens.strong)}>
               <div className="flex items-center gap-2 mb-3">
-                <Star className="w-5 h-5 text-amber-500" />
-                <h3 className="font-semibold text-gray-900">Mon propre contrat</h3>
+                <Star className={clsx('w-5 h-5 fill-current', textTokens.warning)} />
+                <h3 className={clsx('font-semibold', textTokens.title)}>Mon propre contrat</h3>
               </div>
               {templates.length > 0 ? (
                 <>
                   <div className="flex-1 space-y-2 mb-4">
                     {templates.map((t) => (
-                      <div key={t.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
+                      <div key={t.id} className={clsx('flex items-center justify-between rounded-lg p-2.5', surfaceTokens.subtle)}>
                         <div className="flex items-center gap-2 min-w-0">
-                          {t.is_default && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
-                          <span className="text-sm font-medium text-gray-900 truncate">{t.name}</span>
+                          {t.is_default && <Star size={12} className={clsx('fill-current shrink-0', textTokens.warning)} />}
+                          <span className={clsx('text-sm font-medium truncate', textTokens.title)}>{t.name}</span>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {!t.is_default && (
-                            <button onClick={() => setDefaultTemplate(t.id)} className="p-1 text-gray-400 hover:text-amber-500" title="Activer">
+                            <button onClick={() => setDefaultTemplate(t.id)} className={iconButtonToken} title="Activer">
                               <Star size={14} />
                             </button>
                           )}
-                          <button
+                          <Button
                             onClick={() => { setEditingTemplate(t); setShowEditor(true); }}
-                            className="px-2 py-1 text-xs text-slate-700 hover:bg-slate-100 rounded"
+                            variant="tertiary"
+                            size="sm"
                           >
                             Modifier
-                          </button>
-                          <button onClick={() => deleteTemplate(t.id)} className="p-1 text-gray-400 hover:text-red-600">
+                          </Button>
+                          <button onClick={() => deleteTemplate(t.id)} className={clsx(iconButtonToken, textTokens.danger, 'hover:bg-white/70')}>
                             <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <p className="text-[11px] text-gray-400 mb-3">
+                  <p className={clsx('text-[11px] mb-3', textTokens.subtle)}>
                     Dernière modification : {formatDate(templates[0].updated_at)}
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-gray-500 mb-4 flex-1">Créez votre propre contrat personnalisé avec vos clauses spécifiques.</p>
+                <p className={clsx('text-sm mb-4 flex-1', textTokens.subtle)}>Créez votre propre contrat personnalisé avec vos clauses spécifiques.</p>
               )}
-              <button
+              <Button
                 onClick={() => { setEditingTemplate(null); setNewTemplateName(''); setNewTemplateContent(''); setShowEditor(true); }}
-                className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+                variant="primary"
+                className="w-full"
               >
                 {templates.length > 0 ? 'Ajouter un modèle' : 'Créer mon contrat'}
-              </button>
-            </div>
+              </Button>
+            </Card>
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <Card variant="ghost" padding="md">
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-slate-700 shrink-0 mt-0.5" />
+              <Info className={clsx('w-5 h-5 shrink-0 mt-0.5', textTokens.muted)} />
               <div>
-                <h4 className="font-semibold text-slate-900 mb-2">Comment utiliser les contrats</h4>
-                <p className="text-sm text-slate-700 mb-3">
-                  Les contrats sont automatiquement présentés aux invités lors du check-in. Le contrat actif sera utilisé pour toutes les nouvelles réservations.
+                <h4 className={clsx('font-semibold mb-2', textTokens.title)}>Comment utiliser les contrats</h4>
+                <p className={clsx('text-sm mb-3', textTokens.body)}>
+                  Les contrats sont automatiquement présentés aux voyageurs lors du check-in. Le contrat actif sera utilisé pour toutes les nouvelles réservations.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {PLACEHOLDERS.slice(0, 8).map((p) => (
-                    <span key={p.key} className="text-xs bg-white/70 text-slate-700 rounded px-2 py-1 font-mono">{p.key}</span>
+                    <span key={p.key} className={clsx('text-xs bg-white/70 rounded px-2 py-1 font-mono', textTokens.body)}>{p.key}</span>
                   ))}
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {showEditor && (
-            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-              <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">
+            <Card variant="default" padding="sm" className="overflow-hidden p-0">
+              <div className={clsx('p-4 border-b flex items-center justify-between', surfaceTokens.subtle, borderTokens.default)}>
+                <h3 className={clsx('font-semibold', textTokens.title)}>
                   {isEditing ? `Modifier : ${editingTemplate!.name}` : 'Nouveau modèle'}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     onClick={() => {
                       const content = isEditing ? editingTemplate!.content : newTemplateContent;
                       setPreviewContent(replaceVars(content, properties, reservations));
                       setPreviewType('custom');
                       setShowPreview(true);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                    variant="secondary"
+                    size="sm"
                   >
                     <Eye className="w-4 h-4" />
                     Aperçu
-                  </button>
-                  <button onClick={() => { setEditingTemplate(null); setShowEditor(false); }} className="p-1.5 text-gray-400 hover:text-gray-600">
+                  </Button>
+                  <button onClick={() => { setEditingTemplate(null); setShowEditor(false); }} className={iconButtonToken}>
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
               <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du modèle</label>
+                  <label className={clsx('block text-sm font-medium mb-1', textTokens.body)}>Nom du modèle</label>
                   <input
                     type="text"
                     value={isEditing ? editingTemplate!.name : newTemplateName}
                     onChange={(e) => isEditing ? setEditingTemplate({ ...editingTemplate!, name: e.target.value }) : setNewTemplateName(e.target.value)}
                     placeholder="Ex: Contrat standard, Contrat longue durée..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-sm"
+                    className={inputTokens.base}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Variables disponibles</label>
+                  <label className={clsx('block text-sm font-medium mb-1', textTokens.body)}>Variables disponibles</label>
                   <div className="flex flex-wrap gap-1.5">
                     {PLACEHOLDERS.map((p) => (
-                      <button
+                      <Button
                         key={p.key}
                         onClick={() => insertPlaceholder(p.key)}
-                        className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors border border-slate-200"
+                        variant="secondary"
+                        size="sm"
                         title={p.label}
                       >
                         {p.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contenu du contrat</label>
+                  <label className={clsx('block text-sm font-medium mb-1', textTokens.body)}>Contenu du contrat</label>
                   <textarea
                     ref={textareaRef}
                     value={isEditing ? editingTemplate!.content : newTemplateContent}
                     onChange={(e) => isEditing ? setEditingTemplate({ ...editingTemplate!, content: e.target.value }) : setNewTemplateContent(e.target.value)}
                     rows={18}
                     placeholder="Rédigez votre contrat ici... Utilisez les variables ci-dessus pour insérer automatiquement les informations."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none font-mono text-sm leading-relaxed"
+                    className={`${inputTokens.base} font-mono leading-relaxed`}
                   />
                 </div>
                 <div className="flex gap-3">
                   {!isEditing && !newTemplateContent && (
-                    <button
+                    <Button
                       onClick={() => { setNewTemplateName('Contrat standard'); setNewTemplateContent(DEFAULT_TEMPLATE_1); }}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                      variant="secondary"
+                      size="sm"
                     >
                       <FileText className="w-4 h-4" />
                       Utiliser le modèle par défaut
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
                     onClick={saveTemplate}
                     disabled={saving || !(isEditing ? editingTemplate!.name && editingTemplate!.content : newTemplateName && newTemplateContent)}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40 text-sm ml-auto"
+                    variant="primary"
+                    size="sm"
+                    className="ml-auto"
                   >
                     <Save className="w-4 h-4" />
                     {saving ? 'Enregistrement…' : 'Enregistrer'}
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       )}
@@ -671,11 +699,11 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
       {activeTab === 'signed' && (
         <div className="space-y-4">
           {isSigningHost && selectedReservation && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">Signer le contrat</h2>
-                  <button onClick={() => { setIsSigningHost(false); setSelectedReservation(null); clearSignature(); }} className="p-1.5 hover:bg-gray-100 rounded-lg">
+            <div className={modalTokens.overlay}>
+              <div className={`${modalTokens.panel} max-w-2xl`} onClick={(e) => e.stopPropagation()}>
+                <div className={clsx('p-5 border-b flex items-center justify-between', borderTokens.default)}>
+                  <h2 className={clsx('text-xl font-bold', textTokens.title)}>Signer le contrat</h2>
+                  <button onClick={() => { setIsSigningHost(false); setSelectedReservation(null); clearSignature(); }} className={iconButtonToken}>
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -689,13 +717,13 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                       ? replaceVars(tpl.content, [property], [reservation])
                       : `Contrat pour ${property.name}\nRéservation : ${reservation.booking_reference}`;
                     return (
-                      <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
-                        <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">{text}</pre>
-                      </div>
+                      <Card variant="ghost" className="max-h-64 overflow-y-auto">
+                        <pre className={clsx('text-sm whitespace-pre-wrap font-sans', textTokens.body)}>{text}</pre>
+                      </Card>
                     );
                   })()}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Signature du propriétaire</label>
+                    <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>Signature du propriétaire</label>
                     <canvas
                       ref={canvasRef}
                       width={600}
@@ -707,21 +735,25 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                       onTouchStart={handlePointerDown}
                       onTouchMove={handlePointerMove}
                       onTouchEnd={handlePointerUp}
-                      className="border-2 border-gray-300 rounded-lg w-full bg-white"
+                      className={clsx('border-2 rounded-lg w-full bg-white', borderTokens.strong)}
                       style={{ touchAction: 'none' }}
                     />
-                    <button onClick={clearSignature} className="mt-1.5 px-3 py-1.5 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
+                    <Button onClick={clearSignature} variant="secondary" size="sm" className="mt-1.5">
                       Effacer
-                    </button>
+                    </Button>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={saveSignature} className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-lg hover:bg-slate-800">
+                    <Button onClick={saveSignature} variant="primary" className="flex-1">
                       <Check className="w-5 h-5" />
                       Signer et enregistrer
-                    </button>
-                    <button onClick={() => { setIsSigningHost(false); setSelectedReservation(null); clearSignature(); }} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200">
+                    </Button>
+                    <Button
+                      onClick={() => { setIsSigningHost(false); setSelectedReservation(null); clearSignature(); }}
+                      variant="secondary"
+                      className="flex-1"
+                    >
                       Annuler
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -729,34 +761,34 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
           )}
 
           {templates.length === 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-800">
+            <Card variant="warning" padding="md">
+              <p className={clsx('text-sm', textTokens.warning)}>
                 Vous n'avez pas encore de modèle de contrat. Créez-en un dans l'onglet "Modèles de contrat" pour pouvoir émettre des contrats.
               </p>
-            </div>
+            </Card>
           )}
 
           {reservations.length === 0 ? (
-            <div className="bg-white rounded-lg p-8 text-center">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Aucune réservation disponible</p>
-            </div>
+            <Card variant="default" padding="lg" className="text-center">
+              <FileText className={clsx('w-12 h-12 mx-auto mb-4', textTokens.subtle)} />
+              <p className={textTokens.muted}>Aucune réservation disponible</p>
+            </Card>
           ) : (
             reservations.map((reservation) => {
               const property = properties.find((p) => p.id === reservation.property_id);
               const contract = contracts.find((c) => c.reservation_id === reservation.id);
               return (
-                <div key={reservation.id} className="bg-white rounded-lg shadow-sm border p-5">
+                <Card key={reservation.id} variant="default" className="p-5">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <FileText className="w-5 h-5 text-slate-700" />
+                        <FileText className={clsx('w-5 h-5', textTokens.muted)} />
                         <div>
-                          <p className="font-bold text-gray-900">{reservation.booking_reference}</p>
-                          <p className="text-sm text-gray-600">{property?.name}</p>
+                          <p className={clsx('font-bold', textTokens.title)}>{reservation.booking_reference}</p>
+                          <p className={clsx('text-sm', textTokens.muted)}>{property?.name}</p>
                         </div>
                       </div>
-                      <div className="flex gap-6 text-sm text-gray-600">
+                      <div className={clsx('flex gap-6 text-sm', textTokens.muted)}>
                         <span>Arrivée : {formatDate(reservation.check_in_date)}</span>
                         <span>Départ : {formatDate(reservation.check_out_date)}</span>
                       </div>
@@ -764,16 +796,16 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     <div className="flex flex-col items-end gap-2">
                       {contract ? (
                         <>
-                          <span className="px-3 py-1.5 bg-slate-200 text-slate-800 rounded-lg text-sm font-medium flex items-center gap-1.5">
+                          <span className={clsx('px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5', stateFillTokens.neutral, textTokens.body)}>
                             <Check className="w-4 h-4" />
                             Contrat signé
                           </span>
-                          <div className="flex gap-3 text-xs text-gray-500">
+                          <div className={clsx('flex gap-3 text-xs', textTokens.subtle)}>
                             {contract.signed_by_host && <span>Bailleur (émetteur)</span>}
                             {contract.signed_by_guest && <span>Locataire (signataire)</span>}
                           </div>
                           {contract.pdf_storage_path && (
-                            <button
+                            <Button
                               disabled={downloadingPdfId === contract.id}
                               onClick={async () => {
                                 setDownloadingPdfId(contract.id);
@@ -790,7 +822,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                                     if (resp.status === 409) {
                                       alert("Erreur d'intégrité : le PDF semble avoir été modifié. Contactez le support.");
                                     } else {
-                                      alert('Erreur lors du téléchargement du PDF. Veuillez réessayer.');
+                                      alert('Erreur lors du téléchargement du PDF. Réessayez.');
                                     }
                                     console.error(`PDF download failed (${resp.status}):`, errText);
                                     return;
@@ -811,25 +843,27 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                                   setDownloadingPdfId(null);
                                 }
                               }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors border border-slate-200 disabled:opacity-50"
+                              variant="secondary"
+                              size="sm"
                             >
                               <Download size={12} className={downloadingPdfId === contract.id ? 'animate-bounce' : ''} />
                               {downloadingPdfId === contract.id ? '...' : 'PDF'}
-                            </button>
+                            </Button>
                           )}
                         </>
                       ) : (
-                        <button
+                        <Button
                           onClick={() => { setSelectedReservation(reservation.id); setIsSigningHost(true); }}
                           disabled={templates.length === 0}
-                          className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm disabled:opacity-40"
+                          variant="secondary"
+                          size="sm"
                         >
                           Créer et valider
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
-                </div>
+                </Card>
               );
             })
           )}
@@ -837,16 +871,16 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
       )}
 
       {showPreview && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPreview(false)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-gray-200 flex items-center justify-between shrink-0">
-              <h2 className="text-lg font-bold text-gray-900">Apercu du contrat</h2>
-              <button onClick={() => setShowPreview(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <div className={modalTokens.overlay} onClick={() => setShowPreview(false)}>
+          <div className={`${modalTokens.panel} max-w-3xl flex flex-col`} onClick={(e) => e.stopPropagation()}>
+            <div className={clsx('p-5 border-b flex items-center justify-between shrink-0', borderTokens.default)}>
+              <h2 className={clsx('text-lg font-bold', textTokens.title)}>Apercu du contrat</h2>
+              <button onClick={() => setShowPreview(false)} className={iconButtonToken}>
                 <X size={20} />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
-              <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 leading-relaxed">{previewContent}</pre>
+              <pre className={clsx('whitespace-pre-wrap font-sans text-sm leading-relaxed', textTokens.body)}>{previewContent}</pre>
             </div>
           </div>
         </div>

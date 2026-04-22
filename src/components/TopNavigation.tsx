@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Menu, X } from 'lucide-react';
+import { clsx } from '../lib/clsx';
+import { borderTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
 import { AppPage } from '../lib/navigation';
 import { fr } from '../lib/i18n/fr';
 import { Button } from './ui/Button';
@@ -140,12 +142,12 @@ export function TopNavigation({
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header className={clsx('sticky top-0 z-40 border-b bg-white/95 backdrop-blur', borderTokens.default)}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
         <button
           type="button"
           aria-label={fr.topnav.logoAria}
-          className="text-lg font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+          className={clsx('text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.title)}
           onClick={() => handleNavigate('dashboard')}
         >
           {fr.app.brand}
@@ -191,13 +193,17 @@ export function TopNavigation({
                     aria-haspopup="menu"
                     aria-expanded={tabletMoreOpen}
                     onClick={() => setTabletMoreOpen((previous) => !previous)}
-                    className="inline-flex items-center gap-1 border-b-2 border-transparent py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                    className={clsx(
+                      'inline-flex items-center gap-1 border-b-2 border-transparent py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300',
+                      textTokens.muted,
+                      'hover:opacity-90',
+                    )}
                   >
                     {fr.topnav.more}
                     <ChevronDown size={14} />
                   </button>
                   {tabletMoreOpen ? (
-                    <div role="menu" className="absolute right-0 top-11 z-50 min-w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
+                    <div role="menu" className={clsx('absolute right-0 top-11 z-50 min-w-48 rounded-lg border bg-white p-2 shadow-xl', borderTokens.default)}>
                       {tabletOverflowLinks.map((item) => (
                         <NavigationItem
                           key={item.id}
@@ -220,7 +226,7 @@ export function TopNavigation({
           <Button
             variant="secondary"
             size="sm"
-            className="border-slate-900 text-slate-900"
+            className={clsx(borderTokens.strong, textTokens.title)}
             onClick={() => handleNavigate('pricing')}
           >
             {fr.topnav.upgrade}
@@ -233,21 +239,26 @@ export function TopNavigation({
               aria-haspopup="menu"
               aria-expanded={userMenuOpen}
               onClick={() => setUserMenuOpen((previous) => !previous)}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+              className={clsx(
+                'inline-flex items-center gap-2 rounded-lg border bg-white px-2.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300',
+                borderTokens.default,
+                textTokens.body,
+                'hover:bg-white/70',
+              )}
             >
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+              <span className={clsx('inline-flex h-7 w-7 items-center justify-center rounded-full bg-current text-xs font-semibold text-white', textTokens.title)}>
                 {initialsFromName(hostName)}
               </span>
               <ChevronDown size={14} />
             </button>
 
             {userMenuOpen ? (
-              <div role="menu" className="absolute right-0 top-11 z-50 min-w-52 rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
+              <div role="menu" className={clsx('absolute right-0 top-11 z-50 min-w-52 rounded-lg border bg-white p-2 shadow-xl', borderTokens.default)}>
                 <button
                   type="button"
                   role="menuitem"
                   onClick={() => handleNavigate('profile')}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                  className={clsx('w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.body)}
                 >
                   {fr.topnav.userMenu.profile}
                 </button>
@@ -255,7 +266,7 @@ export function TopNavigation({
                   type="button"
                   role="menuitem"
                   onClick={() => handleNavigate('pricing')}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                  className={clsx('w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.body)}
                 >
                   {fr.topnav.userMenu.billing}
                 </button>
@@ -263,7 +274,7 @@ export function TopNavigation({
                   type="button"
                   role="menuitem"
                   onClick={() => handleNavigate('help')}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                  className={clsx('w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.body)}
                 >
                   {fr.topnav.userMenu.help}
                 </button>
@@ -274,7 +285,7 @@ export function TopNavigation({
                     setUserMenuOpen(false);
                     onLogout();
                   }}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                  className={clsx('w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300', textTokens.danger)}
                 >
                   {fr.topnav.userMenu.logout}
                 </button>
@@ -290,7 +301,7 @@ export function TopNavigation({
           aria-expanded={mobileOpen}
           aria-controls="topnav-mobile-panel"
           onClick={() => setMobileOpen(true)}
-          className="rounded-lg border border-slate-200 p-2 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 md:hidden"
+          className={clsx('rounded-lg border p-2 transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 md:hidden', borderTokens.default, textTokens.body)}
         >
           <Menu size={20} />
         </button>
@@ -298,7 +309,7 @@ export function TopNavigation({
 
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-slate-950/55" onClick={() => setMobileOpen(false)} />
+          <div className={clsx('absolute inset-0', surfaceTokens.overlay)} onClick={() => setMobileOpen(false)} />
           <div
             id="topnav-mobile-panel"
             ref={mobilePanelRef}
@@ -309,13 +320,13 @@ export function TopNavigation({
             className="absolute inset-0 flex flex-col bg-white px-5 pb-6 pt-5"
           >
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-base font-semibold text-slate-900">{fr.topnav.mobileMenuTitle}</p>
+              <p className={clsx('text-base font-semibold', textTokens.title)}>{fr.topnav.mobileMenuTitle}</p>
               <button
                 type="button"
                 data-testid="topnav-mobile-close"
                 aria-label={fr.topnav.closeMobileMenu}
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg border border-slate-200 p-2 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                className={clsx('rounded-lg border p-2 transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', borderTokens.default, textTokens.body)}
               >
                 <X size={18} />
               </button>
@@ -338,11 +349,11 @@ export function TopNavigation({
               </ul>
             </nav>
 
-            <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
+            <div className={clsx('mt-4 space-y-2 border-t pt-4', borderTokens.default)}>
               <Button
                 variant="secondary"
                 fullWidth
-                className="border-slate-900 text-slate-900 justify-center"
+                className={clsx('justify-center', borderTokens.strong, textTokens.title)}
                 onClick={() => handleNavigate('pricing')}
               >
                 {fr.topnav.upgrade}

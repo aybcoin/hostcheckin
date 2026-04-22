@@ -196,8 +196,8 @@ export function computeReservationSteps(
     },
     depot: {
       status: depotStatus,
-      label: 'Dépôt en attente',
-      shortLabel: 'Dépôt',
+      label: 'Caution en attente',
+      shortLabel: 'Caution',
     },
   };
 }
@@ -282,7 +282,7 @@ export function computeReservationCta(
 
   // ID rejeté (bloquant absolu même si checked_in)
   if (steps.identite.status === 'blocking' && reservation.status !== 'checked_in') {
-    return { action: 'contacter_invite', label: "Contacter l'invité", variant: 'dangerSoft' };
+    return { action: 'contacter_invite', label: "Contacter le voyageur", variant: 'dangerSoft' };
   }
 
   // Check-in en retard (arrivée passée, statut pending)

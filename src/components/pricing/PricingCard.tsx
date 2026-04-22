@@ -1,4 +1,6 @@
 import { Check } from 'lucide-react';
+import { clsx } from '../../lib/clsx';
+import { borderTokens, surfaceTokens, textTokens } from '../../lib/design-tokens';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 
@@ -32,34 +34,34 @@ export function PricingCard({
       variant={recommended ? 'highlight' : 'default'}
       padding="lg"
       interactive
-      className={recommended ? 'border-slate-900 ring-1 ring-slate-900' : ''}
+      className={recommended ? clsx(borderTokens.strong, 'ring-1 ring-black/10') : ''}
     >
       <div className="mb-5">
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-slate-900">{name}</h3>
+          <h3 className={clsx('text-xl font-semibold', textTokens.title)}>{name}</h3>
           {recommended ? (
-            <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+            <span className={clsx('rounded-full border px-3 py-1 text-xs font-medium', borderTokens.strong, surfaceTokens.subtle, textTokens.body)}>
               Recommandé
             </span>
           ) : null}
         </div>
-        <p className="mt-3 text-3xl font-bold text-slate-900">
+        <p className={clsx('mt-3 text-3xl font-bold', textTokens.title)}>
           {amount}
-          <span className="ml-1 text-base font-medium text-slate-600">{currency}</span>
+          <span className={clsx('ml-1 text-base font-medium', textTokens.muted)}>{currency}</span>
         </p>
-        <p className="text-sm text-slate-500">{suffix}</p>
-        <p className="mt-3 text-sm text-slate-600">{positioning}</p>
+        <p className={clsx('text-sm', textTokens.subtle)}>{suffix}</p>
+        <p className={clsx('mt-3 text-sm', textTokens.muted)}>{positioning}</p>
       </div>
 
       {features.length === 0 ? (
-        <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
+        <p className={clsx('rounded-lg p-3 text-sm', surfaceTokens.subtle, textTokens.subtle)}>
           Aucune fonctionnalité renseignée.
         </p>
       ) : (
         <ul className="space-y-2.5">
           {features.map((feature) => (
-            <li key={feature} className="flex items-start gap-2 text-sm text-slate-700">
-              <Check size={16} className="mt-0.5 shrink-0 text-slate-700" />
+            <li key={feature} className={clsx('flex items-start gap-2 text-sm', textTokens.body)}>
+              <Check size={16} className={clsx('mt-0.5 shrink-0', textTokens.body)} />
               <span>{feature}</span>
             </li>
           ))}

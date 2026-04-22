@@ -21,6 +21,7 @@ import {
   nightsCount,
 } from '../../lib/reservations-status';
 import { ReservationStatusPills } from './ReservationStatusPills';
+import { TrustBadge } from '../trust/TrustBadge';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { fr } from '../../lib/i18n/fr';
@@ -99,6 +100,12 @@ function fmtShortDate(iso: string) {
     day: '2-digit',
     month: 'short',
   });
+}
+
+function isIdentityTrusted(status?: string): boolean {
+  if (!status) return false;
+  const normalized = status.toLowerCase();
+  return normalized === 'approved' || normalized === 'verified' || normalized === 'ok';
 }
 
 // ── Composant ──────────────────────────────────────────────────────────────────
@@ -255,7 +262,11 @@ export function ReservationCard({
           onClick={(e) => e.stopPropagation()}
           role="presentation"
         >
-          <ReservationStatusPills steps={steps} />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <ReservationStatusPills steps={steps} />
+            {contract?.signed_by_guest ? <TrustBadge type="signature" /> : null}
+            {isIdentityTrusted(verification?.status) ? <TrustBadge type="identity" /> : null}
+          </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* CTA contextuel */}
@@ -439,7 +450,7 @@ export function ReservationCard({
             </div>
           )}
 
-          {/* Info invité */}
+          {/* Infos voyageur */}
           {guest && (
             <div className="bg-white rounded-lg border border-slate-200 p-3">
               <p className="text-xs font-medium text-slate-700 mb-2">

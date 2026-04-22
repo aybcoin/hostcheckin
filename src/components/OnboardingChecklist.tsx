@@ -9,6 +9,8 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
+import { clsx } from '../lib/clsx';
+import { borderTokens, stateFillTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
 import type { AppPage } from '../lib/navigation';
 import type { Property } from '../lib/supabase';
 import { useOnboardingSteps, type OnboardingViewStep } from '../hooks/useOnboardingSteps';
@@ -129,7 +131,7 @@ export function OnboardingChecklistCard({
   if (loading) {
     return (
       <Card className={`p-5 ${className}`} data-testid="onboarding-checklist-loading">
-        <p className="text-sm text-slate-500">{fr.onboarding.loading}</p>
+        <p className={clsx('text-sm', textTokens.subtle)}>{fr.onboarding.loading}</p>
       </Card>
     );
   }
@@ -137,7 +139,7 @@ export function OnboardingChecklistCard({
   if (error) {
     return (
       <Card className={`p-5 ${className}`} data-testid="onboarding-checklist-error">
-        <p className="text-sm text-red-700">{error}</p>
+        <p className={clsx('text-sm', textTokens.danger)}>{error}</p>
       </Card>
     );
   }
@@ -152,12 +154,12 @@ export function OnboardingChecklistCard({
       <Card className={`p-4 ${className}`} data-testid="onboarding-complete-banner">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900">{fr.onboarding.completedBanner}</p>
+            <p className={clsx('text-sm font-semibold', textTokens.title)}>{fr.onboarding.completedBanner}</p>
             <button
               type="button"
               onClick={() => setShowChecklistReview(true)}
               data-testid="onboarding-review-link"
-              className="mt-1 text-xs font-medium text-slate-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+              className={clsx('mt-1 text-xs font-medium underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.body)}
             >
               {fr.onboarding.reviewLink}
             </button>
@@ -166,7 +168,7 @@ export function OnboardingChecklistCard({
             type="button"
             onClick={dismissCompletedBanner}
             aria-label={fr.onboarding.dismissBannerAria}
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            className={clsx('rounded-lg p-1.5 hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.subtle)}
           >
             <X size={16} />
           </button>
@@ -179,11 +181,11 @@ export function OnboardingChecklistCard({
     <Card className={`p-5 ${className}`} data-testid="onboarding-checklist">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">{fr.onboarding.title(fr.app.brand)}</h3>
-          <p className="mt-1 text-sm text-slate-600">
+          <h3 className={clsx('text-lg font-semibold', textTokens.title)}>{fr.onboarding.title(fr.app.brand)}</h3>
+          <p className={clsx('mt-1 text-sm', textTokens.muted)}>
             {fr.onboarding.subtitle}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className={clsx('mt-1 text-xs', textTokens.subtle)}>
             {fr.onboarding.progress(completedCount, steps.length)}
           </p>
         </div>
@@ -216,36 +218,36 @@ export function OnboardingChecklistCard({
               role="listitem"
               aria-current={isActive ? 'step' : undefined}
               data-testid={`onboarding-step-${step.step_key}`}
-              className={`
-                rounded-xl border p-4 transition-colors
-                ${isActive ? 'border-slate-900 bg-slate-50' : ''}
-                ${isDone ? 'border-emerald-200 bg-emerald-50/50' : ''}
-                ${isLocked ? 'border-slate-200 bg-slate-50' : ''}
-              `}
+              className={clsx(
+                'rounded-xl border p-4 transition-colors',
+                isActive && clsx(borderTokens.strong, surfaceTokens.subtle),
+                isDone && clsx(borderTokens.success, stateFillTokens.success),
+                isLocked && clsx(borderTokens.default, surfaceTokens.subtle),
+              )}
             >
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`
-                        inline-flex h-8 w-8 items-center justify-center rounded-lg
-                        ${isDone ? 'bg-emerald-100 text-emerald-700' : ''}
-                        ${isActive ? 'bg-slate-900 text-white' : ''}
-                        ${isLocked ? 'bg-slate-200 text-slate-500' : ''}
-                      `}
+                      className={clsx(
+                        'inline-flex h-8 w-8 items-center justify-center rounded-lg',
+                        isDone && clsx(stateFillTokens.success, textTokens.success),
+                        isActive && clsx('bg-current text-white', textTokens.title),
+                        isLocked && clsx(surfaceTokens.elevated, textTokens.subtle),
+                      )}
                     >
                       {isDone ? <CheckCircle2 size={16} /> : <Icon size={16} />}
                     </span>
                     <div className="min-w-0">
                       <p
-                        className={`
-                          truncate text-sm font-semibold
-                          ${isDone ? 'text-slate-700 line-through' : 'text-slate-900'}
-                        `}
+                        className={clsx(
+                          'truncate text-sm font-semibold',
+                          isDone ? clsx(textTokens.body, 'line-through') : textTokens.title,
+                        )}
                       >
                         {step.title}
                       </p>
-                      <p className="text-xs text-slate-600">{step.description}</p>
+                      <p className={clsx('text-xs', textTokens.muted)}>{step.description}</p>
                     </div>
                   </div>
                   <div className="mt-2 flex items-center gap-2">
@@ -254,7 +256,7 @@ export function OnboardingChecklistCard({
                     </Badge>
                     {isDone ? <Badge variant="success">{fr.onboarding.done}</Badge> : null}
                     {isLocked ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                      <span className={clsx('inline-flex items-center gap-1 text-xs', textTokens.subtle)}>
                         <Lock size={12} />
                         {fr.onboarding.locked}
                       </span>

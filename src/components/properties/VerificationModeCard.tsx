@@ -1,5 +1,9 @@
 import { ShieldCheck } from 'lucide-react';
+import { clsx } from '../../lib/clsx';
+import { borderTokens, surfaceTokens, textTokens } from '../../lib/design-tokens';
 import { Property } from '../../lib/supabase';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 
 interface VerificationModeCardProps {
   property: Property;
@@ -11,59 +15,51 @@ export function VerificationModeCard({ property, saving, onChange }: Verificatio
   const mode = property.verification_mode || 'simple';
 
   return (
-    <section className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <Card variant="ghost" padding="sm" className="mt-4">
       <div className="mb-2 flex items-center gap-2">
-        <ShieldCheck size={16} className="text-slate-700" />
-        <h4 className="text-sm font-semibold text-slate-900">Type de vérification</h4>
+        <ShieldCheck size={16} className={textTokens.body} />
+        <h4 className={clsx('text-sm font-semibold', textTokens.title)}>Type de vérification</h4>
       </div>
-      <p className="text-xs text-slate-600">
-        Choisissez le niveau par défaut appliqué aux nouvelles réservations de cette propriété.
+      <p className={clsx('text-xs', textTokens.muted)}>
+        Choisissez le niveau par défaut appliqué aux nouvelles réservations de ce logement.
       </p>
 
-      <div className="mt-3 inline-flex rounded-lg border border-slate-200 bg-white p-1">
-        <button
-          type="button"
+      <div className={clsx('mt-3 inline-flex rounded-lg border bg-white p-1', borderTokens.default)}>
+        <Button
           onClick={() => onChange('simple')}
           disabled={saving}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-            mode === 'simple'
-              ? 'bg-slate-900 text-white'
-              : 'text-slate-700 hover:bg-slate-100'
-          }`}
+          variant={mode === 'simple' ? 'primary' : 'tertiary'}
+          size="sm"
         >
           Vérification simple
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
           onClick={() => onChange('complete')}
           disabled={saving}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-            mode === 'complete'
-              ? 'bg-slate-900 text-white'
-              : 'text-slate-700 hover:bg-slate-100'
-          }`}
+          variant={mode === 'complete' ? 'primary' : 'tertiary'}
+          size="sm"
         >
           Vérification complète
-        </button>
+        </Button>
       </div>
 
-      <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase text-slate-500">
+      <div className={clsx('mt-3 overflow-hidden rounded-lg border bg-white', borderTokens.default)}>
+        <div className={clsx('grid grid-cols-3 border-b px-3 py-2 text-[11px] font-semibold uppercase', borderTokens.default, surfaceTokens.subtle, textTokens.subtle)}>
           <span>Mode</span>
-          <span>Invité principal</span>
+          <span>Voyageur principal</span>
           <span>Tous les adultes</span>
         </div>
-        <div className="grid grid-cols-3 px-3 py-2 text-xs text-slate-700">
+        <div className={clsx('grid grid-cols-3 px-3 py-2 text-xs', textTokens.body)}>
           <span>Simple</span>
           <span>Oui</span>
           <span>Non</span>
         </div>
-        <div className="grid grid-cols-3 border-t border-slate-200 px-3 py-2 text-xs text-slate-700">
+        <div className={clsx('grid grid-cols-3 border-t px-3 py-2 text-xs', borderTokens.default, textTokens.body)}>
           <span>Complète</span>
           <span>Oui</span>
           <span>Oui</span>
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, Plus, Search, X } from 'lucide-react';
+import { clsx } from '../lib/clsx';
 import {
   Reservation, Property, ReservationCreateInput, supabase,
 } from '../lib/supabase';
@@ -23,19 +24,21 @@ import {
   type VerificationSummary,
   type ContractSummary,
 } from '../lib/reservations-status';
+import { computeTrustMetrics } from '../lib/trust-metrics';
 import {
   ReservationCard,
   type GuestInfo,
   type VerificationInfo,
   type ContractInfo,
 } from './reservations/ReservationCard';
+import { TrustBar } from './trust/TrustBar';
 import { ReservationDocuments } from './ReservationDocuments';
 import { ShareLinkModal } from './reservations/ShareLinkModal';
 import { RatingModal } from './reservations/RatingModal';
 import { CreateReservationModal } from './reservations/CreateReservationModal';
 import { Button } from './ui/Button';
 import { fr } from '../lib/i18n/fr';
-import { chipTokens } from '../lib/design-tokens';
+import { borderTokens, chipTokens, inputTokens, stateFillTokens, textTokens } from '../lib/design-tokens';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -103,16 +106,15 @@ function QuickFilterChips({
           >
             {chip.label}
             {chip.count !== undefined && (
-              <span
-                aria-label={`${chip.count} réservations`}
-                className={`
-                  inline-flex items-center justify-center rounded-full
-                  min-w-[1.25rem] h-5 px-1 text-xs font-semibold
-                  ${isActive ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'}
-                `}
-              >
-                {chip.count}
-              </span>
+                <span
+                  aria-label={`${chip.count} réservations`}
+                  className={clsx(
+                    'inline-flex items-center justify-center rounded-full min-w-[1.25rem] h-5 px-1 text-xs font-semibold',
+                    isActive ? 'bg-white/25 text-white' : clsx(stateFillTokens.neutral, textTokens.body),
+                  )}
+                >
+                  {chip.count}
+                </span>
             )}
           </button>
         );
@@ -243,6 +245,20 @@ export function ReservationsPage({
     { label: 'Passées', value: 'past', count: categoryCounts.past },
   ];
 
+  const trustMetrics = useMemo(() => {
+    const contractSummaries: ContractSummary[] = Object.values(contracts).map((contract) => ({
+      signed_by_guest: contract.signed_by_guest,
+      signed_at: contract.signed_at,
+    }));
+
+    const verificationSummaries: VerificationSummary[] = Object.values(verifications).map((verification) => ({
+      status: (verification.status as VerificationSummary['status']) ?? 'pending',
+      verified_at: (verification as VerificationInfo & { verified_at?: string }).verified_at,
+    }));
+
+    return computeTrustMetrics(reservations, contractSummaries, verificationSummaries, 30);
+  }, [contracts, reservations, verifications]);
+
   // ── Filtrage + tri ────────────────────────────────────────────────────────
   const searchLower = search.toLowerCase().trim();
 
@@ -312,10 +328,13 @@ export function ReservationsPage({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+          <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>
             {fr.reservations.title}
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">
+          <div className="mt-3">
+            <TrustBar metrics={trustMetrics} />
+          </div>
+          <p className={clsx('mt-1 text-sm', textTokens.subtle)}>
             {fr.reservations.totalCount(reservations.length)}
           </p>
         </div>
@@ -335,7 +354,7 @@ export function ReservationsPage({
         <div className="relative w-full sm:w-64">
           <Search
             size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            className={clsx('absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none', textTokens.subtle)}
             aria-hidden="true"
           />
           <input
@@ -344,14 +363,14 @@ export function ReservationsPage({
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Voyageur, logement…"
             aria-label="Rechercher une réservation"
-            className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            className={clsx(inputTokens.base, 'py-2 pl-8 pr-8')}
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
               aria-label="Effacer la recherche"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
+              className={clsx('absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:opacity-90', textTokens.subtle)}
             >
               <X size={14} aria-hidden="true" />
             </button>
@@ -362,9 +381,9 @@ export function ReservationsPage({
       {/* Liste */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-            <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
-            <p className="text-slate-500 font-medium">
+          <div className={clsx('rounded-xl border bg-white p-12 text-center shadow-sm', borderTokens.default)}>
+            <Calendar className={clsx('w-10 h-10 mx-auto mb-3', textTokens.subtle)} aria-hidden="true" />
+            <p className={clsx('font-medium', textTokens.subtle)}>
               {search
                 ? 'Aucun résultat pour cette recherche'
                 : quickFilter === 'to_handle'
@@ -404,7 +423,7 @@ export function ReservationsPage({
 
             {/* Compteur + load-more */}
             <div className="flex items-center justify-between pt-1">
-              <p className="text-xs text-slate-400" aria-live="polite">
+              <p className={clsx('text-xs', textTokens.subtle)} aria-live="polite">
                 {Math.min(visibleCount, filtered.length)} / {filtered.length}{' '}
                 réservation{filtered.length > 1 ? 's' : ''}
               </p>

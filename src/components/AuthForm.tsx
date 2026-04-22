@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { LogIn, UserPlus, Building2 } from 'lucide-react';
+import { clsx } from '../lib/clsx';
+import { borderTokens, inputTokens, textTokens } from '../lib/design-tokens';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 interface AuthFormProps {
   onSignIn: (email: string, password: string) => Promise<void>;
@@ -22,7 +26,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
     try {
       if (isSignUp) {
         if (!fullName.trim()) {
-          throw new Error('Veuillez entrer votre nom complet');
+          throw new Error('Saisissez votre nom complet');
         }
         await onSignUp(email, password, fullName);
       } else {
@@ -41,7 +45,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8">
+        <Card variant="highlight" padding="lg" className={clsx('p-5 sm:p-8', borderTokens.subtle)}>
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-gradient-to-r from-slate-900 to-slate-700 rounded-xl">
@@ -51,7 +55,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">
               HostCheckIn
             </h1>
-            <p className="text-gray-600">
+            <p className={textTokens.muted}>
               {isSignUp ? 'Créez votre compte propriétaire' : 'Connectez-vous à votre compte'}
             </p>
           </div>
@@ -59,7 +63,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="fullName" className={clsx('block text-sm font-medium mb-1', textTokens.body)}>
                   Nom complet
                 </label>
                 <input
@@ -68,14 +72,14 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={isSignUp}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-transparent outline-none transition text-base"
+                  className={`${inputTokens.base} text-base`}
                   placeholder="Jean Dupont"
                 />
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className={clsx('block text-sm font-medium mb-1', textTokens.body)}>
                 Email
               </label>
               <input
@@ -84,13 +88,13 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-transparent outline-none transition text-base"
+                className={`${inputTokens.base} text-base`}
                 placeholder="vous@exemple.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className={clsx('block text-sm font-medium mb-1', textTokens.body)}>
                 Mot de passe
               </label>
               <input
@@ -100,21 +104,22 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-transparent outline-none transition text-base"
+                className={`${inputTokens.base} text-base`}
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <Card variant="danger" padding="sm" className={clsx('text-sm', textTokens.danger)}>
                 {error}
-              </div>
+              </Card>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              variant="primary"
+              className="w-full py-3"
             >
               {loading ? (
                 'Chargement…'
@@ -129,7 +134,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                   Se connecter
                 </>
               )}
-            </button>
+            </Button>
           </form>
 
           <div className="mt-6 text-center">
@@ -139,14 +144,14 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                 setError(null);
                 setFullName('');
               }}
-              className="text-sm text-slate-700 hover:text-slate-900 font-medium"
+              className={clsx('text-sm font-medium hover:opacity-90', textTokens.body)}
             >
               {isSignUp
                 ? 'Vous avez déjà un compte ? Connectez-vous'
                 : "Pas encore de compte ? Inscrivez-vous"}
             </button>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { MessageCircleMore, MessageSquareText, Mail, BookOpen } from "lucide-react";
+import { clsx } from "../lib/clsx";
+import { borderTokens, surfaceTokens, textTokens } from "../lib/design-tokens";
 import { fr } from "../lib/i18n/fr";
 
 const getSupportConfig = () => {
@@ -51,7 +53,7 @@ export function SupportButton() {
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen((prev) => !prev)}
-        className="w-full flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-800/70 px-4 py-3 text-slate-100 transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        className="w-full flex items-center gap-3 rounded-lg border border-white/20 bg-black/20 px-4 py-3 text-white transition-colors hover:bg-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
       >
         <MessageCircleMore size={18} />
         <span className="text-sm font-medium">{fr.support.title}</span>
@@ -61,7 +63,7 @@ export function SupportButton() {
         <div
           id={menuId}
           role="menu"
-          className="absolute bottom-14 left-0 right-0 z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
+          className={clsx("absolute bottom-14 left-0 right-0 z-50 overflow-hidden rounded-lg border bg-white shadow-xl", borderTokens.default)}
         >
           {whatsappHref ? (
             <a
@@ -70,17 +72,17 @@ export function SupportButton() {
               rel="noopener noreferrer"
               role="menuitem"
               aria-label={fr.support.whatsappHelp}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+              className={clsx("w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300", textTokens.body)}
               onClick={() => setOpen(false)}
             >
-              <MessageSquareText size={16} className="text-slate-700" />
+              <MessageSquareText size={16} className={textTokens.body} />
               <span>{fr.support.whatsapp}</span>
             </a>
           ) : (
             <button
               type="button"
               disabled
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-400 cursor-not-allowed bg-slate-50"
+              className={clsx("w-full flex items-center gap-3 px-3 py-2.5 text-sm cursor-not-allowed", textTokens.subtle, surfaceTokens.subtle)}
             >
               <MessageSquareText size={16} />
               <span>{fr.support.missingWhatsApp}</span>
@@ -92,17 +94,17 @@ export function SupportButton() {
               href={emailHref}
               role="menuitem"
               aria-label={fr.support.emailHelp}
-              className="w-full flex items-center gap-3 border-t border-slate-100 px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+              className={clsx("w-full flex items-center gap-3 border-t px-3 py-2.5 text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300", borderTokens.subtle, textTokens.body)}
               onClick={() => setOpen(false)}
             >
-              <Mail size={16} className="text-slate-700" />
+              <Mail size={16} className={textTokens.body} />
               <span>{fr.support.email}</span>
             </a>
           ) : (
             <button
               type="button"
               disabled
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-400 cursor-not-allowed bg-slate-50 border-t border-slate-100"
+              className={clsx("w-full flex items-center gap-3 border-t px-3 py-2.5 text-sm cursor-not-allowed", borderTokens.subtle, textTokens.subtle, surfaceTokens.subtle)}
             >
               <Mail size={16} />
               <span>{fr.support.missingEmail}</span>
@@ -113,10 +115,10 @@ export function SupportButton() {
             href="/help"
             role="menuitem"
             aria-label={fr.support.documentationHelp}
-            className="w-full flex items-center gap-3 border-t border-slate-100 px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            className={clsx("w-full flex items-center gap-3 border-t px-3 py-2.5 text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300", borderTokens.subtle, textTokens.body)}
             onClick={() => setOpen(false)}
           >
-            <BookOpen size={16} className="text-slate-700" />
+            <BookOpen size={16} className={textTokens.body} />
             <span>{fr.support.documentation}</span>
           </a>
         </div>

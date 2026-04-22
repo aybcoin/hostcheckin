@@ -1,4 +1,6 @@
 import { ShieldCheck } from "lucide-react";
+import { clsx } from "../lib/clsx";
+import { borderTokens, surfaceTokens, textTokens } from "../lib/design-tokens";
 import { fr } from "../lib/i18n/fr";
 
 interface SecurityNoticeProps {
@@ -8,15 +10,15 @@ interface SecurityNoticeProps {
 export function SecurityNotice({ className = "" }: SecurityNoticeProps) {
   return (
     <div
-      className={`rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 ${className}`}
+      className={clsx("rounded-lg border px-4 py-3", borderTokens.default, surfaceTokens.subtle, className)}
       role="status"
       aria-live="polite"
     >
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 border-l-[3px] border-slate-900 pl-3">
-          <ShieldCheck className="h-4 w-4 text-slate-800" aria-hidden="true" />
+        <div className={clsx("mt-0.5 border-l-[3px] pl-3", textTokens.title)}>
+          <ShieldCheck className={clsx("h-4 w-4", textTokens.body)} aria-hidden="true" />
         </div>
-        <p className="text-sm text-slate-700">{fr.security.notice}</p>
+        <p className={clsx("text-sm", textTokens.body)}>{fr.security.notice}</p>
       </div>
     </div>
   );

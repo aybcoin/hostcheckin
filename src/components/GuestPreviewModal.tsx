@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { clsx } from '../lib/clsx';
 import { APP_BASE_URL } from '../lib/supabase';
-import { iconButtonToken } from '../lib/design-tokens';
+import { borderTokens, iconButtonToken, textTokens } from '../lib/design-tokens';
 import { fr } from '../lib/i18n/fr';
 
 interface GuestPreviewModalProps {
@@ -37,10 +38,10 @@ export function GuestPreviewModal({ onClose }: GuestPreviewModalProps) {
           {fr.guestPreview.banner}
         </div>
 
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div className={clsx('flex items-center justify-between border-b px-4 py-3', borderTokens.default)}>
           <div>
-            <h2 id="guest-preview-title" className="text-lg font-semibold text-slate-900">{fr.guestPreview.title}</h2>
-            <p className="text-xs text-slate-500">{fr.guestPreview.hint}</p>
+            <h2 id="guest-preview-title" className={clsx('text-lg font-semibold', textTokens.title)}>{fr.guestPreview.title}</h2>
+            <p className={clsx('text-xs', textTokens.subtle)}>{fr.guestPreview.hint}</p>
           </div>
           <button
             ref={closeButtonRef}

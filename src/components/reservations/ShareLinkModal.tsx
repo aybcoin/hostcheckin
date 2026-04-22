@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { X, Copy, ExternalLink, Check } from 'lucide-react';
 import { fr } from '../../lib/i18n/fr';
-import { ctaTokens, iconButtonToken, inputTokens, modalTokens } from '../../lib/design-tokens';
+import { iconButtonToken, inputTokens, modalTokens } from '../../lib/design-tokens';
 import {
   interpolateMessageTemplate,
   messageTemplateLocales,
   messageTemplates,
   MessageLocale,
 } from '../../lib/checkin-message-templates';
+import { Button } from '../ui/Button';
 
 interface ShareLinkModalProps {
   link: string;
@@ -21,7 +22,7 @@ type Template = 'standard' | 'security' | 'custom';
 export function ShareLinkModal({ link, guestName, propertyName, onClose }: ShareLinkModalProps) {
   const [language, setLanguage] = useState<MessageLocale>('fr');
   const [template, setTemplate] = useState<Template>('standard');
-  const [customMessage, setCustomMessage] = useState(`Bonjour,\n\nVeuillez compléter votre vérification :\n[LIEN]\n\nMerci.`);
+  const [customMessage, setCustomMessage] = useState(`Bonjour,\n\nComplétez votre vérification :\n[LIEN]\n\nMerci.`);
   const [copied, setCopied] = useState<'link' | 'message' | null>(null);
   const modalTitleId = 'share-link-modal-title';
 
@@ -102,16 +103,14 @@ export function ShareLinkModal({ link, guestName, propertyName, onClose }: Share
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{fr.shareLink.languageLabel}</label>
             <div className="flex gap-2">
               {messageTemplateLocales.map((l) => (
-                <button
-                  type="button"
+                <Button
                   key={l.key}
                   onClick={() => setLanguage(l.key)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    language === l.key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
+                  variant={language === l.key ? 'primary' : 'secondary'}
+                  size="sm"
                 >
                   {l.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -124,16 +123,14 @@ export function ShareLinkModal({ link, guestName, propertyName, onClose }: Share
                 { key: 'security', label: fr.shareLink.templates.security },
                 { key: 'custom', label: fr.shareLink.templates.custom },
               ] as Array<{ key: Template; label: string }>).map((t) => (
-                <button
-                  type="button"
+                <Button
                   key={t.key}
                   onClick={() => setTemplate(t.key)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    template === t.key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
+                  variant={template === t.key ? 'primary' : 'secondary'}
+                  size="sm"
                 >
                   {t.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -167,19 +164,19 @@ export function ShareLinkModal({ link, guestName, propertyName, onClose }: Share
           </div>
 
           <div className="flex gap-2 pt-2">
-            <button
-              type="button"
+            <Button
               onClick={() => handleCopy(message, 'message')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${ctaTokens.primary}`}
+              variant="primary"
+              className="flex-1"
             >
               {copied === 'message' ? <Check size={16} /> : <Copy size={16} />}
               {copied === 'message' ? fr.common.copied : fr.shareLink.copyMessage}
-            </button>
+            </Button>
             <a
               href={`https://wa.me/?text=${encodeURIComponent(message)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className={`flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${ctaTokens.secondary}`}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
             >
               {fr.shareLink.share}
             </a>

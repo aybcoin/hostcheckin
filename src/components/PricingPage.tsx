@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { clsx } from '../lib/clsx';
+import { textTokens } from '../lib/design-tokens';
 import { PricingToggle } from './pricing/PricingToggle';
 import { PricingCard } from './pricing/PricingCard';
 import { Card } from './ui/Card';
@@ -17,9 +19,9 @@ const PLANS: PricingPlan[] = [
     name: 'Starter',
     monthly: 99,
     yearly: 950,
-    positioning: 'Idéal pour démarrer avec une ou deux propriétés.',
+    positioning: 'Idéal pour démarrer avec un ou deux logements.',
     features: [
-      'Jusqu’à 2 propriétés actives',
+      'Jusqu’à 2 logements actifs',
       'Check-in digital et vérification identité',
       'Contrat PDF signé électroniquement',
       'Calendrier consolidé des arrivées',
@@ -32,8 +34,8 @@ const PLANS: PricingPlan[] = [
     yearly: 1910,
     positioning: 'Le meilleur équilibre pour les hôtes en croissance.',
     features: [
-      'Jusqu’à 10 propriétés actives',
-      'Liens automatiques par propriété',
+      'Jusqu’à 10 logements actifs',
+      'Liens automatiques par logement',
       'QR code et affiche imprimable',
       'Templates de messages multilingues',
       'Tableau de bord avancé',
@@ -47,9 +49,9 @@ const PLANS: PricingPlan[] = [
     yearly: 3830,
     positioning: 'Conçu pour les équipes et la gestion multi-collaborateurs.',
     features: [
-      'Propriétés illimitées',
+      'Logements illimités',
       'Workflow vérification complète',
-      'Blacklist invités et alertes avancées',
+      'Voyageurs bloqués et alertes avancées',
       'Journal d’audit renforcé',
       'Accès équipe et rôles',
       'Accompagnement de déploiement',
@@ -84,8 +86,8 @@ export function PricingPage() {
   return (
     <div className="space-y-7">
       <header className="space-y-3">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Abonnement</h1>
-        <p className="text-sm sm:text-base text-slate-600">
+        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>Abonnement</h1>
+        <p className={clsx('text-sm sm:text-base', textTokens.muted)}>
           Choisissez l’offre adaptée à votre activité, avec une expérience premium et sans engagement.
         </p>
       </header>
@@ -110,7 +112,7 @@ export function PricingPage() {
         ))}
       </div>
 
-      <Card as="footer" variant="default" padding="sm" className="text-center text-sm text-slate-600">
+      <Card as="footer" variant="default" padding="sm" className={clsx('text-center text-sm', textTokens.muted)}>
         14 jours d’essai gratuit · Aucune carte requise · Annulation à tout moment
       </Card>
     </div>

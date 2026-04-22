@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Ban, Plus, Trash2 } from 'lucide-react';
 import { supabase, BlacklistedGuest } from '../lib/supabase';
 import { fr } from '../lib/i18n/fr';
-import { inputTokens } from '../lib/design-tokens';
+import { clsx } from '../lib/clsx';
+import { borderTokens, inputTokens, statusTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 
@@ -96,7 +97,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
       .maybeSingle();
 
     if (insertError) {
-      setError('Impossible d’ajouter cet invité à la liste noire.');
+      setError('Impossible d’ajouter ce voyageur aux voyageurs bloqués.');
       setSaving(false);
       return;
     }
@@ -126,21 +127,21 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Liste noire</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Bloquez des invités pour éviter toute future réservation non souhaitée.
+        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>Voyageurs bloqués</h1>
+        <p className={clsx('mt-1 text-sm', textTokens.muted)}>
+          Bloquez des voyageurs pour éviter toute future réservation non souhaitée.
         </p>
       </header>
 
       <Card as="section" variant="default" padding="md">
-        <h2 className="text-lg font-semibold text-slate-900">Ajouter un invité</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className={clsx('text-lg font-semibold', textTokens.title)}>Ajouter un voyageur</h2>
+        <p className={clsx('mt-1 text-sm', textTokens.muted)}>
           Renseignez au moins un identifiant : e-mail, téléphone ou numéro de document.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <label htmlFor="blacklist-full-name" className="text-xs font-medium text-slate-700">
+            <label htmlFor="blacklist-full-name" className={clsx('text-xs font-medium', textTokens.body)}>
               {fr.blacklist.fullName}
             </label>
             <input
@@ -152,7 +153,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="blacklist-email" className="text-xs font-medium text-slate-700">
+            <label htmlFor="blacklist-email" className={clsx('text-xs font-medium', textTokens.body)}>
               {fr.blacklist.email}
             </label>
             <input
@@ -164,7 +165,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="blacklist-phone" className="text-xs font-medium text-slate-700">
+            <label htmlFor="blacklist-phone" className={clsx('text-xs font-medium', textTokens.body)}>
               {fr.blacklist.phone}
             </label>
             <input
@@ -177,7 +178,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="blacklist-document-number" className="text-xs font-medium text-slate-700">
+            <label htmlFor="blacklist-document-number" className={clsx('text-xs font-medium', textTokens.body)}>
               {fr.blacklist.documentNumber}
             </label>
             <input
@@ -189,7 +190,7 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
             />
           </div>
           <div className="space-y-1 sm:col-span-2">
-            <label htmlFor="blacklist-reason" className="text-xs font-medium text-slate-700">
+            <label htmlFor="blacklist-reason" className={clsx('text-xs font-medium', textTokens.body)}>
               {fr.blacklist.reason}
             </label>
             <textarea
@@ -214,20 +215,20 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
         </Button>
 
         {error ? (
-          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className={clsx('mt-3 rounded-lg px-3 py-2 text-sm', statusTokens.danger)}>
             {error}
           </p>
         ) : null}
       </Card>
 
       <Card as="section" variant="default" padding="md">
-        <h2 className="text-lg font-semibold text-slate-900">Invités blacklistés</h2>
+        <h2 className={clsx('text-lg font-semibold', textTokens.title)}>Voyageurs bloqués</h2>
 
         {loading ? (
-          <p className="mt-4 text-sm text-slate-500">Chargement de la liste noire…</p>
+          <p className={clsx('mt-4 text-sm', textTokens.subtle)}>Chargement des voyageurs bloqués…</p>
         ) : items.length === 0 ? (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-            Aucun invité blacklisté pour le moment.
+          <div className={clsx('mt-4 rounded-lg border p-4 text-sm', borderTokens.default, surfaceTokens.subtle, textTokens.subtle)}>
+            Aucun voyageur bloqué pour le moment.
           </div>
         ) : (
           <div className="mt-4 space-y-3">
@@ -235,20 +236,20 @@ export function BlacklistPage({ hostId }: BlacklistPageProps) {
               <Card key={item.id} as="article" variant="ghost" padding="sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-900">{item.full_name}</p>
-                    <p className="text-xs text-slate-500">Ajouté le {formatDate(item.created_at)}</p>
+                    <p className={clsx('font-semibold', textTokens.title)}>{item.full_name}</p>
+                    <p className={clsx('text-xs', textTokens.subtle)}>Ajouté le {formatDate(item.created_at)}</p>
                   </div>
                   <Button
                     variant="tertiary"
                     onClick={() => handleDelete(item.id)}
-                    aria-label="Retirer cet invité de la liste noire"
-                    className="p-1.5 text-red-600 no-underline hover:no-underline"
+                    aria-label="Retirer ce voyageur des voyageurs bloqués"
+                    className={clsx('p-1.5 no-underline hover:no-underline', textTokens.danger)}
                   >
                     <Trash2 size={16} />
                   </Button>
                 </div>
 
-                <div className="mt-2 grid gap-1 text-sm text-slate-600 sm:grid-cols-2">
+                <div className={clsx('mt-2 grid gap-1 text-sm sm:grid-cols-2', textTokens.muted)}>
                   <p><strong>E-mail :</strong> {item.email || '—'}</p>
                   <p><strong>Téléphone :</strong> {item.phone || '—'}</p>
                   <p><strong>Document :</strong> {item.document_number || '—'}</p>

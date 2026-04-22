@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, CreditCard as Edit, Trash2, MapPin, Users, Link as LinkIcon, QrCode, X } from 'lucide-react';
 import { Property, PropertyCreateInput } from '../lib/supabase';
-import { inputTokens } from '../lib/design-tokens';
+import { clsx } from '../lib/clsx';
+import { borderTokens, inputTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
 import { VerificationModeCard } from './properties/VerificationModeCard';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -46,7 +47,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
       const listingId = parseAirbnbUrl(airbnbUrl);
 
       if (!listingId) {
-        alert('URL Airbnb invalide. Veuillez fournir un lien valide.');
+        alert('URL Airbnb invalide. Fournissez un lien valide.');
         return;
       }
 
@@ -89,7 +90,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
 
     } catch (error) {
       console.error('Error importing from Airbnb:', error);
-      alert('Erreur lors de l\'importation depuis Airbnb. Veuillez réessayer.');
+      alert('Erreur lors de l\'importation depuis Airbnb. Réessayez.');
     } finally {
       setImporting(false);
     }
@@ -119,8 +120,8 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
       });
       setShowForm(false);
     } catch (error) {
-      console.error('Erreur lors de l\'ajout/modification de propriété:', error);
-      alert('Erreur: ' + (error instanceof Error ? error.message : 'Impossible d\'ajouter la propriété'));
+      console.error('Erreur lors de l\'ajout/modification de logement:', error);
+      alert('Erreur: ' + (error instanceof Error ? error.message : 'Impossible d\'ajouter le logement'));
     }
   };
 
@@ -140,15 +141,15 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Propriétés</h1>
-          <p className="text-gray-600 mt-1">{properties.length} / 3 propriétés</p>
+          <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>Logements</h1>
+          <p className={clsx('mt-1', textTokens.muted)}>{properties.length} / 3 logements</p>
         </div>
         {canAddMore && (
           <div className="flex gap-2">
             <Button
               variant="secondary"
               onClick={() => setShowAirbnbImport(true)}
-              className="border-2 border-slate-900 text-slate-900"
+              className={clsx('border-2', borderTokens.strong, textTokens.title)}
             >
               <LinkIcon size={18} />
               <span className="hidden sm:inline">Importer Airbnb</span>
@@ -169,8 +170,8 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
       {showAirbnbImport && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card variant="highlight" padding="sm" className="max-w-lg w-full shadow-2xl">
-            <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Importer depuis Airbnb</h2>
+            <div className={clsx('p-4 sm:p-6 border-b flex items-center justify-between', borderTokens.default)}>
+              <h2 className={clsx('text-xl sm:text-2xl font-bold', textTokens.title)}>Importer depuis Airbnb</h2>
               <Button
                 variant="tertiary"
                 onClick={() => setShowAirbnbImport(false)}
@@ -183,18 +184,18 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
 
             <div className="p-4 sm:p-6 space-y-4">
               <div>
-                <p className="text-gray-600 mb-4">
+                <p className={clsx('mb-4', textTokens.muted)}>
                   Collez le lien de votre annonce Airbnb pour importer automatiquement les détails
                 </p>
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-slate-700 break-all">
+                <div className={clsx('border rounded-lg p-3 mb-4', surfaceTokens.subtle, borderTokens.default)}>
+                  <p className={clsx('text-sm break-all', textTokens.body)}>
                     Exemple: https://www.airbnb.com/rooms/12345678
                   </p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                   Lien Airbnb
                 </label>
                 <input
@@ -237,7 +238,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="text"
-                placeholder="Nom de la propriété"
+                placeholder="Nom du logement"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -343,24 +344,24 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
               <img src={property.image_url} alt={property.name} className="w-full h-36 sm:h-48 object-cover" />
             )}
             <div className="p-4 sm:p-6">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900">{property.name}</h3>
-              <div className="flex items-center gap-2 text-gray-600 mt-2">
+              <h3 className={clsx('text-lg sm:text-xl font-bold', textTokens.title)}>{property.name}</h3>
+              <div className={clsx('flex items-center gap-2 mt-2', textTokens.muted)}>
                 <MapPin size={16} />
                 <span className="text-sm">{property.city}, {property.country}</span>
               </div>
 
-              <div className="flex flex-wrap gap-4 sm:gap-6 mt-4 py-3 sm:py-4 border-y border-gray-200">
+              <div className={clsx('flex flex-wrap gap-4 sm:gap-6 mt-4 py-3 sm:py-4 border-y', borderTokens.default)}>
                 <div className="flex items-center gap-2">
-                  <Users size={18} className="text-slate-700" />
-                  <span className="text-sm text-gray-600">{property.max_guests} hôtes max</span>
+                  <Users size={18} className={textTokens.muted} />
+                  <span className={clsx('text-sm', textTokens.muted)}>{property.max_guests} hôtes max</span>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className={clsx('text-sm', textTokens.muted)}>
                   {property.rooms_count} ch. / {property.bathrooms_count} SdB
                 </div>
               </div>
 
               {property.description && (
-                <p className="text-gray-600 text-sm mt-3 sm:mt-4 line-clamp-2">{property.description}</p>
+                <p className={clsx('text-sm mt-3 sm:mt-4 line-clamp-2', textTokens.muted)}>{property.description}</p>
               )}
 
               <div className="flex gap-2 mt-4">
@@ -382,7 +383,7 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
                   });
                   setShowForm(true);
                 }}
-                  className="flex-1 justify-center border-slate-900 text-slate-900"
+                  className={clsx('flex-1 justify-center', borderTokens.strong, textTokens.title)}
                 >
                   <Edit size={16} />
                   <span>Éditer</span>
@@ -420,8 +421,8 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
       </div>
 
       {!canAddMore && properties.length === 3 && (
-        <Card variant="ghost" padding="sm" className="text-center text-slate-700">
-          Vous avez atteint le maximum de 3 propriétés
+        <Card variant="ghost" padding="sm" className={clsx('text-center', textTokens.body)}>
+          Vous avez atteint le maximum de 3 logements
         </Card>
       )}
     </div>

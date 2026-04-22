@@ -3,7 +3,9 @@ import { X, Plus, QrCode, PenLine } from 'lucide-react';
 import { Property, APP_BASE_URL, Reservation, ReservationCreateInput } from '../../lib/supabase';
 import { supabase } from '../../lib/supabase';
 import { fr } from '../../lib/i18n/fr';
-import { ctaTokens, iconButtonToken, inputTokens, modalTokens, statusTokens } from '../../lib/design-tokens';
+import { iconButtonToken, inputTokens, modalTokens, statusTokens } from '../../lib/design-tokens';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 
 interface ReservationMutationError {
   message: string;
@@ -119,7 +121,7 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
     });
 
     if (!matched) return null;
-    return `Invité potentiellement blacklisté (${matched.reason}).`;
+    return `Voyageur potentiellement bloqué (${matched.reason}).`;
   };
 
   const generateBookingRef = () => {
@@ -233,35 +235,29 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
 
         <div className="p-5">
           <div className="flex gap-2 mb-5">
-            <button
-              type="button"
+            <Button
               onClick={() => setMode('auto')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'auto' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+              variant={mode === 'auto' ? 'primary' : 'secondary'}
             >
               <QrCode size={16} />
               {fr.reservationCreate.autoModeLabel}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={() => setMode('manual')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'manual' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+              variant={mode === 'manual' ? 'primary' : 'secondary'}
             >
               <PenLine size={16} />
               {fr.reservationCreate.manualModeLabel}
-            </button>
+            </Button>
           </div>
 
           {mode === 'auto' ? (
             <div className="space-y-4">
-              <div className="bg-slate-50 border-l-4 border-slate-900 p-4 rounded">
+              <Card variant="ghost" padding="md" className="border-l-4 border-l-slate-900">
                 <p className="text-sm text-slate-700">
                   {fr.reservationCreate.autoHelp}
                 </p>
-              </div>
+              </Card>
               <div>
                 <label htmlFor="auto-property-id" className="block text-sm font-medium text-slate-700 mb-1">{fr.reservationCreate.propertyLabel}</label>
                 <select
@@ -280,22 +276,23 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
                 </select>
               </div>
               {selectedProp && (
-                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 text-center">
+                <Card variant="ghost" padding="md" className="text-center">
                   <div className="w-40 h-40 mx-auto bg-white border-2 border-slate-300 rounded-lg flex items-center justify-center mb-3">
                     <QrCode size={80} className="text-slate-400" />
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{fr.reservationCreate.qrForProperty(selectedProp.name)}</p>
-                  <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-slate-200 max-w-md mx-auto">
+                  <Card variant="default" padding="sm" className="mx-auto flex max-w-md items-center gap-2">
                     <span className="text-xs text-slate-500 truncate flex-1">{APP_BASE_URL}/auto/{selectedProp.id}</span>
-                    <button
-                      type="button"
+                    <Button
                       onClick={() => navigator.clipboard.writeText(`${APP_BASE_URL}/auto/${selectedProp.id}`)}
-                      className={`shrink-0 rounded px-2 py-1 text-xs ${ctaTokens.primary}`}
+                      variant="primary"
+                      size="sm"
+                      className="shrink-0"
                     >
                       {fr.reservationCreate.copyLink}
-                    </button>
-                  </div>
-                </div>
+                    </Button>
+                  </Card>
+                </Card>
               )}
             </div>
           ) : (
@@ -452,21 +449,22 @@ export function CreateReservationModal({ properties, onAdd, onClose }: CreateRes
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
                   type="submit"
                   disabled={loading}
-                  className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium transition-colors disabled:opacity-50 ${ctaTokens.primary}`}
+                  variant="primary"
+                  className="flex-1"
                 >
                   <Plus size={16} />
                   {loading ? fr.reservationCreate.submitLoading : fr.reservationCreate.submitLabel}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
                   onClick={onClose}
-                  className={`flex-1 rounded-lg py-3 text-sm font-medium transition-colors ${ctaTokens.subtle}`}
+                  variant="secondary"
+                  className="flex-1"
                 >
                   {fr.reservationCreate.cancelLabel}
-                </button>
+                </Button>
               </div>
             </form>
           )}

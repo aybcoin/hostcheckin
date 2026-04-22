@@ -3,8 +3,21 @@ import {
   X, FileText, User, Camera, PenTool, Download, ExternalLink, Loader2,
   AlertCircle, ShieldCheck, ShieldX, Clock, Activity, Hash
 } from 'lucide-react';
+import { clsx } from '../lib/clsx';
 import { supabase } from '../lib/supabase';
 import { SecurityNotice } from './SecurityNotice';
+import { Badge } from './ui/Badge';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import {
+  borderTokens,
+  iconButtonToken,
+  modalTokens,
+  stateFillTokens,
+  statusTokens,
+  surfaceTokens,
+  textTokens,
+} from '../lib/design-tokens';
 
 interface VerificationData {
   id: string;
@@ -196,65 +209,65 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className={modalTokens.overlay} onClick={onClose}>
         <div
-          className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col"
+          className={`${modalTokens.panel} max-w-3xl flex flex-col`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="p-4 sm:p-5 border-b border-gray-200 flex items-center justify-between shrink-0">
+          <div className={clsx('p-4 sm:p-5 border-b flex items-center justify-between shrink-0', borderTokens.default)}>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Documents du check-in</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Réservation {bookingReference}</p>
+              <h2 className={clsx('text-lg sm:text-xl font-bold', textTokens.title)}>Documents du check-in</h2>
+              <p className={clsx('text-sm mt-0.5', textTokens.subtle)}>Réservation {bookingReference}</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button onClick={onClose} className={iconButtonToken} aria-label="Fermer les documents">
               <X size={20} />
             </button>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 text-slate-700 animate-spin" />
+              <Loader2 className={clsx('w-8 h-8 animate-spin', textTokens.muted)} />
             </div>
           ) : !hasIdentityDocs && !hasContract && auditTrail.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
-              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <AlertCircle className="w-7 h-7 text-gray-400" />
+              <div className={clsx('w-14 h-14 rounded-full flex items-center justify-center mb-4', surfaceTokens.muted)}>
+                <AlertCircle className={clsx('w-7 h-7', textTokens.subtle)} />
               </div>
-              <p className="text-gray-600 text-center font-medium">Aucun document soumis</p>
-              <p className="text-sm text-gray-400 text-center mt-1">
+              <p className={clsx('text-center font-medium', textTokens.muted)}>Aucun document soumis</p>
+              <p className={clsx('text-sm text-center mt-1', textTokens.subtle)}>
                 Le client n'a pas encore complété son check-in en ligne.
               </p>
             </div>
           ) : (
             <>
-              <div className="flex gap-1 bg-gray-100 p-1 mx-4 sm:mx-5 mt-4 rounded-lg shrink-0">
-                <button
+              <div className={clsx('flex gap-1 p-1 mx-4 sm:mx-5 mt-4 rounded-lg shrink-0', surfaceTokens.muted)}>
+                <Button
                   onClick={() => setActiveTab('identity')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'identity' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  variant={activeTab === 'identity' ? 'secondary' : 'tertiary'}
+                  size="sm"
+                  className="flex-1"
                 >
                   <User size={16} />
                   <span>Identité</span>
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setActiveTab('contract')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'contract' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  variant={activeTab === 'contract' ? 'secondary' : 'tertiary'}
+                  size="sm"
+                  className="flex-1"
                 >
                   <FileText size={16} />
                   <span>Contrat</span>
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setActiveTab('audit')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'audit' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  variant={activeTab === 'audit' ? 'secondary' : 'tertiary'}
+                  size="sm"
+                  className="flex-1"
                 >
                   <Activity size={16} />
                   <span>Audit</span>
-                </button>
+                </Button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 sm:p-5">
@@ -263,14 +276,14 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                     {verification ? (
                       <>
                         <div className="flex flex-wrap items-center gap-3">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
                             verification.status === 'approved'
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? statusTokens.success
                               : verification.status === 'rejected'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
+                              ? statusTokens.danger
+                              : statusTokens.pending
                           }`}>
-                            {verification.status === 'approved' ? (
+                          {verification.status === 'approved' ? (
                               <><ShieldCheck size={12} /> Vérifiée</>
                             ) : verification.status === 'rejected' ? (
                               <><ShieldX size={12} /> Rejetée</>
@@ -278,60 +291,62 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                               <><Clock size={12} /> En attente</>
                             )}
                           </span>
-                          <span className="text-sm text-gray-500">
+                          <span className={clsx('text-sm', textTokens.subtle)}>
                             {ID_TYPE_LABELS[verification.id_type] || ID_TYPE_LABELS[verification.detected_document_type || ''] || verification.id_type}
                           </span>
-                          <span className="text-xs text-gray-400">
+                          <span className={clsx('text-xs', textTokens.subtle)}>
                             Soumis le {formatDate(verification.created_at)}
                           </span>
                         </div>
 
                         {confidencePercent !== null && (
-                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                          <Card variant="ghost" padding="sm" className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-700">Score de confiance KYC</span>
-                              <span className={`text-sm font-bold ${
-                                confidencePercent >= 70 ? 'text-emerald-700' : confidencePercent >= 40 ? 'text-amber-600' : 'text-red-600'
-                              }`}>
+                              <span className={clsx('text-sm font-medium', textTokens.body)}>Score de confiance KYC</span>
+                              <span className={clsx(
+                                'text-sm font-bold',
+                                confidencePercent >= 70 ? textTokens.success : confidencePercent >= 40 ? textTokens.warning : textTokens.danger,
+                              )}>
                                 {confidencePercent}%
                               </span>
                             </div>
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className={clsx('w-full h-2 rounded-full overflow-hidden', surfaceTokens.elevated)}>
                               <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  confidencePercent >= 70 ? 'bg-emerald-500' : confidencePercent >= 40 ? 'bg-amber-500' : 'bg-red-500'
-                                }`}
+                                className={clsx(
+                                  'h-full rounded-full transition-all duration-500',
+                                  confidencePercent >= 70 ? stateFillTokens.success : confidencePercent >= 40 ? stateFillTokens.warning : stateFillTokens.danger,
+                                )}
                                 style={{ width: `${confidencePercent}%` }}
                               />
                             </div>
                             {verification.face_match_score != null && verification.face_match_score > 0 && (
-                              <p className="text-xs text-gray-500">
+                              <p className={clsx('text-xs', textTokens.subtle)}>
                                 Correspondance faciale : {Math.round(verification.face_match_score * 100)}%
                               </p>
                             )}
-                          </div>
+                          </Card>
                         )}
 
                         {verification.rejection_reason && (
-                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                            <p className="text-sm text-red-800 font-medium">Raison du rejet :</p>
-                            <p className="text-sm text-red-700 mt-1">{verification.rejection_reason}</p>
-                          </div>
+                          <Card variant="danger" padding="sm">
+                            <p className={clsx('text-sm font-medium', textTokens.danger)}>Raison du rejet :</p>
+                            <p className={clsx('text-sm mt-1', textTokens.danger)}>{verification.rejection_reason}</p>
+                          </Card>
                         )}
 
                         {verification.ocr_data?.declared_name && (
-                          <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-2 gap-3">
+                          <Card variant="ghost" padding="sm" className="grid grid-cols-2 gap-3">
                             <div>
-                              <p className="text-xs text-gray-500">Nom déclaré</p>
-                              <p className="text-sm font-medium text-gray-900">{verification.ocr_data.declared_name}</p>
+                              <p className={clsx('text-xs', textTokens.subtle)}>Nom déclaré</p>
+                              <p className={clsx('text-sm font-medium', textTokens.title)}>{verification.ocr_data.declared_name}</p>
                             </div>
                             {verification.ocr_data.document_number && (
                               <div>
-                                <p className="text-xs text-gray-500">N. document</p>
-                                <p className="text-sm font-medium text-gray-900">{verification.ocr_data.document_number}</p>
+                                <p className={clsx('text-xs', textTokens.subtle)}>N. document</p>
+                                <p className={clsx('text-sm font-medium', textTokens.title)}>{verification.ocr_data.document_number}</p>
                               </div>
                             )}
-                          </div>
+                          </Card>
                         )}
 
                         <SecurityNotice />
@@ -339,9 +354,13 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {isValidUrl(verification.id_document_url) && (
                             <div>
-                              <p className="text-sm font-medium text-gray-700 mb-2">Recto</p>
+                              <p className={clsx('text-sm font-medium mb-2', textTokens.body)}>Recto</p>
                               <div
-                                className="relative group secure-document-preview rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50"
+                                className={clsx(
+                                  'relative group secure-document-preview rounded-lg overflow-hidden border cursor-pointer',
+                                  borderTokens.default,
+                                  surfaceTokens.subtle,
+                                )}
                                 onClick={() => setZoomedImage(verification.id_document_url)}
                               >
                                 <img
@@ -358,9 +377,13 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
 
                           {isValidUrl(verification.id_back_url) && (
                             <div>
-                              <p className="text-sm font-medium text-gray-700 mb-2">Verso</p>
+                              <p className={clsx('text-sm font-medium mb-2', textTokens.body)}>Verso</p>
                               <div
-                                className="relative group secure-document-preview rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50"
+                                className={clsx(
+                                  'relative group secure-document-preview rounded-lg overflow-hidden border cursor-pointer',
+                                  borderTokens.default,
+                                  surfaceTokens.subtle,
+                                )}
                                 onClick={() => setZoomedImage(verification.id_back_url!)}
                               >
                                 <img
@@ -378,12 +401,16 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
 
                         {isValidUrl(verification.selfie_url) && (
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                            <p className={clsx('text-sm font-medium mb-2 flex items-center gap-1.5', textTokens.body)}>
                               <Camera size={16} />
                               Selfie
                             </p>
                             <div
-                              className="relative group secure-document-preview rounded-lg overflow-hidden border border-gray-200 cursor-pointer bg-gray-50 max-w-xs"
+                              className={clsx(
+                                'relative group secure-document-preview rounded-lg overflow-hidden border cursor-pointer max-w-xs',
+                                borderTokens.default,
+                                surfaceTokens.subtle,
+                              )}
                               onClick={() => setZoomedImage(verification.selfie_url!)}
                             >
                               <img
@@ -399,17 +426,17 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         )}
 
                         {!isValidUrl(verification.id_document_url) && !isValidUrl(verification.selfie_url) && (
-                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                            <p className="text-sm text-amber-800">
+                          <Card variant="warning" padding="md">
+                            <p className={clsx('text-sm', textTokens.warning)}>
                               Les documents ont été soumis, mais les fichiers ne sont pas disponibles.
                             </p>
-                          </div>
+                          </Card>
                         )}
                       </>
                     ) : (
                       <div className="text-center py-8">
-                        <User className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500">Aucune vérification d'identité soumise</p>
+                        <User className={clsx('w-10 h-10 mx-auto mb-3', textTokens.subtle)} />
+                        <p className={textTokens.subtle}>Aucune vérification d'identité soumise</p>
                       </div>
                     )}
                   </div>
@@ -420,40 +447,37 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                     {contract ? (
                       <>
                         <div className="flex flex-wrap items-center gap-3">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-                            contract.signed_by_guest
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}>
+                          <Badge variant={contract.signed_by_guest ? 'success' : 'neutral'} className="gap-1.5 rounded-full px-3 py-1.5">
                             {contract.signed_by_guest
                               ? 'Contrat émis par le bailleur et signé électroniquement par le locataire'
                               : 'Contrat émis par le bailleur'}
-                          </span>
+                          </Badge>
                           {contract.signed_at && (
-                            <span className="text-xs text-gray-400">
+                            <span className={clsx('text-xs', textTokens.subtle)}>
                               Signé le {formatDate(contract.signed_at)}
                             </span>
                           )}
                         </div>
 
                         {contract.pdf_storage_path && (
-                          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-between">
+                          <Card variant="ghost" className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <FileText className="w-8 h-8 text-slate-700" />
+                              <FileText className={clsx('w-8 h-8', textTokens.muted)} />
                               <div>
-                                <p className="text-sm font-medium text-slate-900">Contrat PDF disponible</p>
+                                <p className={clsx('text-sm font-medium', textTokens.title)}>Contrat PDF disponible</p>
                                 {contract.content_hash && (
-                                  <p className="text-[11px] text-slate-600 flex items-center gap-1 mt-0.5">
+                                  <p className={clsx('text-[11px] flex items-center gap-1 mt-0.5', textTokens.muted)}>
                                     <Hash size={10} />
                                     SHA-256: {contract.content_hash.substring(0, 16)}...
                                   </p>
                                 )}
                               </div>
                             </div>
-                            <button
+                            <Button
                               onClick={handleDownloadPdf}
                               disabled={downloadingPdf}
-                              className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium disabled:opacity-50"
+                              variant="primary"
+                              size="sm"
                             >
                               {downloadingPdf ? (
                                 <Loader2 size={16} className="animate-spin" />
@@ -461,18 +485,18 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                                 <Download size={16} />
                               )}
                               Télécharger le PDF
-                            </button>
-                          </div>
+                            </Button>
+                          </Card>
                         )}
 
                         {contract.contract_content && (
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                            <p className={clsx('text-sm font-medium mb-2 flex items-center gap-1.5', textTokens.body)}>
                               <FileText size={16} />
                               Contenu du contrat
                             </p>
-                            <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto border border-gray-200">
-                              <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 leading-relaxed">
+                            <div className={clsx('rounded-lg p-4 max-h-64 overflow-y-auto border', surfaceTokens.subtle, borderTokens.default)}>
+                              <pre className={clsx('whitespace-pre-wrap font-sans text-sm leading-relaxed', textTokens.body)}>
                                 {contract.contract_content}
                               </pre>
                             </div>
@@ -482,49 +506,49 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {contract.host_signature_url && contract.host_signature_url.startsWith('data:') && (
                             <div>
-                              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                              <p className={clsx('text-sm font-medium mb-2 flex items-center gap-1.5', textTokens.body)}>
                                 <PenTool size={14} />
                                 Validation du bailleur
                               </p>
-                              <div className="bg-white rounded-lg border border-gray-200 p-3">
+                              <Card variant="default" padding="sm">
                                 <img
                                   src={contract.host_signature_url}
                                   alt="Validation du bailleur"
                                   className="w-full h-24 object-contain"
                                 />
-                              </div>
+                              </Card>
                             </div>
                           )}
 
                           {contract.guest_signature_url && contract.guest_signature_url.startsWith('data:') && (
                             <div>
-                              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                              <p className={clsx('text-sm font-medium mb-2 flex items-center gap-1.5', textTokens.body)}>
                                 <PenTool size={14} />
                                 Signature du locataire
                               </p>
-                              <div className="bg-white rounded-lg border border-gray-200 p-3">
+                              <Card variant="default" padding="sm">
                                 <img
                                   src={contract.guest_signature_url}
                                   alt="Signature du locataire"
                                   className="w-full h-24 object-contain"
                                 />
-                              </div>
+                              </Card>
                             </div>
                           )}
                         </div>
 
                         {!contract.contract_content && !contract.guest_signature_url && !contract.host_signature_url && (
-                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                            <p className="text-sm text-amber-800">
+                          <Card variant="warning" padding="md">
+                            <p className={clsx('text-sm', textTokens.warning)}>
                               Le contrat a été créé, mais il n'a pas encore de contenu ou de signature.
                             </p>
-                          </div>
+                          </Card>
                         )}
                       </>
                     ) : (
                       <div className="text-center py-8">
-                        <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500">Aucun contrat pour cette réservation</p>
+                        <FileText className={clsx('w-10 h-10 mx-auto mb-3', textTokens.subtle)} />
+                        <p className={textTokens.subtle}>Aucun contrat pour cette réservation</p>
                       </div>
                     )}
                   </div>
@@ -534,22 +558,22 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                   <div className="space-y-4">
                     {auditTrail.length > 0 ? (
                       <div className="relative">
-                        <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200" />
+                        <div className={clsx('absolute left-4 top-0 bottom-0 w-px', surfaceTokens.elevated)} />
                         <div className="space-y-4">
                           {auditTrail.map((entry) => (
                             <div key={entry.id} className="relative pl-10">
-                              <div className="absolute left-2.5 top-1.5 w-3 h-3 rounded-full bg-slate-700 ring-4 ring-white" />
-                              <div className="bg-gray-50 rounded-lg p-3">
+                              <div className={clsx('absolute left-2.5 top-1.5 w-3 h-3 rounded-full bg-current ring-4 ring-white', textTokens.muted)} />
+                              <div className={clsx('rounded-lg p-3', surfaceTokens.subtle)}>
                                 <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium text-gray-900">
+                                  <span className={clsx('text-sm font-medium', textTokens.title)}>
                                     {EVENT_LABELS[entry.event_type] || entry.event_type}
                                   </span>
-                                  <span className="text-xs text-gray-400">
+                                  <span className={clsx('text-xs', textTokens.subtle)}>
                                     {formatDate(entry.created_at)}
                                   </span>
                                 </div>
-                                <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                                  <span className="px-2 py-0.5 bg-white rounded border border-gray-200">
+                                <div className={clsx('flex flex-wrap gap-2 text-xs', textTokens.subtle)}>
+                                  <span className={clsx('rounded border px-2 py-0.5', borderTokens.default, surfaceTokens.panel)}>
                                     {SIGNER_ROLE_LABELS[entry.signer_role] || entry.signer_role}
                                   </span>
                                   {entry.signer_email && (
@@ -560,7 +584,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                                   )}
                                 </div>
                                 {entry.consent_text && (
-                                  <p className="text-[11px] text-gray-400 mt-2 italic">
+                                  <p className={clsx('text-[11px] mt-2 italic', textTokens.subtle)}>
                                     "{entry.consent_text}"
                                   </p>
                                 )}
@@ -571,8 +595,8 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <Activity className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500">Aucun événement d'audit enregistré</p>
+                        <Activity className={clsx('w-10 h-10 mx-auto mb-3', textTokens.subtle)} />
+                        <p className={textTokens.subtle}>Aucun événement d'audit enregistré</p>
                       </div>
                     )}
                   </div>
@@ -591,7 +615,8 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
           <div className="relative max-w-4xl max-h-[90vh] w-full">
             <button
               onClick={() => setZoomedImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
+              className="absolute -top-10 right-0 rounded-lg p-1.5 text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              aria-label="Fermer l'image"
             >
               <X size={28} />
             </button>
@@ -604,7 +629,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
               href={zoomedImage}
               target="_blank"
               rel="noopener noreferrer"
-              className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white/90 text-gray-900 rounded-lg text-sm font-medium hover:bg-white transition-colors"
+              className={clsx('absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white/90 rounded-lg text-sm font-medium hover:bg-white transition-colors', textTokens.title)}
               onClick={(e) => e.stopPropagation()}
             >
               <Download size={16} />

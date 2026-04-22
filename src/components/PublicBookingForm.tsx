@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { CalendarDays, Loader2, ShieldCheck } from 'lucide-react';
+import { clsx } from '../lib/clsx';
+import { borderTokens, inputTokens, statusTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
 import { APP_BASE_URL } from '../lib/supabase';
 import { fr } from '../lib/i18n/fr';
 import { Button } from './ui/Button';
@@ -154,13 +156,12 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
     }
   };
 
-  const inputClassName =
-    'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200';
+  const inputClassName = inputTokens.base;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
-        <Card className="mx-auto mt-10 max-w-xl text-sm text-slate-500" padding="lg">
+      <div className={clsx('min-h-screen p-4', surfaceTokens.app)}>
+        <Card className={clsx('mx-auto mt-10 max-w-xl text-sm', textTokens.subtle)} padding="lg">
           {fr.publicBooking.loading}
         </Card>
       </div>
@@ -169,8 +170,8 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
 
   if (!property) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
-        <Card variant="danger" padding="lg" className="mx-auto mt-10 max-w-xl text-sm text-red-700">
+      <div className={clsx('min-h-screen p-4', surfaceTokens.app)}>
+        <Card variant="danger" padding="lg" className={clsx('mx-auto mt-10 max-w-xl text-sm', textTokens.danger)}>
           {error || 'Lien de réservation introuvable.'}
         </Card>
       </div>
@@ -178,9 +179,9 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <div className={clsx('min-h-screen p-4', surfaceTokens.app)}>
       <div className="mx-auto max-w-xl space-y-5 py-6">
-        <header className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-sm">
+        <header className={clsx('relative overflow-hidden rounded-2xl border bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-sm', borderTokens.default)}>
           {property.image_url ? (
             <img
               src={property.image_url}
@@ -189,24 +190,24 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
             />
           ) : null}
           <div className="relative z-10">
-            <p className="text-xs uppercase tracking-wide text-slate-200">{fr.app.brand}</p>
+            <p className="text-xs uppercase tracking-wide text-white/80">{fr.app.brand}</p>
             <h1 className="text-2xl font-bold">{fr.publicBooking.pageTitle}</h1>
-            <p className="mt-1 text-sm text-slate-200">
+            <p className="mt-1 text-sm text-white/80">
               {property.name} · {property.city}, {property.country}
             </p>
           </div>
         </header>
 
         <Card as="section" variant="default" padding="md">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-            <ShieldCheck size={14} className="text-slate-700" />
+          <div className={clsx('mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium', borderTokens.default, surfaceTokens.subtle, textTokens.body)}>
+            <ShieldCheck size={14} className={textTokens.body} />
             {fr.publicBooking.secureBadge}
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <label htmlFor="public-booking-full-name" className="text-xs font-medium text-slate-700">
+                <label htmlFor="public-booking-full-name" className={clsx('text-xs font-medium', textTokens.body)}>
                   {fr.publicBooking.fullName}
                 </label>
                 <input
@@ -220,7 +221,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="public-booking-email" className="text-xs font-medium text-slate-700">
+                <label htmlFor="public-booking-email" className={clsx('text-xs font-medium', textTokens.body)}>
                   {fr.publicBooking.email}
                 </label>
                 <input
@@ -234,7 +235,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="public-booking-phone" className="text-xs font-medium text-slate-700">
+                <label htmlFor="public-booking-phone" className={clsx('text-xs font-medium', textTokens.body)}>
                   {fr.publicBooking.phone}
                 </label>
                 <input
@@ -249,11 +250,11 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="public-booking-guests" className="text-xs font-medium text-slate-700">
+                <label htmlFor="public-booking-guests" className={clsx('text-xs font-medium', textTokens.body)}>
                   {fr.publicBooking.guestsCount}
                 </label>
-                <div className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2">
-                  <CalendarDays size={16} className="text-slate-500" aria-hidden="true" />
+                <div className={clsx('flex items-center gap-2 rounded-lg border px-3 py-2', borderTokens.strong)}>
+                  <CalendarDays size={16} className={textTokens.subtle} aria-hidden="true" />
                   <input
                     id="public-booking-guests"
                     type="number"
@@ -271,7 +272,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
                 </div>
               </div>
               <div className="space-y-1">
-                <label htmlFor="public-booking-checkin" className="text-xs font-medium text-slate-700">
+                <label htmlFor="public-booking-checkin" className={clsx('text-xs font-medium', textTokens.body)}>
                   {fr.publicBooking.checkInDate}
                 </label>
                 <input
@@ -284,7 +285,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="public-booking-checkout" className="text-xs font-medium text-slate-700">
+                <label htmlFor="public-booking-checkout" className={clsx('text-xs font-medium', textTokens.body)}>
                   {fr.publicBooking.checkOutDate}
                 </label>
                 <input
@@ -299,11 +300,11 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
             </div>
 
             {captchaRequired ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <p className="text-xs text-amber-800">
+              <div className={clsx('rounded-lg p-3', statusTokens.warning)}>
+                <p className="text-xs">
                   {fr.publicBooking.captchaHint}
                 </p>
-                <label htmlFor="public-booking-captcha" className="mt-2 block text-xs font-medium text-amber-800">
+                <label htmlFor="public-booking-captcha" className="mt-2 block text-xs font-medium">
                   {fr.publicBooking.captchaToken}
                 </label>
                 <input
@@ -311,14 +312,14 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
                   type="text"
                   value={form.captcha_token}
                   onChange={(event) => setForm((previous) => ({ ...previous, captcha_token: event.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-amber-300 px-3 py-2 text-sm outline-none focus:border-amber-400"
+                  className={clsx('mt-1', inputTokens.base)}
                   required
                 />
               </div>
             ) : null}
 
             {error ? (
-              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+              <p className={clsx('rounded-lg px-3 py-2 text-sm', statusTokens.danger)} role="alert">
                 {error}
               </p>
             ) : null}
@@ -333,7 +334,7 @@ export function PublicBookingForm({ propertyToken }: PublicBookingFormProps) {
               {fr.publicBooking.continue}
             </Button>
           </form>
-          <p className="mt-4 text-center text-xs text-slate-500">{fr.publicBooking.secureFooter}</p>
+          <p className={clsx('mt-4 text-center text-xs', textTokens.subtle)}>{fr.publicBooking.secureFooter}</p>
         </Card>
       </div>
     </div>
