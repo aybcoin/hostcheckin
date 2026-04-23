@@ -21,6 +21,7 @@ import { PublicBookingForm } from './components/PublicBookingForm';
 import { BlacklistPage } from './components/BlacklistPage';
 import { HelpPage } from './components/HelpPage';
 import { SecurityPage } from './components/SecurityPage';
+import { AutomationsPage } from './components/AutomationsPage';
 import { APP_PAGE_PATHS, AppPage } from './lib/navigation';
 
 function pageFromPath(pathname: string): AppPage {
@@ -247,6 +248,10 @@ function App() {
 
         {!autoLinkPropertyId && currentPage === 'checkins' ? (
           <CheckinsPage reservations={reservations} properties={properties} />
+        ) : null}
+
+        {!autoLinkPropertyId && currentPage === 'automations' ? (
+          <AutomationsPage />
         ) : null}
 
         {!autoLinkPropertyId && currentPage === 'calendar' ? (

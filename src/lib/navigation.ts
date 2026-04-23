@@ -3,6 +3,7 @@ export type AppPage =
   | 'properties'
   | 'reservations'
   | 'checkins'
+  | 'automations'
   | 'calendar'
   | 'contracts'
   | 'profile'
@@ -16,6 +17,7 @@ export const APP_PAGE_PATHS: Record<AppPage, string> = {
   properties: '/properties',
   reservations: '/reservations',
   checkins: '/checkins',
+  automations: '/automatisations',
   calendar: '/calendar',
   contracts: '/contracts',
   profile: '/profile',

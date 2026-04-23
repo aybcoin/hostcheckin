@@ -105,6 +105,45 @@ export const fr = {
       supportSectionAria: "Section : en cas de problème",
     },
   },
+  automations: {
+    pageTitle: 'Automatisations',
+    pageDescription: 'Gérez vos notifications automatiques pour les hôtes et les invités.',
+    rulesTitle: 'Règles d\'automatisation',
+    logsTitle: 'Journal des notifications',
+    providerTitle: 'Configuration des providers',
+    triggers: {
+      checkin_reminder_j1: 'Rappel check-in J-1',
+      checkin_day: 'Jour du check-in',
+      checkout_reminder: 'Rappel check-out',
+      contract_signed: 'Contrat signé',
+      verification_complete: 'Identité vérifiée',
+    },
+    channels: {
+      email: 'Email',
+      sms: 'SMS',
+      both: 'Email + SMS',
+    },
+    status: {
+      sent: 'Envoyé',
+      failed: 'Échec',
+      pending: 'En attente',
+      skipped: 'Ignoré',
+    },
+    actions: {
+      test: 'Tester',
+      testing: 'Envoi...',
+      enable: 'Activer',
+      disable: 'Désactiver',
+    },
+    empty: {
+      logsTitle: 'Aucune notification',
+      logsDescription: 'Les notifications envoyées apparaîtront ici.',
+    },
+    warnings: {
+      emailNotConfigured: 'Email non configuré. Ajoutez RESEND_API_KEY dans vos variables Supabase.',
+      smsNotConfigured: 'SMS non configuré. Ajoutez les variables Twilio dans votre projet Supabase.',
+    },
+  },
   trust: {
     region: "Indicateurs de confiance",
     signatures: "Signatures vérifiées",
