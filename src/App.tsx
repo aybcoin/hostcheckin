@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { clsx } from './lib/clsx';
+import { surfaceTokens, textTokens } from './lib/design-tokens';
 import { useAuth } from './hooks/useAuth';
 import { useHost } from './hooks/useHost';
 import { useProperties } from './hooks/useProperties';
 import { useReservations } from './hooks/useReservations';
 import { AuthForm } from './components/AuthForm';
 import { TopNavigation } from './components/TopNavigation';
-import { Dashboard } from './components/Dashboard';
+import { DashboardPage } from './components/DashboardPage';
 import { PropertiesPage } from './components/PropertiesPage';
 import { ReservationsPage } from './components/ReservationsPage';
 import { CheckinsPage } from './components/CheckinsPage';
@@ -18,6 +20,7 @@ import { AutoLinkGenerator } from './components/AutoLinkGenerator';
 import { PublicBookingForm } from './components/PublicBookingForm';
 import { BlacklistPage } from './components/BlacklistPage';
 import { HelpPage } from './components/HelpPage';
+import { SecurityPage } from './components/SecurityPage';
 import { APP_PAGE_PATHS, AppPage } from './lib/navigation';
 
 function pageFromPath(pathname: string): AppPage {
@@ -30,7 +33,13 @@ function App() {
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const { host, updateHost } = useHost(user?.id || null);
   const { properties, addProperty, updateProperty, deleteProperty } = useProperties(user?.id || null);
-  const { reservations, addReservation, updateReservation, deleteReservation } = useReservations();
+  const {
+    reservations,
+    loading: reservationsLoading,
+    addReservation,
+    updateReservation,
+    deleteReservation,
+  } = useReservations();
 
   const [currentPage, setCurrentPage] = useState<AppPage>('dashboard');
   const [verificationLink, setVerificationLink] = useState<string | null>(null);
@@ -170,8 +179,8 @@ function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-slate-700">Chargement…</div>
+      <div className={clsx('min-h-screen flex items-center justify-center', surfaceTokens.app)}>
+        <div className={textTokens.body}>Chargement…</div>
       </div>
     );
   }
@@ -181,7 +190,13 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className={clsx('min-h-screen', surfaceTokens.app)}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:outline-none focus:ring-2 focus:ring-white"
+      >
+        Aller au contenu principal
+      </a>
       <TopNavigation
         currentPage={currentPage}
         onNavigate={navigateToPage}
@@ -190,7 +205,7 @@ function App() {
         reservationsActionCount={reservationsActionCount}
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+      <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 md:py-8">
         {autoLinkPropertyId ? (
           <AutoLinkGenerator
             property={selectedAutoLinkProperty}
@@ -200,11 +215,11 @@ function App() {
         ) : null}
 
         {!autoLinkPropertyId && currentPage === 'dashboard' ? (
-          <Dashboard
+          <DashboardPage
             host={host}
             properties={properties}
             reservations={reservations}
-            loading={false}
+            loading={reservationsLoading}
             onOpenReservation={openReservationFromDashboard}
           />
         ) : null}
@@ -266,6 +281,10 @@ function App() {
 
         {!autoLinkPropertyId && currentPage === 'help' ? (
           <HelpPage onNavigate={navigateToPage} />
+        ) : null}
+
+        {!autoLinkPropertyId && currentPage === 'security' ? (
+          <SecurityPage />
         ) : null}
       </main>
     </div>

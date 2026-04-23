@@ -463,9 +463,11 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
 
       <div className={clsx('flex gap-1 p-1 rounded-lg w-fit', surfaceTokens.muted)}>
           <button
+            type="button"
             onClick={() => setActiveTab('templates')}
+            aria-pressed={activeTab === 'templates'}
             className={clsx(
-              'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+              'px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300',
               activeTab === 'templates'
                 ? clsx(surfaceTokens.panel, textTokens.title, 'shadow-sm')
                 : clsx(textTokens.muted, 'hover:bg-white/70'),
@@ -474,9 +476,11 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
           Modèles de contrat
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('signed')}
+          aria-pressed={activeTab === 'signed'}
           className={clsx(
-            'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+            'px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300',
             activeTab === 'signed'
               ? clsx(surfaceTokens.panel, textTokens.title, 'shadow-sm')
               : clsx(textTokens.muted, 'hover:bg-white/70'),
@@ -553,8 +557,8 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {!t.is_default && (
-                            <button onClick={() => setDefaultTemplate(t.id)} className={iconButtonToken} title="Activer">
-                              <Star size={14} />
+                            <button type="button" onClick={() => setDefaultTemplate(t.id)} className={iconButtonToken} aria-label={`Activer le modèle ${t.name}`}>
+                              <Star size={14} aria-hidden="true" />
                             </button>
                           )}
                           <Button
@@ -564,8 +568,8 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                           >
                             Modifier
                           </Button>
-                          <button onClick={() => deleteTemplate(t.id)} className={clsx(iconButtonToken, textTokens.danger, 'hover:bg-white/70')}>
-                            <Trash2 size={14} />
+                          <button type="button" onClick={() => deleteTemplate(t.id)} className={clsx(iconButtonToken, textTokens.danger, 'hover:bg-white/70')} aria-label={`Supprimer le modèle ${t.name}`}>
+                            <Trash2 size={14} aria-hidden="true" />
                           </button>
                         </div>
                       </div>
@@ -625,8 +629,8 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
                     <Eye className="w-4 h-4" />
                     Aperçu
                   </Button>
-                  <button onClick={() => { setEditingTemplate(null); setShowEditor(false); }} className={iconButtonToken}>
-                    <X className="w-5 h-5" />
+                  <button type="button" aria-label="Fermer l'éditeur de modèle" onClick={() => { setEditingTemplate(null); setShowEditor(false); }} className={iconButtonToken}>
+                    <X className="w-5 h-5" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -703,8 +707,8 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
               <div className={`${modalTokens.panel} max-w-2xl`} onClick={(e) => e.stopPropagation()}>
                 <div className={clsx('p-5 border-b flex items-center justify-between', borderTokens.default)}>
                   <h2 className={clsx('text-xl font-bold', textTokens.title)}>Signer le contrat</h2>
-                  <button onClick={() => { setIsSigningHost(false); setSelectedReservation(null); clearSignature(); }} className={iconButtonToken}>
-                    <X className="w-5 h-5" />
+                  <button type="button" aria-label="Fermer la fenêtre de signature" onClick={() => { setIsSigningHost(false); setSelectedReservation(null); clearSignature(); }} className={iconButtonToken}>
+                    <X className="w-5 h-5" aria-hidden="true" />
                   </button>
                 </div>
                 <div className="p-5 space-y-5">
@@ -875,8 +879,8 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
           <div className={`${modalTokens.panel} max-w-3xl flex flex-col`} onClick={(e) => e.stopPropagation()}>
             <div className={clsx('p-5 border-b flex items-center justify-between shrink-0', borderTokens.default)}>
               <h2 className={clsx('text-lg font-bold', textTokens.title)}>Apercu du contrat</h2>
-              <button onClick={() => setShowPreview(false)} className={iconButtonToken}>
-                <X size={20} />
+              <button type="button" aria-label="Fermer l'aperçu du contrat" onClick={() => setShowPreview(false)} className={iconButtonToken}>
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-5">

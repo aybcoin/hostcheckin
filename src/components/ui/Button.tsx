@@ -46,6 +46,7 @@ export function Button({
       type={type}
       className={clsx(
         'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2',
         'disabled:cursor-not-allowed disabled:opacity-50',
         sizeClasses[size],
         ctaTokens[resolvedVariant],

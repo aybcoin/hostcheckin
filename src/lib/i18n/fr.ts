@@ -79,6 +79,31 @@ export const fr = {
   security: {
     notice: "Document chiffré et stocké de manière sécurisée. Conforme RGPD.",
     watermark: "HostCheckIn • Document sécurisé",
+    page: {
+      title: "Sécurité & confidentialité",
+      subtitle: "Tout ce que HostCheckIn fait pour protéger vos voyageurs et vos données.",
+      versionBadge: "v2.1 — Mise à jour avr. 2026",
+      identityTitle: "Vos voyageurs sont identifiés",
+      identityBody:
+        "Avant chaque arrivée, le voyageur télécharge une pièce d'identité directement sur la plateforme. Vous recevez une confirmation visuelle avant de remettre les clés.",
+      identityBadge: "Actif",
+      contractTitle: "Vos contrats sont signés",
+      contractBody:
+        "Chaque réservation génère un contrat signé électroniquement par le voyageur via un code OTP. La signature est horodatée et conservée dans votre espace.",
+      contractBadge: "Actif",
+      dataTitle: "Vos données sont protégées",
+      dataBody:
+        "Toutes les pièces d'identité sont chiffrées au repos et en transit. Elles sont automatiquement supprimées après la période légale de conservation.",
+      dataBadge: "Données chiffrées",
+      supportTitle: "En cas de problème",
+      supportBody:
+        "Contactez-nous via le bouton Support en bas de l'écran. En cas d'urgence (voyageur non identifié), bloquez-le directement depuis la fiche réservation.",
+      supportCta: "Accéder au support",
+      identitySectionAria: "Section : vos voyageurs sont identifiés",
+      contractSectionAria: "Section : vos contrats sont signés",
+      dataSectionAria: "Section : vos données sont protégées",
+      supportSectionAria: "Section : en cas de problème",
+    },
   },
   trust: {
     region: "Indicateurs de confiance",
@@ -263,17 +288,20 @@ export const fr = {
       legal: "Légal",
       contracts: "Contrats",
       billing: "Facturation",
+      security: "Sécurité & confidentialité",
     },
     sectionDescriptions: {
       checkin: "Pilotez votre parcours voyageur et vos automatisations check-in.",
       legal: "Consultez vos obligations et ressources réglementaires.",
       contracts: "Ajustez vos modèles contractuels et vos paramètres de signature.",
       billing: "Gérez votre abonnement et vos paramètres de facturation.",
+      security: "Consultez les garanties de sécurité et de protection des données de la plateforme.",
     },
     openCheckin: "Ouvrir Check-ins",
     openLegal: "Ouvrir le centre d'aide",
     openContracts: "Ouvrir Contrats",
     openBilling: "Ouvrir Facturation",
+    openSecurity: "Ouvrir Sécurité & confidentialité",
   },
   calendar: {
     unknownProperty: "Inconnu",

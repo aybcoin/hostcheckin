@@ -16,7 +16,7 @@ interface ProfilePageProps {
   onNavigate: (page: AppPage) => void;
 }
 
-type AccountSection = 'details' | 'checkin' | 'legal' | 'contracts' | 'billing';
+type AccountSection = 'details' | 'checkin' | 'legal' | 'contracts' | 'billing' | 'security';
 
 interface AccountSectionConfig {
   id: AccountSection;
@@ -55,6 +55,7 @@ export function ProfilePage({
     { id: 'legal', label: fr.profile.sections.legal },
     { id: 'contracts', label: fr.profile.sections.contracts },
     { id: 'billing', label: fr.profile.sections.billing },
+    { id: 'security', label: fr.profile.sections.security },
   ];
   const editableInputClass = clsx(inputTokens.base, 'text-base');
   const readOnlyInputClass = clsx(inputTokens.readOnly, 'text-base');
@@ -75,13 +76,14 @@ export function ProfilePage({
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
+              <label htmlFor="profile-full-name" className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                 <div className="flex items-center gap-2">
-                  <User size={16} />
+                  <User size={16} aria-hidden="true" />
                   <span>{fr.profile.fullName}</span>
                 </div>
               </label>
               <input
+                id="profile-full-name"
                 type="text"
                 value={formData.full_name}
                 onChange={(event) => setFormData({ ...formData, full_name: event.target.value })}
@@ -91,13 +93,14 @@ export function ProfilePage({
             </div>
 
             <div>
-              <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
+              <label htmlFor="profile-email" className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                 <div className="flex items-center gap-2">
-                  <Mail size={16} />
+                  <Mail size={16} aria-hidden="true" />
                   <span>Email</span>
                 </div>
               </label>
               <input
+                id="profile-email"
                 type="email"
                 value={formData.email}
                 disabled
@@ -106,13 +109,14 @@ export function ProfilePage({
             </div>
 
             <div>
-              <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
+              <label htmlFor="profile-phone" className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                 <div className="flex items-center gap-2">
-                  <Phone size={16} />
+                  <Phone size={16} aria-hidden="true" />
                   <span>Téléphone</span>
                 </div>
               </label>
               <input
+                id="profile-phone"
                 type="tel"
                 value={formData.phone}
                 onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
@@ -123,13 +127,14 @@ export function ProfilePage({
             </div>
 
             <div>
-              <label className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
+              <label htmlFor="profile-company" className={clsx('block text-sm font-medium mb-2', textTokens.body)}>
                 <div className="flex items-center gap-2">
-                  <Building2 size={16} />
+                  <Building2 size={16} aria-hidden="true" />
                   <span>{fr.profile.companyName}</span>
                 </div>
               </label>
               <input
+                id="profile-company"
                 type="text"
                 value={formData.company_name}
                 onChange={(event) => setFormData({ ...formData, company_name: event.target.value })}
@@ -139,7 +144,7 @@ export function ProfilePage({
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-wrap gap-3 pt-4">
             {!isEditing ? (
               <Button
                 variant="primary"
@@ -211,6 +216,7 @@ export function ProfilePage({
     if (activeSection === 'checkin') return renderSimpleSection(fr.profile.sectionDescriptions.checkin, fr.profile.openCheckin, 'checkins');
     if (activeSection === 'legal') return renderSimpleSection(fr.profile.sectionDescriptions.legal, fr.profile.openLegal, 'help');
     if (activeSection === 'contracts') return renderSimpleSection(fr.profile.sectionDescriptions.contracts, fr.profile.openContracts, 'contracts');
+    if (activeSection === 'security') return renderSimpleSection(fr.profile.sectionDescriptions.security, fr.profile.openSecurity, 'security');
     return renderSimpleSection(fr.profile.sectionDescriptions.billing, fr.profile.openBilling, 'pricing');
   };
 

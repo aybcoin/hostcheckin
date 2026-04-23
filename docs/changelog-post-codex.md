@@ -137,6 +137,17 @@ Ajoutés dans `/Users/hammasayoub/Desktop/Tech/project/src/lib/design-tokens.ts`
 - `tsc --noEmit -p tsconfig.app.json` : ✅
 - `vite build` : ✅
 
+## Lot 5
+
+- Création de `src/components/SecurityPage.tsx` : page `/securite` en 4 sections Card (ShieldCheck, FileCheck, Lock, LifeBuoy), grille 1-col mobile / 2-col tablet+.
+- Tokens exclusivement (`textTokens`, `cardTokens`, `ctaTokens`) — 0 couleur hardcodée.
+- Namespace `security.page` ajouté dans `src/lib/i18n/fr.ts` (20 clés) ; namespace existant `security` étendu avec `sections.security`, `sectionDescriptions.security` et `openSecurity` pour ProfilePage.
+- Route `/securite` ajoutée : `AppPage` étendu d'une valeur `'security'`, `APP_PAGE_PATHS['security'] = '/securite'` dans `src/lib/navigation.ts`.
+- Import `SecurityPage` + bloc conditionnel `currentPage === 'security'` ajouté dans `src/App.tsx`.
+- Lien "Sécurité & confidentialité" ajouté dans le menu latéral de `src/components/ProfilePage.tsx` via `renderSimpleSection`.
+- `tsc --noEmit -p tsconfig.app.json` : ✅
+- `vite build` : ✅
+
 ## Lot 3
 
 - Refonte Dashboard V2 livrée via [src/components/DashboardPage.tsx](/Users/hammasayoub/Desktop/Tech/project/src/components/DashboardPage.tsx) (mobile-first, 3 zones stables).
@@ -167,3 +178,77 @@ Ajoutés dans `/Users/hammasayoub/Desktop/Tech/project/src/lib/design-tokens.ts`
 - Validation technique locale :
   - `tsc --noEmit -p tsconfig.app.json` ✅
   - `vite build` ✅
+
+## Lot 9
+
+- Vitest détecté dans `devDependencies` (`vitest@4.1.5`, `@vitest/coverage-v8@4.1.5`), sans réinstallation possible via `npm` (binaire indisponible dans l’environnement).
+- Configuration test ajoutée à [vite.config.ts](/Users/hammasayoub/Desktop/Tech/project/vite.config.ts) (`globals`, `environment: node`, `include: tests/unit/**/*.test.ts`).
+- Configuration harmonisée dans [vitest.config.ts](/Users/hammasayoub/Desktop/Tech/project/vitest.config.ts) pour éviter les divergences.
+- Correctif environnement Vitest: fallback WASM rolldown activé via `NAPI_RS_FORCE_WASI=1`.
+- Dépendances WASM manquantes installées localement dans `node_modules` (`@rolldown/binding-wasm32-wasi`, `@napi-rs/wasm-runtime`, `@emnapi/core`, `@emnapi/runtime`, `@emnapi/wasi-threads`, `@tybys/wasm-util`, `tslib`).
+- Résultat `tests/unit/trust-metrics.test.ts`: **10 pass / 0 fail / 0 skip**.
+- Résultat `tests/unit/dashboard-data.test.ts`: **23 pass / 0 fail / 0 skip**.
+- Résultat `tests/unit/reservations-status.test.ts`: **32 pass / 0 fail / 0 skip**.
+- Résultat global `tests/unit/`: **65 pass / 0 fail / 0 skip**.
+- Validation finale: `vitest` ✅, `tsc --noEmit -p tsconfig.app.json` ✅, `vite build` ✅.
+
+## Lot 10
+
+- Ajout de stories CSF3 + autodocs dans `src/stories/`:
+  - [Button.stories.tsx](/Users/hammasayoub/Desktop/Tech/project/src/stories/Button.stories.tsx)
+  - [Card.stories.tsx](/Users/hammasayoub/Desktop/Tech/project/src/stories/Card.stories.tsx)
+  - [Badge.stories.tsx](/Users/hammasayoub/Desktop/Tech/project/src/stories/Badge.stories.tsx)
+  - [EmptyState.stories.tsx](/Users/hammasayoub/Desktop/Tech/project/src/stories/EmptyState.stories.tsx)
+  - [ReservationStatusPills.stories.tsx](/Users/hammasayoub/Desktop/Tech/project/src/stories/ReservationStatusPills.stories.tsx)
+  - [TrustBar.stories.tsx](/Users/hammasayoub/Desktop/Tech/project/src/stories/TrustBar.stories.tsx)
+  - [TrustBadge.stories.tsx](/Users/hammasayoub/Desktop/Tech/project/src/stories/TrustBadge.stories.tsx)
+- Storybook discovery élargie dans [.storybook/main.ts](/Users/hammasayoub/Desktop/Tech/project/.storybook/main.ts) pour inclure `../src/stories/**/*.stories.@(ts|tsx)`.
+- Shim de types Storybook ajouté pour TypeScript strict sans dépendance runtime locale:
+  - [src/types/storybook-react.d.ts](/Users/hammasayoub/Desktop/Tech/project/src/types/storybook-react.d.ts)
+- Contrôles `argTypes` ajoutés (variants/sizes/types), sans `any`.
+- Validation après ajout stories: `tsc` ✅, `vitest` ✅, `vite build` ✅.
+
+## Lot 7
+
+### Audit responsive mobile 375px — problèmes trouvés par fichier
+
+- **ReservationsPage.tsx** : état vide `p-12` — padding excessif sur 375px, le bloc débordait visuellement en réduisant l'espace utile.
+- **ProfilePage.tsx** : `flex gap-3` sans `flex-wrap` sur la rangée de boutons Enregistrer/Annuler — risque de débordement horizontal sur très petits écrans avec libellés longs.
+- **DashboardPage.tsx** : aucun problème détecté (layout 1 colonne, skeletons `w-full`, tokens corrects).
+- **TopNavigation.tsx** : aucun problème détecté (hamburger mobile, menu plein écran `fixed inset-0`, brand + bouton bien dimensionnés dans `px-4`).
+- **SecurityPage.tsx** : aucun problème détecté (grille `grid-cols-1 md:grid-cols-2`, `min-w-0` sur contenus, `flex-wrap` sur badges).
+- **ReservationCard.tsx** : aucun problème bloquant — le container CTA a déjà `flex-wrap`, la grille détail est `grid-cols-2` (acceptable sur 375px), les images ont `flex-wrap`.
+- **Modales (CreateReservationModal, ShareLinkModal, RatingModal, ReservationDocuments)** : toutes utilisent `modalTokens.panel` qui contient déjà `max-h-[90vh] overflow-y-auto` — conformes.
+
+### Corrections appliquées
+
+- `src/components/ReservationsPage.tsx` : `p-12` → `p-6 sm:p-12` sur le bloc état vide.
+- `src/components/ProfilePage.tsx` : `flex gap-3` → `flex flex-wrap gap-3` sur la rangée boutons Enregistrer/Annuler.
+
+### Validation
+
+- `tsc --noEmit -p tsconfig.app.json` ✅
+- `vite build` ✅
+
+---
+
+## Lot 8 — Accessibilité globale (a11y)
+
+### Audit (5 fichiers)
+
+- `Button.tsx` : `focus-visible:ring-2` absent — corrigé.
+- `TopNavigation.tsx` : skip link absent — corrigé. Boutons hamburger/close avaient déjà `aria-label` via i18n.
+- `ReservationCard.tsx` : tous les boutons icon-only avaient `aria-label`, icônes avec `aria-hidden="true"` — rien à corriger.
+- `DashboardPage.tsx` : aucun bouton icon-only, aucune lacune — rien à corriger.
+- `ProfilePage.tsx` : 4 inputs sans association `htmlFor`/`id`, 4 icônes dans labels sans `aria-hidden` — corrigés.
+
+### Corrections appliquées
+
+- `src/components/ui/Button.tsx` : 1 correction — ajout `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2` sur le bouton de base.
+- `src/components/TopNavigation.tsx` : 1 correction — ajout du skip link `<a href="#main-content">Aller au contenu</a>` (sr-only, visible au focus).
+- `src/components/ProfilePage.tsx` : 8 corrections — `htmlFor`/`id` sur 4 paires label/input + `aria-hidden="true"` sur 4 icônes décoratives dans les labels.
+
+### Validation
+
+- `tsc --noEmit -p tsconfig.app.json` ✅
+- `vite build` ✅

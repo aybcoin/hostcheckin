@@ -381,7 +381,7 @@ export function ReservationsPage({
       {/* Liste */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className={clsx('rounded-xl border bg-white p-12 text-center shadow-sm', borderTokens.default)}>
+          <div className={clsx('rounded-xl border bg-white p-6 sm:p-12 text-center shadow-sm', borderTokens.default)}>
             <Calendar className={clsx('w-10 h-10 mx-auto mb-3', textTokens.subtle)} aria-hidden="true" />
             <p className={clsx('font-medium', textTokens.subtle)}>
               {search
