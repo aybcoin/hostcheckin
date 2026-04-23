@@ -149,15 +149,15 @@ function buildNotificationMessage(payload: NotificationPayload): string {
 function buildEmailSubject(payload: NotificationPayload): string {
   switch (payload.trigger) {
     case 'checkin_reminder_j1':
-      return `Rappel check-in demain - ${payload.propertyName}`;
+      return `Rappel check-in — ${payload.propertyName}`;
     case 'checkin_day':
-      return `Bienvenue - check-in aujourd'hui à ${payload.propertyName}`;
+      return `Bienvenue à ${payload.propertyName} !`;
     case 'checkout_reminder':
-      return `Rappel check-out demain - ${payload.propertyName}`;
+      return `Votre séjour se termine demain — ${payload.propertyName}`;
     case 'contract_signed':
-      return `Contrat signé - ${payload.propertyName}`;
+      return `Contrat signé — ${payload.propertyName}`;
     case 'verification_complete':
-      return `Identité vérifiée - ${payload.propertyName}`;
+      return `Identité vérifiée — ${payload.guestName}`;
     default:
       return 'Notification HostCheckIn';
   }
@@ -214,54 +214,91 @@ async function insertNotificationLog(
   console.error('notification_logs insert failed', error);
 }
 
-async function sendEmailWithResend(
+const BREVO_API_KEY_NOT_CONFIGURED = 'BREVO_API_KEY not configured';
+
+function sanitizeBrevoSmsSender(senderName: string): string {
+  const alphanumericSender = senderName.replace(/[^a-zA-Z0-9]/g, '');
+  if (!alphanumericSender) {
+    return 'HostCheckIn'.substring(0, 11);
+  }
+  return alphanumericSender.substring(0, 11);
+}
+
+function parseBrevoMessageId(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== 'object') {
+    return undefined;
+  }
+
+  const body = payload as Record<string, unknown>;
+  const rawMessageId = body.messageId ?? body.id;
+
+  if (typeof rawMessageId === 'string') {
+    return rawMessageId;
+  }
+
+  if (typeof rawMessageId === 'number') {
+    return String(rawMessageId);
+  }
+
+  return undefined;
+}
+
+function parseBrevoError(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== 'object') {
+    return undefined;
+  }
+
+  const body = payload as Record<string, unknown>;
+  if (typeof body.message === 'string' && body.message.length > 0) {
+    return body.message;
+  }
+  if (typeof body.code === 'string' && body.code.length > 0) {
+    return body.code;
+  }
+  return undefined;
+}
+
+async function sendEmailWithBrevo(
   to: string,
   subject: string,
   message: string,
-  senderName: string,
+  payload: NotificationPayload,
+  brevoApiKey: string | undefined,
 ): Promise<DeliveryOutcome> {
-  const resendApiKey = Deno.env.get('RESEND_API_KEY');
-  const resendFromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'HostCheckIn <onboarding@resend.dev>';
-
-  if (!resendApiKey) {
-    console.error('EMAIL_PROVIDER_NOT_CONFIGURED');
+  if (!brevoApiKey) {
     return {
       status: 'skipped',
-      reason: 'no_provider',
+      reason: BREVO_API_KEY_NOT_CONFIGURED,
     };
   }
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${resendApiKey}`,
+        'api-key': brevoApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: resendFromEmail,
-        to: [to],
+        sender: { name: payload.senderName, email: payload.hostEmail },
+        to: [{ email: to }],
         subject,
-        text: message,
-        reply_to: undefined,
-        headers: {
-          'X-HostCheckIn-Sender': senderName,
-        },
+        textContent: message,
       }),
     });
 
-    const body = await response.json().catch(() => null) as { id?: string; message?: string } | null;
+    const body = await response.json().catch(() => null);
 
     if (!response.ok) {
       return {
         status: 'failed',
-        error: body?.message || `resend_http_${response.status}`,
+        error: parseBrevoError(body) || `brevo_email_http_${response.status}`,
       };
     }
 
     return {
       status: 'sent',
-      messageId: body?.id,
+      messageId: parseBrevoMessageId(body),
     };
   } catch (error) {
     return {
@@ -271,49 +308,46 @@ async function sendEmailWithResend(
   }
 }
 
-async function sendSmsWithTwilio(to: string, message: string): Promise<DeliveryOutcome> {
-  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const fromNumber = Deno.env.get('TWILIO_FROM_NUMBER');
-
-  if (!accountSid || !authToken || !fromNumber) {
-    console.error('SMS_PROVIDER_NOT_CONFIGURED');
+async function sendSmsWithBrevo(
+  to: string,
+  message: string,
+  senderName: string,
+  brevoApiKey: string | undefined,
+): Promise<DeliveryOutcome> {
+  if (!brevoApiKey) {
     return {
       status: 'skipped',
-      reason: 'no_provider',
+      reason: BREVO_API_KEY_NOT_CONFIGURED,
     };
   }
 
   try {
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    const authHeader = `Basic ${btoa(`${accountSid}:${authToken}`)}`;
-
-    const formData = new URLSearchParams();
-    formData.set('To', to);
-    formData.set('From', fromNumber);
-    formData.set('Body', message);
-
-    const response = await fetch(url, {
+    const response = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
       method: 'POST',
       headers: {
-        Authorization: authHeader,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'api-key': brevoApiKey,
+        'Content-Type': 'application/json',
       },
-      body: formData.toString(),
+      body: JSON.stringify({
+        sender: sanitizeBrevoSmsSender(senderName),
+        recipient: to,
+        content: message,
+        type: 'transactional',
+      }),
     });
 
-    const body = await response.json().catch(() => null) as { sid?: string; message?: string } | null;
+    const body = await response.json().catch(() => null);
 
     if (!response.ok) {
       return {
         status: 'failed',
-        error: body?.message || `twilio_http_${response.status}`,
+        error: parseBrevoError(body) || `brevo_sms_http_${response.status}`,
       };
     }
 
     return {
       status: 'sent',
-      messageId: body?.sid,
+      messageId: parseBrevoMessageId(body),
     };
   } catch (error) {
     return {
@@ -381,6 +415,7 @@ serve(async (req: Request) => {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const brevoApiKey = Deno.env.get('BREVO_API_KEY');
   const message = buildNotificationMessage(payload);
   const subject = buildEmailSubject(payload);
 
@@ -389,6 +424,28 @@ serve(async (req: Request) => {
 
   for (const channel of channels) {
     const recipients = resolveRecipients(payload, channel);
+
+    if (!brevoApiKey) {
+      for (const recipient of recipients) {
+        const reservationId = isUuid(payload.reservationId) ? payload.reservationId : null;
+        await insertNotificationLog(supabase, {
+          reservation_id: reservationId,
+          trigger: payload.trigger,
+          channel,
+          recipient,
+          status: 'skipped',
+          sent_at: null,
+          error: BREVO_API_KEY_NOT_CONFIGURED,
+        });
+      }
+
+      channelResults.push({
+        channel,
+        status: 'skipped',
+        reason: BREVO_API_KEY_NOT_CONFIGURED,
+      });
+      continue;
+    }
 
     if (recipients.length === 0) {
       channelResults.push({
@@ -404,8 +461,8 @@ serve(async (req: Request) => {
 
     for (const recipient of recipients) {
       const outcome = channel === 'email'
-        ? await sendEmailWithResend(recipient, subject, message, payload.senderName)
-        : await sendSmsWithTwilio(recipient, message);
+        ? await sendEmailWithBrevo(recipient, subject, message, payload, brevoApiKey)
+        : await sendSmsWithBrevo(recipient, message, payload.senderName, brevoApiKey);
 
       outcomes.push(outcome);
 

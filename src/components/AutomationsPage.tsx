@@ -1,4 +1,4 @@
-import { BellRing, MailWarning, MessageSquareWarning } from 'lucide-react';
+import { BellRing, MessageSquareWarning } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAutomations } from '../hooks/useAutomations';
 import { clsx } from '../lib/clsx';
@@ -72,12 +72,7 @@ export function AutomationsPage() {
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [feedbackState, setFeedbackState] = useState<'success' | 'error'>('success');
 
-  const hasEmailProvider = Boolean(import.meta.env.VITE_RESEND_API_KEY);
-  const hasSmsProvider = Boolean(
-    import.meta.env.VITE_TWILIO_ACCOUNT_SID
-      && import.meta.env.VITE_TWILIO_AUTH_TOKEN
-      && import.meta.env.VITE_TWILIO_FROM_NUMBER,
-  );
+  const hasBrevoProvider = Boolean(import.meta.env.VITE_BREVO_API_KEY || import.meta.env.BREVO_API_KEY);
 
   const sortedRules = useMemo(
     () => [...rules].sort((first, second) => first.trigger.localeCompare(second.trigger)),
@@ -221,25 +216,33 @@ export function AutomationsPage() {
       <section role="region" aria-label={t.providerTitle} className="space-y-4">
         <h2 className={clsx('text-lg font-semibold', textTokens.title)}>{t.providerTitle}</h2>
         <div className="space-y-3">
-          {!hasEmailProvider ? (
+          {!hasBrevoProvider ? (
             <Card variant="warning" padding="md" className="flex items-start gap-3">
-              <MailWarning className={clsx('mt-0.5 h-5 w-5 shrink-0', textTokens.warning)} aria-hidden="true" />
-              <p className={clsx('text-sm', textTokens.body)}>{t.warnings.emailNotConfigured}</p>
+              <MessageSquareWarning
+                className={clsx('mt-0.5 h-5 w-5 shrink-0', textTokens.warning)}
+                aria-hidden="true"
+              />
+              <p className={clsx('text-sm', textTokens.body)}>
+                Notifications non configurées. Créez un compte gratuit sur brevo.com, copiez votre API key et
+                ajoutez-la dans vos variables d&apos;environnement Supabase sous le nom <code>BREVO_API_KEY</code>.
+              </p>
             </Card>
           ) : null}
 
-          {!hasSmsProvider ? (
-            <Card variant="warning" padding="md" className="flex items-start gap-3">
-              <MessageSquareWarning className={clsx('mt-0.5 h-5 w-5 shrink-0', textTokens.warning)} aria-hidden="true" />
-              <p className={clsx('text-sm', textTokens.body)}>{t.warnings.smsNotConfigured}</p>
-            </Card>
-          ) : null}
-
-          {hasEmailProvider && hasSmsProvider ? (
+          {hasBrevoProvider ? (
             <Card variant="info" padding="md">
-              <p className={clsx('text-sm', textTokens.body)}>Providers configurés.</p>
+              <p className={clsx('text-sm', textTokens.body)}>Provider Brevo configuré.</p>
             </Card>
           ) : null}
+
+          <a
+            href="https://app.brevo.com/settings/keys/api"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={clsx('text-sm underline underline-offset-2', textTokens.info)}
+          >
+            Ouvrir les API keys Brevo
+          </a>
 
           <a
             href="https://supabase.com/docs/guides/functions/secrets"

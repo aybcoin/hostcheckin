@@ -140,8 +140,8 @@ export const fr = {
       logsDescription: 'Les notifications envoyées apparaîtront ici.',
     },
     warnings: {
-      emailNotConfigured: 'Email non configuré. Ajoutez RESEND_API_KEY dans vos variables Supabase.',
-      smsNotConfigured: 'SMS non configuré. Ajoutez les variables Twilio dans votre projet Supabase.',
+      providerNotConfigured:
+        'Notifications non configurées. Créez un compte gratuit sur brevo.com et ajoutez votre BREVO_API_KEY dans les variables Supabase.',
     },
   },
   trust: {
