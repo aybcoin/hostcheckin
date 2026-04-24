@@ -17,6 +17,8 @@ export interface UseAutomationsReturn {
   rules: AutomationRule[];
   logs: NotificationLog[];
   isLoading: boolean;
+  error: string | null;
+  refresh: () => void;
   toggleRule: (ruleId: string) => Promise<void>;
   sendTestNotification: (trigger: AutomationTrigger, channel: NotificationChannel) => Promise<void>;
   isSending: boolean;
@@ -115,6 +117,7 @@ export function useAutomations(): UseAutomationsReturn {
   const [rules, setRules] = useState<AutomationRule[]>(() => loadPersistedRules());
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   const fetchLogs = useCallback(async () => {
@@ -145,15 +148,21 @@ export function useAutomations(): UseAutomationsReturn {
         }));
 
       setLogs(mapped);
+      setError(null);
     } catch (error) {
       console.error('Failed to load automation logs:', error);
       setLogs([]);
+      setError('Impossible de charger les notifications automatiques.');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    void fetchLogs();
+  }, [fetchLogs]);
+
+  const refresh = useCallback(() => {
     void fetchLogs();
   }, [fetchLogs]);
 
@@ -275,6 +284,8 @@ export function useAutomations(): UseAutomationsReturn {
     rules,
     logs,
     isLoading,
+    error,
+    refresh,
     toggleRule,
     sendTestNotification,
     isSending,

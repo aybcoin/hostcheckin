@@ -13,6 +13,17 @@ export const fr = {
     retry: "Réessayer",
     details: "Détails",
   },
+  errors: {
+    generic: 'Une erreur est survenue.',
+    reload: 'Recharger la page',
+    retry: 'Réessayer',
+    dashboard: 'Impossible de charger le tableau de bord.',
+    reservations: 'Impossible de charger les réservations.',
+  },
+  realtime: {
+    live: 'En direct',
+    reconnecting: 'Reconnexion...',
+  },
   app: {
     brand: "HostCheckIn",
     hostFallbackName: "Hôte",

@@ -9,6 +9,7 @@ import { useReservations } from './hooks/useReservations';
 import { AuthForm } from './components/AuthForm';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { TopNavigation } from './components/TopNavigation';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { APP_PAGE_PATHS, AppPage } from './lib/navigation';
 
@@ -79,10 +80,20 @@ function App() {
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const { host, updateHost } = useHost(user?.id || null);
   const onboarding = useOnboarding();
-  const { properties, addProperty, updateProperty, deleteProperty } = useProperties(user?.id || null);
+  const {
+    properties,
+    loading: propertiesLoading,
+    error: propertiesError,
+    refresh: refreshProperties,
+    addProperty,
+    updateProperty,
+    deleteProperty,
+  } = useProperties(user?.id || null);
   const {
     reservations,
     loading: reservationsLoading,
+    error: reservationsError,
+    refresh: refreshReservations,
     addReservation,
     updateReservation,
     deleteReservation,
@@ -308,9 +319,6 @@ function App() {
           {!autoLinkPropertyId && currentPage === 'dashboard' ? (
             <DashboardPage
               host={host}
-              properties={properties}
-              reservations={reservations}
-              loading={reservationsLoading}
               onOpenReservation={openReservationFromDashboard}
             />
           ) : null}
@@ -318,6 +326,9 @@ function App() {
           {!autoLinkPropertyId && currentPage === 'properties' ? (
             <PropertiesPage
               properties={properties}
+              isLoading={propertiesLoading}
+              error={propertiesError}
+              onRetry={refreshProperties}
               onAdd={addProperty}
               onEdit={updateProperty}
               onDelete={deleteProperty}
@@ -337,7 +348,16 @@ function App() {
           ) : null}
 
           {!autoLinkPropertyId && currentPage === 'checkins' ? (
-            <CheckinsPage reservations={reservations} properties={properties} />
+            <CheckinsPage
+              reservations={reservations}
+              properties={properties}
+              isLoading={reservationsLoading || propertiesLoading}
+              error={reservationsError || propertiesError}
+              onRetry={() => {
+                refreshReservations();
+                refreshProperties();
+              }}
+            />
           ) : null}
 
           {!autoLinkPropertyId && currentPage === 'automations' ? (
@@ -393,9 +413,11 @@ function App() {
   return (
     <>
       <ToastContainer />
-      <Suspense fallback={suspenseFallback}>
-        {appContent}
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={suspenseFallback}>
+          {appContent}
+        </Suspense>
+      </ErrorBoundary>
       {shouldShowOnboardingModal && user ? (
         <OnboardingModal
           isOpen

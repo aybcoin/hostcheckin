@@ -1,20 +1,47 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, Upload, CheckCircle, Clock } from "lucide-react";
+import { FileText, Upload, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { clsx } from "../lib/clsx";
-import { surfaceTokens, textTokens } from "../lib/design-tokens";
+import { borderTokens, surfaceTokens, textTokens } from "../lib/design-tokens";
 import { Reservation, Property, APP_BASE_URL, supabase } from "../lib/supabase";
 import { fr } from "../lib/i18n/fr";
 import { CheckinMessageTemplates } from "./CheckinMessageTemplates";
 import { GuestPreviewModal } from "./GuestPreviewModal";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
+import { EmptyState } from "./ui/EmptyState";
+import { Skeleton } from "./ui/Skeleton";
 
 interface CheckinsPageProps {
   reservations: Reservation[];
   properties: Property[];
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
-export function CheckinsPage({ reservations, properties }: CheckinsPageProps) {
+function CheckinsPageSkeleton() {
+  return (
+    <Card variant="default" padding="md" aria-hidden="true" className={clsx('space-y-3', borderTokens.default)}>
+      {[1, 2, 3, 4, 5].map((index) => (
+        <div key={index} className={clsx('flex items-center gap-3 border-b pb-3 last:border-b-0 last:pb-0', borderTokens.subtle)}>
+          <Skeleton variant="circle" className="h-8 w-8" />
+          <div className="flex-1 space-y-2">
+            <Skeleton variant="text" className="h-4 w-2/3" />
+            <Skeleton variant="text" className="h-3 w-1/3" />
+          </div>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+export function CheckinsPage({
+  reservations,
+  properties,
+  isLoading = false,
+  error = null,
+  onRetry,
+}: CheckinsPageProps) {
   const [guestNames, setGuestNames] = useState<Record<string, string>>({});
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const pendingReservations = useMemo(
@@ -59,6 +86,25 @@ export function CheckinsPage({ reservations, properties }: CheckinsPageProps) {
   const getPropertyName = (propertyId: string): string => {
     return properties.find((property) => property.id === propertyId)?.name || 'votre logement';
   };
+
+  if (isLoading) {
+    return <CheckinsPageSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={<AlertCircle className={textTokens.warning} aria-hidden="true" />}
+        title="Erreur"
+        description={error}
+        action={(
+          <Button variant="secondary" onClick={onRetry}>
+            {fr.errors.retry}
+          </Button>
+        )}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

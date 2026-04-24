@@ -1,38 +1,61 @@
-import { useState, useEffect } from 'react';
-import { supabase, Property, PropertyCreateInput } from '../lib/supabase';
+import { useCallback, useEffect, useState } from 'react';
+import { Property, PropertyCreateInput, supabase } from '../lib/supabase';
 
 export function useProperties(hostId: string | null) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (hostId) {
-      fetchProperties();
+  const fetchProperties = useCallback(async (showLoader: boolean = true) => {
+    if (!hostId) {
+      setProperties([]);
+      setError(null);
+      setLoading(false);
+      return;
     }
-  }, [hostId]);
 
-  const fetchProperties = async () => {
+    if (showLoader) {
+      setLoading(true);
+    }
+
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('properties')
         .select('*')
         .eq('host_id', hostId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (fetchError) {
+        throw fetchError;
+      }
+
       setProperties(data || []);
+      setError(null);
+    } catch (fetchError) {
+      console.error('[useProperties] Failed to load properties:', fetchError);
+      setError('Impossible de charger les logements.');
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
-  };
+  }, [hostId]);
+
+  useEffect(() => {
+    void fetchProperties(true);
+  }, [fetchProperties]);
+
+  const refresh = useCallback(() => {
+    void fetchProperties(true);
+  }, [fetchProperties]);
 
   const addProperty = async (property: PropertyCreateInput) => {
-    const { data, error } = await supabase
+    const { data, error: insertError } = await supabase
       .from('properties')
       .insert([{ ...property, host_id: hostId }])
       .select();
 
-    if (error) throw error;
+    if (insertError) throw insertError;
 
     if (data) {
       setProperties((prev) => [data[0], ...prev]);
@@ -41,28 +64,28 @@ export function useProperties(hostId: string | null) {
   };
 
   const updateProperty = async (id: string, updates: Partial<Property>) => {
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('properties')
       .update(updates)
       .eq('id', id);
 
-    if (error) throw error;
+    if (updateError) throw updateError;
 
     setProperties((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+      prev.map((property) => (property.id === id ? { ...property, ...updates } : property))
     );
   };
 
   const deleteProperty = async (id: string) => {
-    const { error } = await supabase
+    const { error: deleteError } = await supabase
       .from('properties')
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (deleteError) throw deleteError;
 
-    setProperties((prev) => prev.filter((p) => p.id !== id));
+    setProperties((prev) => prev.filter((property) => property.id !== id));
   };
 
-  return { properties, loading, addProperty, updateProperty, deleteProperty };
+  return { properties, loading, error, refresh, addProperty, updateProperty, deleteProperty };
 }

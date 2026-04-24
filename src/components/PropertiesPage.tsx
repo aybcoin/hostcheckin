@@ -1,21 +1,51 @@
 import { useState, type FormEvent } from 'react';
-import { Plus, CreditCard as Edit, Trash2, MapPin, Users, Link as LinkIcon, QrCode, X } from 'lucide-react';
+import { AlertCircle, Plus, CreditCard as Edit, Trash2, MapPin, Users, Link as LinkIcon, QrCode, X } from 'lucide-react';
 import { Property, PropertyCreateInput } from '../lib/supabase';
 import { clsx } from '../lib/clsx';
 import { borderTokens, inputTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
+import { fr } from '../lib/i18n/fr';
 import { VerificationModeCard } from './properties/VerificationModeCard';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import { EmptyState } from './ui/EmptyState';
+import { Skeleton } from './ui/Skeleton';
 
 interface PropertiesPageProps {
   properties: Property[];
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   onAdd: (property: PropertyCreateInput) => Promise<void>;
   onEdit: (id: string, updates: Partial<Property>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onOpenAutoLink: (propertyId: string) => void;
 }
 
-export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAutoLink }: PropertiesPageProps) {
+function PropertiesPageSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden="true">
+      {[1, 2, 3].map((index) => (
+        <Card key={index} variant="default" padding="md" className={clsx('space-y-4', borderTokens.default)}>
+          <Skeleton variant="rect" className="h-5 w-1/3" />
+          <Skeleton variant="rect" className="h-20 w-full rounded-lg" />
+          <Skeleton variant="text" className="h-4 w-5/6" />
+          <Skeleton variant="text" className="h-4 w-2/3" />
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function PropertiesPage({
+  properties,
+  isLoading = false,
+  error = null,
+  onRetry,
+  onAdd,
+  onEdit,
+  onDelete,
+  onOpenAutoLink,
+}: PropertiesPageProps) {
   const [showForm, setShowForm] = useState(false);
   const [showAirbnbImport, setShowAirbnbImport] = useState(false);
   const [airbnbUrl, setAirbnbUrl] = useState('');
@@ -35,6 +65,25 @@ export function PropertiesPage({ properties, onAdd, onEdit, onDelete, onOpenAuto
   });
 
   const canAddMore = properties.length < 3;
+
+  if (isLoading) {
+    return <PropertiesPageSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={<AlertCircle className={textTokens.warning} aria-hidden="true" />}
+        title="Erreur"
+        description={error}
+        action={(
+          <Button variant="secondary" onClick={onRetry}>
+            {fr.errors.retry}
+          </Button>
+        )}
+      />
+    );
+  }
 
   const parseAirbnbUrl = (url: string) => {
     const listingIdMatch = url.match(/\/rooms\/(\d+)/);

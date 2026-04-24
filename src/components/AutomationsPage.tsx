@@ -1,4 +1,4 @@
-import { BellRing, MessageSquareWarning } from 'lucide-react';
+import { AlertCircle, BellRing, MessageSquareWarning } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAutomations } from '../hooks/useAutomations';
 import { clsx } from '../lib/clsx';
@@ -15,6 +15,7 @@ import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { EmptyState } from './ui/EmptyState';
+import { Skeleton } from './ui/Skeleton';
 
 const t = fr.automations;
 
@@ -67,8 +68,30 @@ function formatDate(value: string | null): string {
   });
 }
 
+function AutomationsPageSkeleton() {
+  return (
+    <Card variant="default" padding="md" aria-hidden="true" className={clsx('space-y-3', borderTokens.default)}>
+      {[1, 2, 3, 4, 5].map((index) => (
+        <div key={index} className={clsx('space-y-2 border-b pb-3 last:border-b-0 last:pb-0', borderTokens.subtle)}>
+          <Skeleton variant="text" className="h-4 w-1/3" />
+          <Skeleton variant="text" className="h-3 w-2/3" />
+        </div>
+      ))}
+    </Card>
+  );
+}
+
 export function AutomationsPage() {
-  const { rules, logs, isLoading, toggleRule, sendTestNotification, isSending } = useAutomations();
+  const {
+    rules,
+    logs,
+    isLoading,
+    error,
+    refresh,
+    toggleRule,
+    sendTestNotification,
+    isSending,
+  } = useAutomations();
   const [testingRuleId, setTestingRuleId] = useState<string | null>(null);
 
   const hasBrevoProvider = Boolean(import.meta.env.VITE_BREVO_API_KEY || import.meta.env.BREVO_API_KEY);
@@ -77,6 +100,25 @@ export function AutomationsPage() {
     () => [...rules].sort((first, second) => first.trigger.localeCompare(second.trigger)),
     [rules],
   );
+
+  if (isLoading) {
+    return <AutomationsPageSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={<AlertCircle className={textTokens.warning} aria-hidden="true" />}
+        title="Erreur"
+        description={error}
+        action={(
+          <Button variant="secondary" onClick={refresh}>
+            {fr.errors.retry}
+          </Button>
+        )}
+      />
+    );
+  }
 
   const handleToggleRule = async (ruleId: string) => {
     await toggleRule(ruleId);
@@ -151,9 +193,7 @@ export function AutomationsPage() {
       <section role="region" aria-label={t.logsTitle} className="space-y-4">
         <h2 className={clsx('text-lg font-semibold', textTokens.title)}>{t.logsTitle}</h2>
         <Card variant="default" padding="md" aria-live="polite">
-          {isLoading ? (
-            <p className={textTokens.muted}>{fr.common.loading}</p>
-          ) : logs.length === 0 ? (
+          {logs.length === 0 ? (
             <EmptyState
               icon={<BellRing className={textTokens.subtle} aria-hidden="true" />}
               title={t.empty.logsTitle}
