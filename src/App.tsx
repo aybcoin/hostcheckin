@@ -3,9 +3,11 @@ import { clsx } from './lib/clsx';
 import { borderTokens, surfaceTokens, textTokens } from './lib/design-tokens';
 import { useAuth } from './hooks/useAuth';
 import { useHost } from './hooks/useHost';
+import { useOnboarding } from './hooks/useOnboarding';
 import { useProperties } from './hooks/useProperties';
 import { useReservations } from './hooks/useReservations';
 import { AuthForm } from './components/AuthForm';
+import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { TopNavigation } from './components/TopNavigation';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { APP_PAGE_PATHS, AppPage } from './lib/navigation';
@@ -76,6 +78,7 @@ function pageFromPath(pathname: string): AppPage {
 function App() {
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const { host, updateHost } = useHost(user?.id || null);
+  const onboarding = useOnboarding();
   const { properties, addProperty, updateProperty, deleteProperty } = useProperties(user?.id || null);
   const {
     reservations,
@@ -251,6 +254,7 @@ function App() {
   );
 
   const isPublicRoute = guestPortalToken !== null || verificationLink !== null || publicBookingToken !== null;
+  const shouldShowOnboardingModal = Boolean(user && !isPublicRoute && !onboarding.isComplete);
 
   if (authLoading && !isPublicRoute) {
     return (
@@ -392,6 +396,16 @@ function App() {
       <Suspense fallback={suspenseFallback}>
         {appContent}
       </Suspense>
+      {shouldShowOnboardingModal && user ? (
+        <OnboardingModal
+          isOpen
+          hostId={user.id}
+          state={onboarding.state}
+          goToStep={onboarding.goToStep}
+          complete={onboarding.complete}
+          skip={onboarding.skip}
+        />
+      ) : null}
     </>
   );
 }

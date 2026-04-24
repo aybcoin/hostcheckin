@@ -151,6 +151,7 @@ export const fr = {
       notifications: 'Notifications',
       provider: 'Provider Brevo',
       account: 'Compte',
+      application: 'Application',
     },
     fields: {
       emailEnabled: 'Notifications email',
@@ -610,6 +611,7 @@ export const fr = {
     loading: "Chargement de la checklist de mise en route…",
     loadError: "Impossible de charger les étapes de configuration.",
     completedBanner: "Votre configuration est terminée.",
+    skip: 'Passer',
     reviewLink: "Revoir la mise en route",
     dismissBannerAria: "Masquer la bannière de mise en route terminée",
     title: (appName: string) => `Commencer avec ${appName}`,
@@ -624,6 +626,9 @@ export const fr = {
     openDefault: "Ouvrir",
     openAriaFallback: "Ouvrir cette étape",
     steps: {
+      welcome: 'Bienvenue',
+      property: 'Propriété',
+      notifications: 'Notifications',
       accountCreated: {
         key: "account_created",
         icon: "shield-check",
@@ -655,6 +660,37 @@ export const fr = {
         estimate: "~1 min",
         cta: "Activer maintenant",
       },
+    },
+    welcome: {
+      title: 'Bienvenue sur HostCheckIn',
+      subtitle: 'Configurons votre compte en 3 étapes rapides.',
+      benefit1: 'Check-ins sécurisés',
+      benefit2: 'Notifications automatiques',
+      benefit3: 'Contrats signés',
+      cta: 'Commencer',
+    },
+    property: {
+      title: 'Ajoutez votre première propriété',
+      nameLabel: 'Nom de la propriété',
+      namePlaceholder: 'Ex: Appartement Paris 11e',
+      addressLabel: 'Adresse (optionnel)',
+      typeLabel: 'Type de bien',
+      types: {
+        apartment: 'Appartement',
+        house: 'Maison',
+        studio: 'Studio',
+        villa: 'Villa',
+      },
+      cta: 'Enregistrer',
+      saving: 'Enregistrement...',
+      skip: 'Passer cette étape',
+    },
+    notifications: {
+      title: 'Activez les notifications',
+      emailLabel: 'Notifications email',
+      smsLabel: 'Notifications SMS',
+      brevoHint: 'Configurez votre clé Brevo dans Paramètres pour activer les envois.',
+      cta: 'Terminer',
     },
   },
 } as const;

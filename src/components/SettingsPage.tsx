@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import { InstallPWA } from './ui/InstallPWA';
 
 const t = fr.settings;
 
@@ -380,6 +381,14 @@ export default function SettingsPage() {
             {fr.profile.sections.security}
           </a>
         </div>
+      </Card>
+
+      <Card role="region" aria-label={t.sections.application} variant="default" padding="lg" className="space-y-4">
+        <h2 className={clsx('text-lg font-semibold', textTokens.title)}>{t.sections.application}</h2>
+        <p className={clsx('text-sm', textTokens.muted)}>
+          Installez HostCheckIn en PWA pour y accéder rapidement depuis votre écran d&apos;accueil.
+        </p>
+        <InstallPWA />
       </Card>
     </div>
   );
