@@ -191,6 +191,24 @@ export function ProfilePage({
         properties={properties}
         onNavigate={onNavigate}
       />
+
+      <Card variant="default" padding="md" className="space-y-3">
+        <h3 className={clsx('text-base font-semibold', textTokens.title)}>Liens rapides</h3>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => onNavigate('settings')}
+          >
+            {fr.settings.actions.openSettings}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => onNavigate('security')}
+          >
+            {fr.profile.sections.security}
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 

@@ -1,12 +1,22 @@
-import { FileCheck, LifeBuoy, Lock, ShieldCheck } from 'lucide-react';
+import { BellRing, FileCheck, LifeBuoy, Lock, ShieldCheck } from 'lucide-react';
 import { clsx } from '../lib/clsx';
 import { textTokens } from '../lib/design-tokens';
 import { fr } from '../lib/i18n/fr';
+import { APP_PAGE_PATHS } from '../lib/navigation';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 
 const t = fr.security.page;
+const tAutomations = fr.automations;
+
+function navigateToAutomations() {
+  const targetPath = APP_PAGE_PATHS.automations;
+  if (window.location.pathname !== targetPath) {
+    window.history.pushState({}, '', targetPath);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+}
 
 export function SecurityPage() {
   return (
@@ -119,6 +129,32 @@ export function SecurityPage() {
                 onClick={() => window.open('mailto:support@hostcheckin.com')}
               >
                 {t.supportCta}
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <Card
+          variant="default"
+          padding="lg"
+          aria-label={tAutomations.pageTitle}
+        >
+          <div className="flex items-start gap-4">
+            <div className={clsx('shrink-0 mt-0.5', textTokens.info)}>
+              <BellRing size={24} aria-hidden="true" />
+            </div>
+            <div className="min-w-0 space-y-3">
+              <h2 className={clsx('text-base font-semibold', textTokens.title)}>
+                {tAutomations.pageTitle}
+              </h2>
+              <p className={clsx('text-sm leading-relaxed', textTokens.body)}>
+                {tAutomations.pageDescription}
+              </p>
+              <Button
+                variant="secondary"
+                onClick={navigateToAutomations}
+              >
+                {tAutomations.rulesTitle}
               </Button>
             </div>
           </div>

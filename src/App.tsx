@@ -1,30 +1,72 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { clsx } from './lib/clsx';
-import { surfaceTokens, textTokens } from './lib/design-tokens';
+import { borderTokens, surfaceTokens, textTokens } from './lib/design-tokens';
 import { useAuth } from './hooks/useAuth';
 import { useHost } from './hooks/useHost';
 import { useProperties } from './hooks/useProperties';
 import { useReservations } from './hooks/useReservations';
 import { AuthForm } from './components/AuthForm';
 import { TopNavigation } from './components/TopNavigation';
-import { DashboardPage } from './components/DashboardPage';
-import { PropertiesPage } from './components/PropertiesPage';
-import { ReservationsPage } from './components/ReservationsPage';
-import { CheckinsPage } from './components/CheckinsPage';
-import { ProfilePage } from './components/ProfilePage';
-import { ContractPage } from './components/ContractPage';
-import { CalendarPage } from './components/CalendarPage';
-import { VerificationPage } from './components/VerificationPage';
-import { PricingPage } from './components/PricingPage';
-import { AutoLinkGenerator } from './components/AutoLinkGenerator';
-import { PublicBookingForm } from './components/PublicBookingForm';
-import { BlacklistPage } from './components/BlacklistPage';
-import { HelpPage } from './components/HelpPage';
-import { SecurityPage } from './components/SecurityPage';
-import { AutomationsPage } from './components/AutomationsPage';
+import { ToastContainer } from './components/ui/ToastContainer';
 import { APP_PAGE_PATHS, AppPage } from './lib/navigation';
 
+const DashboardPage = lazy(() =>
+  import('./components/DashboardPage').then((module) => ({ default: module.DashboardPage })),
+);
+const ReservationsPage = lazy(() =>
+  import('./components/ReservationsPage').then((module) => ({ default: module.ReservationsPage })),
+);
+const CalendarPage = lazy(() =>
+  import('./components/CalendarPage').then((module) => ({ default: module.CalendarPage })),
+);
+const PropertiesPage = lazy(() =>
+  import('./components/PropertiesPage').then((module) => ({ default: module.PropertiesPage })),
+);
+const CheckinsPage = lazy(() =>
+  import('./components/CheckinsPage').then((module) => ({ default: module.CheckinsPage })),
+);
+const BlacklistPage = lazy(() =>
+  import('./components/BlacklistPage').then((module) => ({ default: module.BlacklistPage })),
+);
+const VerificationPage = lazy(() =>
+  import('./components/VerificationPage').then((module) => ({ default: module.VerificationPage })),
+);
+const ContractPage = lazy(() =>
+  import('./components/ContractPage').then((module) => ({ default: module.ContractPage })),
+);
+const ProfilePage = lazy(() =>
+  import('./components/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+);
+const SecurityPage = lazy(() =>
+  import('./components/SecurityPage').then((module) => ({ default: module.SecurityPage })),
+);
+const AutomationsPage = lazy(() =>
+  import('./components/AutomationsPage').then((module) => ({ default: module.AutomationsPage })),
+);
+const HelpPage = lazy(() =>
+  import('./components/HelpPage').then((module) => ({ default: module.HelpPage })),
+);
+const PricingPage = lazy(() =>
+  import('./components/PricingPage').then((module) => ({ default: module.PricingPage })),
+);
+const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const AutoLinkGenerator = lazy(() =>
+  import('./components/AutoLinkGenerator').then((module) => ({ default: module.AutoLinkGenerator })),
+);
+const PublicBookingForm = lazy(() =>
+  import('./components/PublicBookingForm').then((module) => ({ default: module.PublicBookingForm })),
+);
+
+const legacyPagePathAliases: Partial<Record<string, AppPage>> = {
+  '/profile': 'profile',
+};
+
 function pageFromPath(pathname: string): AppPage {
+  const aliasedPage = legacyPagePathAliases[pathname];
+  if (aliasedPage) {
+    return aliasedPage;
+  }
+
   const entry = Object.entries(APP_PAGE_PATHS).find(([, path]) => path === pathname);
   if (!entry) return 'dashboard';
   return entry[0] as AppPage;
@@ -170,13 +212,15 @@ function App() {
     }).length;
   }, [reservations]);
 
-  if (verificationLink) {
-    return <VerificationPage uniqueLink={verificationLink} />;
-  }
-
-  if (publicBookingToken) {
-    return <PublicBookingForm propertyToken={publicBookingToken} />;
-  }
+  const suspenseFallback = (
+    <div className={clsx('flex min-h-screen items-center justify-center', surfaceTokens.app)}>
+      <div
+        className={clsx('h-8 w-8 animate-spin rounded-full border-2 border-t-transparent', borderTokens.default)}
+        role="status"
+        aria-label="Chargement..."
+      />
+    </div>
+  );
 
   if (authLoading) {
     return (
@@ -186,113 +230,137 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <AuthForm onSignIn={handleSignIn} onSignUp={handleSignUp} />;
+  let appContent: JSX.Element;
+
+  if (verificationLink) {
+    appContent = <VerificationPage uniqueLink={verificationLink} />;
+  } else if (publicBookingToken) {
+    appContent = <PublicBookingForm propertyToken={publicBookingToken} />;
+  } else if (!user) {
+    appContent = <AuthForm onSignIn={handleSignIn} onSignUp={handleSignUp} />;
+  } else {
+    appContent = (
+      <div className={clsx('min-h-screen', surfaceTokens.app)}>
+        <a
+          href="#main-content"
+          className={clsx(
+            'sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:outline-none focus:ring-2',
+            surfaceTokens.panel,
+            textTokens.title,
+            borderTokens.strong,
+          )}
+        >
+          Aller au contenu principal
+        </a>
+        <TopNavigation
+          currentPage={currentPage}
+          onNavigate={navigateToPage}
+          onLogout={handleSignOut}
+          hostName={host?.full_name}
+          reservationsActionCount={reservationsActionCount}
+        />
+
+        <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+          {autoLinkPropertyId ? (
+            <AutoLinkGenerator
+              property={selectedAutoLinkProperty}
+              hostId={user.id}
+              onBack={() => navigateToPage('properties')}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'dashboard' ? (
+            <DashboardPage
+              host={host}
+              properties={properties}
+              reservations={reservations}
+              loading={reservationsLoading}
+              onOpenReservation={openReservationFromDashboard}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'properties' ? (
+            <PropertiesPage
+              properties={properties}
+              onAdd={addProperty}
+              onEdit={updateProperty}
+              onDelete={deleteProperty}
+              onOpenAutoLink={openAutoLinkPage}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'reservations' ? (
+            <ReservationsPage
+              reservations={reservations}
+              properties={properties}
+              focusedReservationId={focusedReservationId}
+              onUpdate={updateReservation}
+              onAdd={addReservation}
+              onDelete={deleteReservation}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'checkins' ? (
+            <CheckinsPage reservations={reservations} properties={properties} />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'automations' ? (
+            <AutomationsPage />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'calendar' ? (
+            <CalendarPage
+              reservations={reservations}
+              properties={properties}
+              onNavigateToReservation={() => navigateToPage('reservations')}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'contracts' ? (
+            <ContractPage
+              reservations={reservations}
+              properties={properties}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'profile' ? (
+            <ProfilePage
+              host={host}
+              onUpdate={updateHost}
+              properties={properties}
+              onNavigate={navigateToPage}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'settings' ? (
+            <SettingsPage />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'pricing' ? <PricingPage /> : null}
+
+          {!autoLinkPropertyId && currentPage === 'blacklist' ? (
+            <BlacklistPage hostId={user.id} />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'help' ? (
+            <HelpPage onNavigate={navigateToPage} />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'security' ? (
+            <SecurityPage />
+          ) : null}
+        </main>
+      </div>
+    );
   }
 
   return (
-    <div className={clsx('min-h-screen', surfaceTokens.app)}>
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:outline-none focus:ring-2 focus:ring-white"
-      >
-        Aller au contenu principal
-      </a>
-      <TopNavigation
-        currentPage={currentPage}
-        onNavigate={navigateToPage}
-        onLogout={handleSignOut}
-        hostName={host?.full_name}
-        reservationsActionCount={reservationsActionCount}
-      />
-
-      <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-        {autoLinkPropertyId ? (
-          <AutoLinkGenerator
-            property={selectedAutoLinkProperty}
-            hostId={user.id}
-            onBack={() => navigateToPage('properties')}
-          />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'dashboard' ? (
-          <DashboardPage
-            host={host}
-            properties={properties}
-            reservations={reservations}
-            loading={reservationsLoading}
-            onOpenReservation={openReservationFromDashboard}
-          />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'properties' ? (
-          <PropertiesPage
-            properties={properties}
-            onAdd={addProperty}
-            onEdit={updateProperty}
-            onDelete={deleteProperty}
-            onOpenAutoLink={openAutoLinkPage}
-          />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'reservations' ? (
-          <ReservationsPage
-            reservations={reservations}
-            properties={properties}
-            focusedReservationId={focusedReservationId}
-            onUpdate={updateReservation}
-            onAdd={addReservation}
-            onDelete={deleteReservation}
-          />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'checkins' ? (
-          <CheckinsPage reservations={reservations} properties={properties} />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'automations' ? (
-          <AutomationsPage />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'calendar' ? (
-          <CalendarPage
-            reservations={reservations}
-            properties={properties}
-            onNavigateToReservation={() => navigateToPage('reservations')}
-          />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'contracts' ? (
-          <ContractPage
-            reservations={reservations}
-            properties={properties}
-          />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'profile' ? (
-          <ProfilePage
-            host={host}
-            onUpdate={updateHost}
-            properties={properties}
-            onNavigate={navigateToPage}
-          />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'pricing' ? <PricingPage /> : null}
-
-        {!autoLinkPropertyId && currentPage === 'blacklist' ? (
-          <BlacklistPage hostId={user.id} />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'help' ? (
-          <HelpPage onNavigate={navigateToPage} />
-        ) : null}
-
-        {!autoLinkPropertyId && currentPage === 'security' ? (
-          <SecurityPage />
-        ) : null}
-      </main>
-    </div>
+    <>
+      <ToastContainer />
+      <Suspense fallback={suspenseFallback}>
+        {appContent}
+      </Suspense>
+    </>
   );
 }
 

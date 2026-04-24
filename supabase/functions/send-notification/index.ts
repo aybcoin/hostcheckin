@@ -56,7 +56,7 @@ interface NotificationLogInsert {
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey, X-Brevo-Api-Key',
 };
 
 const ALLOWED_TRIGGERS: Trigger[] = [
@@ -415,7 +415,8 @@ serve(async (req: Request) => {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const brevoApiKey = Deno.env.get('BREVO_API_KEY');
+  const requestBrevoApiKey = req.headers.get('x-brevo-api-key')?.trim();
+  const brevoApiKey = requestBrevoApiKey || Deno.env.get('BREVO_API_KEY');
   const message = buildNotificationMessage(payload);
   const subject = buildEmailSubject(payload);
 

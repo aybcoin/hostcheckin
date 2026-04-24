@@ -4,6 +4,7 @@ import { useAutomations } from '../hooks/useAutomations';
 import { clsx } from '../lib/clsx';
 import { borderTokens, statusTokens, textTokens } from '../lib/design-tokens';
 import { fr } from '../lib/i18n/fr';
+import { toast } from '../lib/toast';
 import type {
   AutomationRule,
   AutomationTrigger,
@@ -69,8 +70,6 @@ function formatDate(value: string | null): string {
 export function AutomationsPage() {
   const { rules, logs, isLoading, toggleRule, sendTestNotification, isSending } = useAutomations();
   const [testingRuleId, setTestingRuleId] = useState<string | null>(null);
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [feedbackState, setFeedbackState] = useState<'success' | 'error'>('success');
 
   const hasBrevoProvider = Boolean(import.meta.env.VITE_BREVO_API_KEY || import.meta.env.BREVO_API_KEY);
 
@@ -85,15 +84,12 @@ export function AutomationsPage() {
 
   const handleSendTest = async (rule: AutomationRule) => {
     setTestingRuleId(rule.id);
-    setFeedbackMessage(null);
 
     try {
       await sendTestNotification(rule.trigger, rule.channel);
-      setFeedbackState('success');
-      setFeedbackMessage('Notification de test envoyée.');
-    } catch (error) {
-      setFeedbackState('error');
-      setFeedbackMessage(error instanceof Error ? error.message : 'Échec de l’envoi du test.');
+      toast.success(fr.toast.notificationSent);
+    } catch {
+      toast.error(fr.toast.notificationError);
     } finally {
       setTestingRuleId(null);
     }
@@ -155,18 +151,6 @@ export function AutomationsPage() {
       <section role="region" aria-label={t.logsTitle} className="space-y-4">
         <h2 className={clsx('text-lg font-semibold', textTokens.title)}>{t.logsTitle}</h2>
         <Card variant="default" padding="md" aria-live="polite">
-          {feedbackMessage ? (
-            <p
-              className={clsx(
-                'mb-4 rounded-lg border px-3 py-2 text-sm',
-                feedbackState === 'success' ? statusTokens.success : statusTokens.danger,
-              )}
-              role="status"
-            >
-              {feedbackMessage}
-            </p>
-          ) : null}
-
           {isLoading ? (
             <p className={textTokens.muted}>{fr.common.loading}</p>
           ) : logs.length === 0 ? (
