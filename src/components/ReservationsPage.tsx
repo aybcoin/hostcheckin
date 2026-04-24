@@ -39,6 +39,7 @@ import { CreateReservationModal } from './reservations/CreateReservationModal';
 import { Button } from './ui/Button';
 import { fr } from '../lib/i18n/fr';
 import { borderTokens, chipTokens, inputTokens, stateFillTokens, textTokens } from '../lib/design-tokens';
+import { toast } from '../lib/toast';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -69,6 +70,10 @@ interface QuickFilter {
   label: string;
   value: ReservationCategory | 'all';
   count?: number;
+}
+
+interface GuestTokenRecord {
+  token: string;
 }
 
 // ── Chips de filtre rapide ────────────────────────────────────────────────────
@@ -321,6 +326,51 @@ export function ReservationsPage({
     setRatingModal(null);
   };
 
+  const handleCopyGuestPortalLink = useCallback(async (reservation: Reservation) => {
+    try {
+      const nowIso = new Date().toISOString();
+
+      const { data: existingToken, error: findError } = await supabase
+        .from('guest_tokens')
+        .select('token')
+        .eq('reservation_id', reservation.id)
+        .gt('expires_at', nowIso)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (findError) {
+        toast.error(fr.reservations.guestPortalLinkError);
+        return;
+      }
+
+      const token = (existingToken as GuestTokenRecord | null)?.token;
+
+      if (token) {
+        await navigator.clipboard.writeText(`${window.location.origin}/check-in/${token}`);
+        toast.success(fr.reservations.guestPortalLinkCopied);
+        return;
+      }
+
+      const { data: insertedToken, error: insertError } = await supabase
+        .from('guest_tokens')
+        .insert({ reservation_id: reservation.id })
+        .select('token')
+        .single();
+
+      if (insertError || !insertedToken) {
+        toast.error(fr.reservations.guestPortalLinkError);
+        return;
+      }
+
+      const createdToken = (insertedToken as GuestTokenRecord).token;
+      await navigator.clipboard.writeText(`${window.location.origin}/check-in/${createdToken}`);
+      toast.success(fr.reservations.guestPortalLinkCopied);
+    } catch {
+      toast.error(fr.reservations.guestPortalLinkError);
+    }
+  }, []);
+
   // ── Rendu ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
@@ -417,6 +467,7 @@ export function ReservationsPage({
                 onOpenShare={(link, guestName, propertyName) =>
                   setShareModal({ link, guestName, propertyName })
                 }
+                onCopyGuestPortalLink={handleCopyGuestPortalLink}
                 onOpenRating={(id, ref, rating) => setRatingModal({ id, ref, rating })}
               />
             ))}

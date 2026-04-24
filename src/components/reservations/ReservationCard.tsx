@@ -75,6 +75,7 @@ export interface ReservationCardProps {
   onBlacklist: (reservation: Reservation, guest: GuestInfo | undefined) => Promise<void>;
   onOpenDocuments: (id: string, ref: string) => void;
   onOpenShare: (link: string, guestName: string, propertyName: string) => void;
+  onCopyGuestPortalLink: (reservation: Reservation) => Promise<void>;
   onOpenRating: (id: string, ref: string, rating?: number) => void;
 }
 
@@ -124,6 +125,7 @@ export function ReservationCard({
   onBlacklist,
   onOpenDocuments,
   onOpenShare,
+  onCopyGuestPortalLink,
   onOpenRating,
 }: ReservationCardProps) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
@@ -295,6 +297,20 @@ export function ReservationCard({
             >
               <Star size={11} aria-hidden="true" />
               {reservation.guest_rating ? `${reservation.guest_rating}/5` : '—'}
+            </button>
+
+            <button
+              type="button"
+              title={fr.reservations.guestPortalLink}
+              aria-label={`${fr.reservations.guestPortalLink} ${reservation.booking_reference}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                void onCopyGuestPortalLink(reservation);
+              }}
+              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${statusTokens.neutral}`}
+            >
+              <Link2 size={13} aria-hidden="true" />
+              {fr.reservations.guestPortalLink}
             </button>
 
             <button

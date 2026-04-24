@@ -56,6 +56,7 @@ const AutoLinkGenerator = lazy(() =>
 const PublicBookingForm = lazy(() =>
   import('./components/PublicBookingForm').then((module) => ({ default: module.PublicBookingForm })),
 );
+const GuestPortalPage = lazy(() => import('./components/GuestPortalPage'));
 
 const legacyPagePathAliases: Partial<Record<string, AppPage>> = {
   '/profile': 'profile',
@@ -87,14 +88,35 @@ function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('dashboard');
   const [verificationLink, setVerificationLink] = useState<string | null>(null);
   const [publicBookingToken, setPublicBookingToken] = useState<string | null>(null);
+  const [guestPortalToken, setGuestPortalToken] = useState<string | null>(null);
   const [autoLinkPropertyId, setAutoLinkPropertyId] = useState<string | null>(null);
   const [focusedReservationId, setFocusedReservationId] = useState<string | null>(null);
 
   const applyRoute = useCallback((pathname: string, search: string = '') => {
     const params = new URLSearchParams(search);
+    const guestPortalMatch = pathname.match(/^\/check-in\/(.+)$/);
+    if (guestPortalMatch) {
+      setGuestPortalToken(guestPortalMatch[1]);
+      setVerificationLink(null);
+      setPublicBookingToken(null);
+      setAutoLinkPropertyId(null);
+      setFocusedReservationId(null);
+      return;
+    }
+
+    if (pathname === '/check-in') {
+      setGuestPortalToken(params.get('token') ?? '');
+      setVerificationLink(null);
+      setPublicBookingToken(null);
+      setAutoLinkPropertyId(null);
+      setFocusedReservationId(null);
+      return;
+    }
+
     const checkinMatch = pathname.match(/^\/checkin\/(.+)$/);
     if (checkinMatch) {
       setVerificationLink(checkinMatch[1]);
+      setGuestPortalToken(null);
       setPublicBookingToken(null);
       setAutoLinkPropertyId(null);
       setFocusedReservationId(null);
@@ -104,6 +126,7 @@ function App() {
     const publicBookingMatch = pathname.match(/^\/book\/(.+)$/);
     if (publicBookingMatch) {
       setPublicBookingToken(publicBookingMatch[1]);
+      setGuestPortalToken(null);
       setVerificationLink(null);
       setAutoLinkPropertyId(null);
       setFocusedReservationId(null);
@@ -113,6 +136,7 @@ function App() {
     const autoLinkMatch = pathname.match(/^\/properties\/([^/]+)\/auto-link$/);
     if (autoLinkMatch) {
       setAutoLinkPropertyId(autoLinkMatch[1]);
+      setGuestPortalToken(null);
       setVerificationLink(null);
       setPublicBookingToken(null);
       setFocusedReservationId(null);
@@ -120,6 +144,7 @@ function App() {
       return;
     }
 
+    setGuestPortalToken(null);
     setVerificationLink(null);
     setPublicBookingToken(null);
     setAutoLinkPropertyId(null);
@@ -141,6 +166,7 @@ function App() {
 
   const navigateToPage = useCallback((page: AppPage) => {
     setCurrentPage(page);
+    setGuestPortalToken(null);
     setVerificationLink(null);
     setPublicBookingToken(null);
     setAutoLinkPropertyId(null);
@@ -154,6 +180,7 @@ function App() {
 
   const openAutoLinkPage = useCallback((propertyId: string) => {
     setAutoLinkPropertyId(propertyId);
+    setGuestPortalToken(null);
     setVerificationLink(null);
     setPublicBookingToken(null);
     setFocusedReservationId(null);
@@ -166,6 +193,7 @@ function App() {
 
   const openReservationFromDashboard = useCallback((reservationId: string) => {
     setCurrentPage('reservations');
+    setGuestPortalToken(null);
     setVerificationLink(null);
     setPublicBookingToken(null);
     setAutoLinkPropertyId(null);
@@ -222,7 +250,9 @@ function App() {
     </div>
   );
 
-  if (authLoading) {
+  const isPublicRoute = guestPortalToken !== null || verificationLink !== null || publicBookingToken !== null;
+
+  if (authLoading && !isPublicRoute) {
     return (
       <div className={clsx('min-h-screen flex items-center justify-center', surfaceTokens.app)}>
         <div className={textTokens.body}>Chargement…</div>
@@ -232,7 +262,9 @@ function App() {
 
   let appContent: JSX.Element;
 
-  if (verificationLink) {
+  if (guestPortalToken !== null) {
+    appContent = <GuestPortalPage routeToken={guestPortalToken} />;
+  } else if (verificationLink) {
     appContent = <VerificationPage uniqueLink={verificationLink} />;
   } else if (publicBookingToken) {
     appContent = <PublicBookingForm propertyToken={publicBookingToken} />;
