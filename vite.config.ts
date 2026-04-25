@@ -44,35 +44,6 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) {
-            return undefined;
-          }
-
-          if (id.includes('@supabase')) {
-            return 'vendor-supabase';
-          }
-
-          if (id.includes('react') || id.includes('scheduler')) {
-            return 'vendor-react';
-          }
-
-          if (id.includes('lucide-react')) {
-            return 'vendor-lucide';
-          }
-
-          if (id.includes('qrcode.react')) {
-            return 'vendor-qrcode';
-          }
-
-          return 'vendor';
-        },
-      },
-    },
-  },
   test: {
     globals: true,
     environment: 'node',

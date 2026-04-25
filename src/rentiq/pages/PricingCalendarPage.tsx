@@ -14,10 +14,8 @@ function rowAccent(day: DailyPricing): string {
 }
 
 export function PricingCalendarPage() {
-  const { dailyPricing, selectedListingId } = useRentiqStore((state) => ({
-    dailyPricing: state.dailyPricing,
-    selectedListingId: state.selectedListingId,
-  }));
+  const dailyPricing = useRentiqStore((state) => state.dailyPricing);
+  const selectedListingId = useRentiqStore((state) => state.selectedListingId);
 
   const rows = useMemo(
     () => dailyPricing.filter((day) => day.listingId === selectedListingId).slice(0, 60),

@@ -12,12 +12,10 @@ import { useRentiqStore } from './store/useRentiqStore';
 import './app/theme.css';
 
 export default function RentiqApp() {
-  const { initialize, initialized, loading, error } = useRentiqStore((state) => ({
-    initialize: state.initialize,
-    initialized: state.initialized,
-    loading: state.loading,
-    error: state.error,
-  }));
+  const initialize = useRentiqStore((state) => state.initialize);
+  const initialized = useRentiqStore((state) => state.initialized);
+  const loading = useRentiqStore((state) => state.loading);
+  const error = useRentiqStore((state) => state.error);
 
   useEffect(() => {
     if (!initialized) {

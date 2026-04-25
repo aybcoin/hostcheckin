@@ -4,17 +4,10 @@ import type { ListingPositioning } from '../types';
 import { formatMad } from '../utils/currency';
 
 export function ListingsPage() {
-  const {
-    listings,
-    selectedListingId,
-    updateListing,
-    updateListingAmenities,
-  } = useRentiqStore((state) => ({
-    listings: state.listings,
-    selectedListingId: state.selectedListingId,
-    updateListing: state.updateListing,
-    updateListingAmenities: state.updateListingAmenities,
-  }));
+  const listings = useRentiqStore((state) => state.listings);
+  const selectedListingId = useRentiqStore((state) => state.selectedListingId);
+  const updateListing = useRentiqStore((state) => state.updateListing);
+  const updateListingAmenities = useRentiqStore((state) => state.updateListingAmenities);
 
   const listing = useMemo(
     () => listings.find((item) => item.id === selectedListingId) ?? listings[0] ?? null,

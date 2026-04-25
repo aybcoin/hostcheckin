@@ -3,12 +3,10 @@ import { useRentiqStore } from '../store/useRentiqStore';
 import { formatMad } from '../utils/currency';
 
 export function CompetitorsPage() {
-  const { competitors, listings, selectedListingId, addCompetitor } = useRentiqStore((state) => ({
-    competitors: state.competitors,
-    listings: state.listings,
-    selectedListingId: state.selectedListingId,
-    addCompetitor: state.addCompetitor,
-  }));
+  const competitors = useRentiqStore((state) => state.competitors);
+  const listings = useRentiqStore((state) => state.listings);
+  const selectedListingId = useRentiqStore((state) => state.selectedListingId);
+  const addCompetitor = useRentiqStore((state) => state.addCompetitor);
 
   const selectedListing = listings.find((listing) => listing.id === selectedListingId) ?? listings[0] ?? null;
   const filtered = useMemo(

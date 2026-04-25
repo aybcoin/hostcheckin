@@ -8,11 +8,9 @@ import { formatMad } from '../utils/currency';
 import { toISODate } from '../utils/dates';
 
 export function DashboardPage() {
-  const { dailyPricing, recommendations, selectedListingId } = useRentiqStore((state) => ({
-    dailyPricing: state.dailyPricing,
-    recommendations: state.recommendations,
-    selectedListingId: state.selectedListingId,
-  }));
+  const dailyPricing = useRentiqStore((state) => state.dailyPricing);
+  const recommendations = useRentiqStore((state) => state.recommendations);
+  const selectedListingId = useRentiqStore((state) => state.selectedListingId);
 
   const filteredDailyPricing = useMemo(
     () => dailyPricing.filter((day) => day.listingId === selectedListingId).slice(0, 60),

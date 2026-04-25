@@ -7,12 +7,10 @@ async function readFileAsText(file: File): Promise<string> {
 }
 
 export function ImportExportPage() {
-  const { exportJson, importJson, importCsvBookings, importIcalBookings } = useRentiqStore((state) => ({
-    exportJson: state.exportJson,
-    importJson: state.importJson,
-    importCsvBookings: state.importCsvBookings,
-    importIcalBookings: state.importIcalBookings,
-  }));
+  const exportJson = useRentiqStore((state) => state.exportJson);
+  const importJson = useRentiqStore((state) => state.importJson);
+  const importCsvBookings = useRentiqStore((state) => state.importCsvBookings);
+  const importIcalBookings = useRentiqStore((state) => state.importIcalBookings);
 
   const [csvText, setCsvText] = useState('');
   const [icalText, setIcalText] = useState('');

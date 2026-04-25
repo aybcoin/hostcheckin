@@ -10,10 +10,8 @@ function modeLabel(mode: RecommendationMode): string {
 }
 
 export function RecommendationsPage() {
-  const { recommendations, selectedListingId } = useRentiqStore((state) => ({
-    recommendations: state.recommendations,
-    selectedListingId: state.selectedListingId,
-  }));
+  const recommendations = useRentiqStore((state) => state.recommendations);
+  const selectedListingId = useRentiqStore((state) => state.selectedListingId);
   const [mode, setMode] = useState<RecommendationMode>('opportunities');
   const today = toISODate(new Date());
 

@@ -14,21 +14,12 @@ const links = [
 ];
 
 export function LayoutShell() {
-  const {
-    listings,
-    selectedListingId,
-    setSelectedListing,
-    regeneratePricing,
-    loading,
-    recommendations,
-  } = useRentiqStore((state) => ({
-    listings: state.listings,
-    selectedListingId: state.selectedListingId,
-    setSelectedListing: state.setSelectedListing,
-    regeneratePricing: state.regeneratePricing,
-    loading: state.loading,
-    recommendations: state.recommendations,
-  }));
+  const listings = useRentiqStore((state) => state.listings);
+  const selectedListingId = useRentiqStore((state) => state.selectedListingId);
+  const setSelectedListing = useRentiqStore((state) => state.setSelectedListing);
+  const regeneratePricing = useRentiqStore((state) => state.regeneratePricing);
+  const loading = useRentiqStore((state) => state.loading);
+  const recommendations = useRentiqStore((state) => state.recommendations);
 
   const activeListing = useMemo(
     () => listings.find((listing) => listing.id === selectedListingId) ?? listings[0] ?? null,

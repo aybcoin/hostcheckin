@@ -25,23 +25,13 @@ function scenarioByKey(result: BacktestRunResult | null, scenario: BacktestScena
 }
 
 export function BacktestPage() {
-  const {
-    listings,
-    selectedListingId,
-    setSelectedListing,
-    bookings,
-    dailyPricing,
-    competitors,
-    events,
-  } = useRentiqStore((state) => ({
-    listings: state.listings,
-    selectedListingId: state.selectedListingId,
-    setSelectedListing: state.setSelectedListing,
-    bookings: state.bookings,
-    dailyPricing: state.dailyPricing,
-    competitors: state.competitors,
-    events: state.events,
-  }));
+  const listings = useRentiqStore((state) => state.listings);
+  const selectedListingId = useRentiqStore((state) => state.selectedListingId);
+  const setSelectedListing = useRentiqStore((state) => state.setSelectedListing);
+  const bookings = useRentiqStore((state) => state.bookings);
+  const dailyPricing = useRentiqStore((state) => state.dailyPricing);
+  const competitors = useRentiqStore((state) => state.competitors);
+  const events = useRentiqStore((state) => state.events);
 
   const today = toISODate(new Date());
   const yearStart = `${today.slice(0, 4)}-01-01`;
