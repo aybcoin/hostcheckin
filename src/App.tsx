@@ -49,6 +49,9 @@ const AutomationsPage = lazy(() =>
 const HelpPage = lazy(() =>
   import('./components/HelpPage').then((module) => ({ default: module.HelpPage })),
 );
+const HousekeepingPage = lazy(() =>
+  import('./components/HousekeepingPage').then((module) => ({ default: module.HousekeepingPage })),
+);
 const PricingPage = lazy(() =>
   import('./components/PricingPage').then((module) => ({ default: module.PricingPage })),
 );
@@ -319,7 +322,9 @@ function App() {
           {!autoLinkPropertyId && currentPage === 'dashboard' ? (
             <DashboardPage
               host={host}
+              hostId={user.id}
               onOpenReservation={openReservationFromDashboard}
+              onNavigateToHousekeeping={() => navigateToPage('housekeeping')}
             />
           ) : null}
 
@@ -340,6 +345,7 @@ function App() {
             <ReservationsPage
               reservations={reservations}
               properties={properties}
+              hostId={user.id}
               focusedReservationId={focusedReservationId}
               onUpdate={updateReservation}
               onAdd={addReservation}
@@ -404,6 +410,14 @@ function App() {
 
           {!autoLinkPropertyId && currentPage === 'security' ? (
             <SecurityPage />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'housekeeping' ? (
+            <HousekeepingPage
+              hostId={user.id}
+              properties={properties}
+              reservations={reservations}
+            />
           ) : null}
         </main>
       </div>

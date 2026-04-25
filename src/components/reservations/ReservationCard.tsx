@@ -26,6 +26,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { fr } from '../../lib/i18n/fr';
 import { statusTokens, ctaTokens } from '../../lib/design-tokens';
+import { clsx } from '../../lib/clsx';
 import { SecurityNotice } from '../SecurityNotice';
 
 // ── Types locaux ───────────────────────────────────────────────────────────────
@@ -60,6 +61,13 @@ export interface ContractInfo {
   signed_at?: string;
 }
 
+export type HousekeepingBadgeKind = 'todo' | 'in_progress' | 'issue' | 'ready';
+
+export interface HousekeepingBadgeInfo {
+  kind: HousekeepingBadgeKind;
+  label: string;
+}
+
 export interface ReservationCardProps {
   reservation: Reservation;
   property: Property | undefined;
@@ -68,6 +76,7 @@ export interface ReservationCardProps {
   contract: ContractInfo | undefined;
   steps: ReservationSteps;
   cta: ReservationCta;
+  housekeepingBadge?: HousekeepingBadgeInfo | null;
   /** ID initialement déplié (depuis navigation externe). */
   initiallyExpanded?: boolean;
   onUpdate: (id: string, updates: Partial<Reservation>) => Promise<{ error: { message: string } | null }>;
@@ -119,6 +128,7 @@ export function ReservationCard({
   contract,
   steps,
   cta,
+  housekeepingBadge = null,
   initiallyExpanded = false,
   onUpdate,
   onDelete,
@@ -268,6 +278,23 @@ export function ReservationCard({
             <ReservationStatusPills steps={steps} />
             {contract?.signed_by_guest ? <TrustBadge type="signature" /> : null}
             {isIdentityTrusted(verification?.status) ? <TrustBadge type="identity" /> : null}
+            {housekeepingBadge ? (
+              <span
+                className={clsx(
+                  'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
+                  housekeepingBadge.kind === 'ready'
+                    ? statusTokens.success
+                    : housekeepingBadge.kind === 'issue'
+                      ? statusTokens.danger
+                      : housekeepingBadge.kind === 'in_progress'
+                        ? statusTokens.warning
+                        : statusTokens.neutral,
+                )}
+                data-testid={`reservation-housekeeping-${reservation.id}`}
+              >
+                {housekeepingBadge.label}
+              </span>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">

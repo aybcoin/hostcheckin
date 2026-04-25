@@ -30,7 +30,10 @@ import {
   type GuestInfo,
   type VerificationInfo,
   type ContractInfo,
+  type HousekeepingBadgeInfo,
 } from './reservations/ReservationCard';
+import { useHousekeepingTasks } from '../hooks/useHousekeepingTasks';
+import { isOpenStatus, isDoneStatus } from '../lib/housekeeping-logic';
 import { TrustBar } from './trust/TrustBar';
 import { ReservationDocuments } from './ReservationDocuments';
 import { ShareLinkModal } from './reservations/ShareLinkModal';
@@ -51,6 +54,7 @@ const PAGE_SIZE = 20;
 interface ReservationsPageProps {
   reservations: Reservation[];
   properties: Property[];
+  hostId: string;
   focusedReservationId?: string | null;
   onUpdate: (
     id: string,
@@ -133,11 +137,39 @@ function QuickFilterChips({
 export function ReservationsPage({
   reservations,
   properties,
+  hostId,
   focusedReservationId = null,
   onUpdate,
   onAdd,
   onDelete,
 }: ReservationsPageProps) {
+  const { tasks: housekeepingTasks } = useHousekeepingTasks(hostId);
+
+  const housekeepingByReservation = useMemo(() => {
+    const map = new Map<string, HousekeepingBadgeInfo>();
+    for (const task of housekeepingTasks) {
+      if (!task.reservation_id) continue;
+      let info: HousekeepingBadgeInfo;
+      if (task.status === 'issue_reported') {
+        info = { kind: 'issue', label: fr.reservationsHousekeeping.issue };
+      } else if (task.status === 'in_progress') {
+        info = { kind: 'in_progress', label: fr.reservationsHousekeeping.inProgress };
+      } else if (isOpenStatus(task.status)) {
+        info = { kind: 'todo', label: fr.reservationsHousekeeping.todo };
+      } else if (isDoneStatus(task.status)) {
+        info = { kind: 'ready', label: fr.reservationsHousekeeping.ready };
+      } else {
+        continue;
+      }
+      const previous = map.get(task.reservation_id);
+      const rank = (kind: HousekeepingBadgeInfo['kind']): number =>
+        kind === 'issue' ? 0 : kind === 'in_progress' ? 1 : kind === 'todo' ? 2 : 3;
+      if (!previous || rank(info.kind) < rank(previous.kind)) {
+        map.set(task.reservation_id, info);
+      }
+    }
+    return map;
+  }, [housekeepingTasks]);
   // ── État UI ───────────────────────────────────────────────────────────────
   const [quickFilter, setQuickFilter] = useState<ReservationCategory | 'all'>('all');
   const [search, setSearch] = useState('');
@@ -459,6 +491,7 @@ export function ReservationsPage({
                 contract={contracts[reservation.id]}
                 steps={steps}
                 cta={cta}
+                housekeepingBadge={housekeepingByReservation.get(reservation.id) ?? null}
                 initiallyExpanded={focusedReservationId === reservation.id}
                 onUpdate={onUpdate}
                 onDelete={handleDelete}

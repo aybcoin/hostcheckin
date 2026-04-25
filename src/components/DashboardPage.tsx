@@ -5,6 +5,7 @@ import { fr } from '../lib/i18n/fr';
 import type { Host } from '../lib/supabase';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { ActivityTimeline } from './dashboard/ActivityTimeline';
+import { HousekeepingTodayCard } from './dashboard/HousekeepingTodayCard';
 import { TodaySection } from './dashboard/TodaySection';
 import { WeekSection } from './dashboard/WeekSection';
 import { TrustBar } from './trust/TrustBar';
@@ -15,7 +16,9 @@ import { Skeleton } from './ui/Skeleton';
 
 interface DashboardPageProps {
   host: Host | null;
+  hostId: string;
   onOpenReservation: (reservationId: string) => void;
+  onNavigateToHousekeeping: () => void;
 }
 
 function TodaySectionSkeleton() {
@@ -112,7 +115,7 @@ function LiveBadge({
   );
 }
 
-export function DashboardPage({ host, onOpenReservation }: DashboardPageProps) {
+export function DashboardPage({ host, hostId, onOpenReservation, onNavigateToHousekeeping }: DashboardPageProps) {
   const {
     todayItems,
     weekItems,
@@ -171,6 +174,7 @@ export function DashboardPage({ host, onOpenReservation }: DashboardPageProps) {
       ) : (
         <>
           <TodaySection items={todayItems} onAction={handleAction} />
+          <HousekeepingTodayCard hostId={hostId} onSeeAll={onNavigateToHousekeeping} />
           <WeekSection items={weekItems} onAction={handleAction} />
           <ActivityTimeline events={timeline} />
         </>

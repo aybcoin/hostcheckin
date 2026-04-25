@@ -56,6 +56,7 @@ export function TopNavigation({
     () => [
       { id: 'reservations', label: fr.topnav.links.reservations, showBadge: true },
       { id: 'properties', label: fr.topnav.links.properties },
+      { id: 'housekeeping', label: fr.topnav.links.housekeeping },
       { id: 'contracts', label: fr.topnav.links.documents },
       { id: 'checkins', label: fr.topnav.links.automations },
       { id: 'profile', label: fr.topnav.links.account },
