@@ -234,6 +234,15 @@ export function TopNavigation({
             variant="secondary"
             size="sm"
             className={clsx(borderTokens.strong, textTokens.title)}
+            onClick={() => handleNavigate('rentiq')}
+          >
+            {fr.topnav.rentiq}
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            className={clsx(borderTokens.strong, textTokens.title)}
             onClick={() => handleNavigate('pricing')}
           >
             {fr.topnav.upgrade}
@@ -357,6 +366,14 @@ export function TopNavigation({
             </nav>
 
             <div className={clsx('mt-4 space-y-2 border-t pt-4', borderTokens.default)}>
+              <Button
+                variant="secondary"
+                fullWidth
+                className={clsx('justify-center', borderTokens.strong, textTokens.title)}
+                onClick={() => handleNavigate('rentiq')}
+              >
+                {fr.topnav.rentiq}
+              </Button>
               <Button
                 variant="secondary"
                 fullWidth

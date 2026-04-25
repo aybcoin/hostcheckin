@@ -34,6 +34,12 @@ export function LayoutShell() {
             <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/80">RentIQ Maroc</p>
             <h1 className="mt-2 text-xl font-semibold">Revenue cockpit</h1>
             <p className="mt-1 text-sm text-slate-300">Pricing dynamique local-first</p>
+            <a
+              href="/"
+              className="mt-4 inline-flex rounded-lg border border-[var(--rq-border)] px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-white/5"
+            >
+              Retour vers HostCheckIn
+            </a>
           </div>
 
           <nav className="space-y-1">
@@ -79,6 +85,12 @@ export function LayoutShell() {
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <a
+                  href="/"
+                  className="inline-flex items-center justify-center rounded-lg border border-[var(--rq-border)] px-3 py-2 text-sm text-slate-200 transition hover:bg-white/5 lg:hidden"
+                >
+                  HostCheckIn
+                </a>
                 <select
                   value={selectedListingId ?? activeListing?.id ?? ''}
                   onChange={(event) => setSelectedListing(event.target.value)}

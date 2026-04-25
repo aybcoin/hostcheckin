@@ -182,6 +182,11 @@ function App() {
   }, [applyRoute]);
 
   const navigateToPage = useCallback((page: AppPage) => {
+    if (page === 'rentiq') {
+      window.location.assign(APP_PAGE_PATHS.rentiq);
+      return;
+    }
+
     setCurrentPage(page);
     setGuestPortalToken(null);
     setVerificationLink(null);

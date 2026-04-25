@@ -40,7 +40,7 @@ export default function RentiqApp() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/rentiq">
       <Routes>
         <Route element={<LayoutShell />}>
           <Route path="/" element={<DashboardPage />} />

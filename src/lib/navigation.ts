@@ -10,6 +10,7 @@ export type AppPage =
   | 'profile'
   | 'settings'
   | 'pricing'
+  | 'rentiq'
   | 'blacklist'
   | 'help'
   | 'security';
@@ -26,6 +27,7 @@ export const APP_PAGE_PATHS: Record<AppPage, string> = {
   profile: '/profil',
   settings: '/parametres',
   pricing: '/pricing',
+  rentiq: '/rentiq',
   blacklist: '/blacklist',
   help: '/help',
   security: '/securite',

@@ -36,6 +36,7 @@ export const fr = {
     mobileMenuTitle: "Navigation",
     more: "Plus",
     upgrade: "Passer en Pro",
+    rentiq: "RentIQ Maroc",
     links: {
       reservations: "Réservations",
       properties: "Logements",
