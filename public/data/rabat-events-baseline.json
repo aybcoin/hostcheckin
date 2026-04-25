@@ -1,0 +1,29 @@
+[
+  {
+    "name": "SIAM 2026",
+    "category": "conference",
+    "startDate": "2026-04-21",
+    "endDate": "2026-04-27",
+    "zones": ["rabat", "temara", "sale"],
+    "multiplierHint": 1.1,
+    "source": "MAP / SIAM"
+  },
+  {
+    "name": "Festival Mawazine 2026",
+    "category": "festival",
+    "startDate": "2026-06-19",
+    "endDate": "2026-06-27",
+    "zones": ["rabat", "temara", "sale"],
+    "multiplierHint": 1.2,
+    "source": "Visit Rabat"
+  },
+  {
+    "name": "Conférences internationales Rabat",
+    "category": "conference",
+    "startDate": "2026-10-10",
+    "endDate": "2026-10-14",
+    "zones": ["rabat", "temara"],
+    "multiplierHint": 1.3,
+    "source": "Agenda institutionnel"
+  }
+]

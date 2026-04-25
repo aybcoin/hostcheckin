@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Ramadan 2026",
+    "startDate": "2026-02-18",
+    "endDate": "2026-03-19",
+    "multiplierHint": 1.15,
+    "source": "Calendrier Hijri"
+  },
+  {
+    "name": "Aïd al-Fitr 2026",
+    "startDate": "2026-03-20",
+    "endDate": "2026-03-22",
+    "multiplierHint": 1.25,
+    "source": "Calendrier Hijri"
+  },
+  {
+    "name": "Aïd al-Adha 2026",
+    "startDate": "2026-05-26",
+    "endDate": "2026-05-30",
+    "multiplierHint": 1.25,
+    "source": "Calendrier Hijri"
+  },
+  {
+    "name": "Achoura 2026",
+    "startDate": "2026-07-16",
+    "endDate": "2026-07-17",
+    "multiplierHint": 1.05,
+    "source": "Calendrier Hijri"
+  }
+]

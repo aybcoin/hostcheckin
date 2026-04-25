@@ -1,0 +1,291 @@
+import type {
+  Booking,
+  Competitor,
+  CompetitorObservation,
+  Listing,
+  LocalEvent,
+  PricingSettings,
+} from '../types';
+import { rentiqDb } from './db';
+
+const nowIso = new Date().toISOString();
+
+export const defaultListing: Listing = {
+  id: 'listing-temara-premium',
+  name: 'Témara Premium',
+  zone: 'temara',
+  capacity: 5,
+  bedrooms: 2,
+  positioning: 'premium',
+  basePrice: 750,
+  minPrice: 450,
+  maxPrice: 1800,
+  cleaningFee: 150,
+  amenities: [
+    'parking privé',
+    'terrasse',
+    'résidence sécurisée',
+    'climatisation',
+    'fibre',
+    'Netflix',
+    'vue ouverte',
+  ],
+  currentPrice: 750,
+  createdAt: nowIso,
+  updatedAt: nowIso,
+};
+
+const bookingSeed: Booking[] = [
+  {
+    id: 'booking-2026-04-28',
+    listingId: defaultListing.id,
+    source: 'airbnb',
+    checkIn: '2026-04-28',
+    checkOut: '2026-05-01',
+    nights: 3,
+    totalRevenue: 2520,
+    pricePerNight: 840,
+    guestCount: 3,
+    status: 'confirmed',
+    importedFrom: 'seed',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'booking-2026-05-03',
+    listingId: defaultListing.id,
+    source: 'airbnb',
+    checkIn: '2026-05-03',
+    checkOut: '2026-05-06',
+    nights: 3,
+    totalRevenue: 2280,
+    pricePerNight: 760,
+    guestCount: 4,
+    status: 'confirmed',
+    importedFrom: 'seed',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'booking-2026-05-10',
+    listingId: defaultListing.id,
+    source: 'airbnb',
+    checkIn: '2026-05-10',
+    checkOut: '2026-05-14',
+    nights: 4,
+    totalRevenue: 3600,
+    pricePerNight: 900,
+    guestCount: 5,
+    status: 'confirmed',
+    importedFrom: 'seed',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'booking-2026-05-19',
+    listingId: defaultListing.id,
+    source: 'airbnb',
+    checkIn: '2026-05-19',
+    checkOut: '2026-05-22',
+    nights: 3,
+    totalRevenue: 2550,
+    pricePerNight: 850,
+    guestCount: 2,
+    status: 'confirmed',
+    importedFrom: 'seed',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'booking-2026-06-21',
+    listingId: defaultListing.id,
+    source: 'airbnb',
+    checkIn: '2026-06-21',
+    checkOut: '2026-06-24',
+    nights: 3,
+    totalRevenue: 3240,
+    pricePerNight: 1080,
+    guestCount: 4,
+    status: 'confirmed',
+    importedFrom: 'seed',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'booking-block-2026-05-16',
+    listingId: defaultListing.id,
+    source: 'manual',
+    checkIn: '2026-05-16',
+    checkOut: '2026-05-17',
+    nights: 1,
+    totalRevenue: 0,
+    pricePerNight: 0,
+    guestCount: 0,
+    status: 'blocked',
+    importedFrom: 'seed',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+];
+
+function observation(id: string, date: string, weekday: number, weekend: number): CompetitorObservation {
+  return {
+    id,
+    date,
+    observedPriceWeekday: weekday,
+    observedPriceWeekend: weekend,
+    occupancyHint: 'partially_booked',
+  };
+}
+
+const competitorSeed: Competitor[] = [
+  {
+    id: 'competitor-harhoura-breeze',
+    name: 'Harhoura Breeze Suites',
+    zone: 'temara',
+    capacity: 4,
+    positioning: 'premium',
+    priceWeekday: 720,
+    priceWeekend: 980,
+    cleaningFee: 130,
+    rating: 4.74,
+    amenities: ['parking', 'fibre', 'terrasse'],
+    observations: [
+      observation('obs-1', '2026-04-20', 700, 940),
+      observation('obs-2', '2026-04-24', 730, 990),
+    ],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'competitor-rabat-ocean',
+    name: 'Rabat Ocean Family Stay',
+    zone: 'temara',
+    capacity: 5,
+    positioning: 'premium',
+    priceWeekday: 780,
+    priceWeekend: 1080,
+    cleaningFee: 160,
+    rating: 4.81,
+    amenities: ['parking', 'netflix', 'climatisation'],
+    observations: [
+      observation('obs-3', '2026-04-21', 760, 1040),
+      observation('obs-4', '2026-04-24', 790, 1090),
+    ],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'competitor-temara-budget',
+    name: 'Temara Budget Flat',
+    zone: 'temara',
+    capacity: 3,
+    positioning: 'standard',
+    priceWeekday: 560,
+    priceWeekend: 690,
+    cleaningFee: 90,
+    rating: 4.32,
+    amenities: ['wifi', 'balcon'],
+    observations: [
+      observation('obs-5', '2026-04-22', 540, 650),
+      observation('obs-6', '2026-04-24', 570, 710),
+    ],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+];
+
+const eventSeed: LocalEvent[] = [
+  {
+    id: 'event-siam-2026',
+    name: 'SIAM 2026',
+    category: 'conference',
+    startDate: '2026-04-21',
+    endDate: '2026-04-27',
+    zonesImpacted: ['rabat', 'temara', 'sale'],
+    expectedImpact: 'medium',
+    multiplierHint: 1.1,
+    source: 'SIAM / MAP',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'event-mawazine-2026',
+    name: 'Festival Mawazine 2026',
+    category: 'festival',
+    startDate: '2026-06-19',
+    endDate: '2026-06-27',
+    zonesImpacted: ['rabat', 'temara', 'sale'],
+    expectedImpact: 'high',
+    multiplierHint: 1.2,
+    source: 'Visit Rabat',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'event-ramadan-2026',
+    name: 'Ramadan 2026',
+    category: 'religious',
+    startDate: '2026-02-18',
+    endDate: '2026-03-19',
+    zonesImpacted: ['rabat', 'temara', 'sale', 'harhoura', 'skhirat'],
+    expectedImpact: 'medium',
+    multiplierHint: 1.15,
+    source: 'Calendrier islamique',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'event-aid-adha-2026',
+    name: 'Aïd al-Adha 2026',
+    category: 'religious',
+    startDate: '2026-05-26',
+    endDate: '2026-05-30',
+    zonesImpacted: ['rabat', 'temara', 'sale', 'harhoura', 'skhirat'],
+    expectedImpact: 'high',
+    multiplierHint: 1.25,
+    source: 'Calendrier islamique',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: 'event-vacances-ete-2026',
+    name: 'Vacances scolaires été 2026',
+    category: 'school_holiday',
+    startDate: '2026-07-01',
+    endDate: '2026-08-31',
+    zonesImpacted: ['rabat', 'temara', 'harhoura', 'skhirat', 'sale'],
+    expectedImpact: 'high',
+    multiplierHint: 1.18,
+    source: 'MEN Maroc',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+];
+
+const pricingSettingsSeed: PricingSettings = {
+  id: 'settings-temara-premium',
+  listingId: defaultListing.id,
+  shadowMode: true,
+  maxDailyVariationPct: 0.25,
+  cooldownHours: 48,
+  createdAt: nowIso,
+  updatedAt: nowIso,
+};
+
+export async function ensureSeedData(): Promise<void> {
+  const listingsCount = await rentiqDb.listings.count();
+  if (listingsCount > 0) return;
+
+  await rentiqDb.transaction(
+    'rw',
+    [rentiqDb.listings, rentiqDb.bookings, rentiqDb.competitors, rentiqDb.events, rentiqDb.settings],
+    async () => {
+      await rentiqDb.listings.add(defaultListing);
+      await rentiqDb.bookings.bulkAdd(bookingSeed);
+      await rentiqDb.competitors.bulkAdd(competitorSeed);
+      await rentiqDb.events.bulkAdd(eventSeed);
+      await rentiqDb.settings.add(pricingSettingsSeed);
+    },
+  );
+}

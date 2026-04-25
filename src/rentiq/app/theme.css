@@ -1,0 +1,18 @@
+:root {
+  --rq-bg: #090d12;
+  --rq-surface: #111826;
+  --rq-panel: #151f2f;
+  --rq-border: #233249;
+  --rq-text: #e5edf7;
+  --rq-muted: #97a8c0;
+  --rq-success: #10b981;
+  --rq-warning: #f59e0b;
+  --rq-danger: #ef4444;
+}
+
+body {
+  background: radial-gradient(1200px 600px at 20% -10%, #16304f 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #1f3b33 0%, transparent 50%),
+    var(--rq-bg);
+  color: var(--rq-text);
+}
