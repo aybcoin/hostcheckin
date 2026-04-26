@@ -31,7 +31,7 @@ import { clsx } from '../lib/clsx';
 import {
   accentTokens,
   borderTokens,
-  displayTokens,
+  sidebarPropertyTokens,
   sidebarTokens,
   surfaceTokens,
   textTokens,
@@ -39,6 +39,7 @@ import {
 } from '../lib/design-tokens';
 import type { AppPage } from '../lib/navigation';
 import { fr } from '../lib/i18n/fr';
+import type { Property, Reservation } from '../lib/supabase';
 import { Badge } from './ui/Badge';
 
 const UPGRADE_BANNER_DISMISSED_KEY = 'hostcheckin:upgrade-banner-dismissed';
@@ -49,6 +50,163 @@ interface TopNavigationProps {
   onLogout: () => void;
   hostName?: string;
   reservationsActionCount?: number;
+  /** Currently focused property to surface in the sidebar context card. */
+  activeProperty?: Property | null;
+  /** Next or current reservation tied to the active property. */
+  activeReservation?: Reservation | null;
+  /** Today's date (ISO yyyy-MM-dd) — injected for testability. Defaults to system today. */
+  today?: string;
+  /** Triggered when the user activates the property card. */
+  onSelectProperty?: (propertyId: string) => void;
+}
+
+type PropertyStatus = 'arriving' | 'leaving' | 'idle';
+
+function todayIso(): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatShortDate(iso: string): string {
+  // ISO yyyy-mm-dd → dd/mm/yyyy (no Date parsing to avoid TZ off-by-one)
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!match) return iso;
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function platformVariant(source: Reservation['external_source'] | undefined) {
+  switch (source) {
+    case 'airbnb':
+      return { label: fr.topnav.propertyCard.platform.airbnb, className: sidebarPropertyTokens.platformAirbnb };
+    case 'booking':
+      return { label: fr.topnav.propertyCard.platform.booking, className: sidebarPropertyTokens.platformBooking };
+    case 'vrbo':
+      return { label: fr.topnav.propertyCard.platform.vrbo, className: sidebarPropertyTokens.platformOther };
+    case 'manual':
+      return { label: fr.topnav.propertyCard.platform.direct, className: sidebarPropertyTokens.platformDirect };
+    case 'other':
+      return { label: fr.topnav.propertyCard.platform.other, className: sidebarPropertyTokens.platformOther };
+    default:
+      return null;
+  }
+}
+
+function computePropertyStatus(reservation: Reservation | null | undefined, today: string): PropertyStatus {
+  if (!reservation) return 'idle';
+  if (reservation.check_in_date === today) return 'arriving';
+  if (reservation.check_out_date === today) return 'leaving';
+  return 'idle';
+}
+
+interface SidebarPropertyCardProps {
+  property: Property;
+  reservation: Reservation | null;
+  today: string;
+  onSelect?: (propertyId: string) => void;
+}
+
+function SidebarPropertyCard({ property, reservation, today, onSelect }: SidebarPropertyCardProps) {
+  const status = computePropertyStatus(reservation, today);
+  const platform = platformVariant(reservation?.external_source ?? undefined);
+  const reference = property.id.slice(0, 6).toUpperCase();
+  const ariaLabel = fr.topnav.propertyCard.ariaLabel.replace('{name}', property.name);
+
+  const statusLabel =
+    status === 'arriving'
+      ? fr.topnav.propertyCard.arrivingToday
+      : status === 'leaving'
+      ? fr.topnav.propertyCard.leavingToday
+      : fr.topnav.propertyCard.freeStatus;
+
+  const statusClass =
+    status === 'arriving'
+      ? sidebarPropertyTokens.statusArriving
+      : status === 'leaving'
+      ? sidebarPropertyTokens.statusLeaving
+      : sidebarPropertyTokens.statusIdle;
+
+  const statusDotClass =
+    status === 'arriving'
+      ? sidebarPropertyTokens.statusArrivingDot
+      : status === 'leaving'
+      ? sidebarPropertyTokens.statusLeavingDot
+      : sidebarPropertyTokens.statusIdleDot;
+
+  return (
+    <div className="px-4 pb-3">
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        onClick={() => onSelect?.(property.id)}
+        className={clsx(
+          'flex w-full flex-col gap-2.5 rounded-2xl p-3 text-left',
+          sidebarPropertyTokens.card,
+          sidebarPropertyTokens.focusRing,
+        )}
+      >
+        <div className="flex items-start gap-3">
+          {property.image_url ? (
+            <img
+              src={property.image_url}
+              alt={fr.topnav.propertyCard.imageAlt}
+              className="h-14 w-14 shrink-0 rounded-xl object-cover"
+            />
+          ) : (
+            <div
+              className={clsx(
+                'flex h-14 w-14 shrink-0 items-center justify-center rounded-xl',
+                sidebarPropertyTokens.imageFallback,
+              )}
+              aria-hidden="true"
+            >
+              <Home size={22} />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className={clsx('truncate text-sm font-semibold leading-tight', sidebarPropertyTokens.title)}>
+              {property.name}
+            </p>
+            {platform ? (
+              <span
+                className={clsx(
+                  'mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                  platform.className,
+                )}
+              >
+                {platform.label}
+              </span>
+            ) : null}
+            <p className={clsx('mt-1.5 text-[11px]', sidebarPropertyTokens.reference)}>
+              {fr.topnav.propertyCard.referenceLabel.replace('{reference}', reference)}
+            </p>
+            {reservation ? (
+              <p className={clsx('mt-0.5 text-[11px]', sidebarPropertyTokens.dates)}>
+                {formatShortDate(reservation.check_in_date)}
+                {' → '}
+                {formatShortDate(reservation.check_out_date)}
+              </p>
+            ) : (
+              <p className={clsx('mt-0.5 text-[11px]', sidebarPropertyTokens.reference)}>
+                {fr.topnav.propertyCard.noUpcoming}
+              </p>
+            )}
+          </div>
+        </div>
+        <span
+          className={clsx(
+            'inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-[11px] font-medium',
+            statusClass,
+          )}
+        >
+          <span aria-hidden="true" className={clsx('h-1.5 w-1.5 rounded-full', statusDotClass)} />
+          {statusLabel}
+        </span>
+      </button>
+    </div>
+  );
 }
 
 interface NavItem {
@@ -129,6 +287,10 @@ interface SidebarContentProps {
   onNavigate: (page: AppPage) => void;
   onLogout: () => void;
   onClose?: () => void;
+  activeProperty?: Property | null;
+  activeReservation?: Reservation | null;
+  today: string;
+  onSelectProperty?: (propertyId: string) => void;
 }
 
 function SidebarContent({
@@ -138,6 +300,10 @@ function SidebarContent({
   onNavigate,
   onLogout,
   onClose,
+  activeProperty,
+  activeReservation,
+  today,
+  onSelectProperty,
 }: SidebarContentProps) {
   const [isUpgradeBannerDismissed, setIsUpgradeBannerDismissed] = useState(() => {
     try {
@@ -191,6 +357,15 @@ function SidebarContent({
           </button>
         ) : null}
       </div>
+
+      {activeProperty ? (
+        <SidebarPropertyCard
+          property={activeProperty}
+          reservation={activeReservation ?? null}
+          today={today}
+          onSelect={onSelectProperty}
+        />
+      ) : null}
 
       <nav aria-label={fr.topnav.primaryNav} className="relative flex-1 overflow-y-auto px-3 pb-4 pt-2">
         <ul className="space-y-6">
@@ -301,8 +476,13 @@ export function TopNavigation({
   onLogout,
   hostName,
   reservationsActionCount = 0,
+  activeProperty,
+  activeReservation,
+  today,
+  onSelectProperty,
 }: TopNavigationProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const todayStr = today ?? todayIso();
 
   const groups: NavGroup[] = [
     {
@@ -364,6 +544,10 @@ export function TopNavigation({
           hostName={hostName}
           onNavigate={handleNavigate}
           onLogout={onLogout}
+          activeProperty={activeProperty}
+          activeReservation={activeReservation}
+          today={todayStr}
+          onSelectProperty={onSelectProperty}
         />
       </aside>
 
@@ -434,6 +618,10 @@ export function TopNavigation({
               onNavigate={handleNavigate}
               onLogout={onLogout}
               onClose={() => setMobileOpen(false)}
+              activeProperty={activeProperty}
+              activeReservation={activeReservation}
+              today={todayStr}
+              onSelectProperty={onSelectProperty}
             />
           </aside>
         </div>

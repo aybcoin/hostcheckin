@@ -180,6 +180,39 @@ export const accentTokens = {
 } as const;
 
 /**
+ * Property card embedded at the top of the sidebar — surfaces the current
+ * "context" property, its reference, dates and arrival/leaving status.
+ * Designed to live on a slate-950 background.
+ */
+export const sidebarPropertyTokens = {
+  card:
+    "border border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.06] transition-colors duration-200",
+  imageFallback: "bg-white/[0.06] text-slate-300",
+  title: "text-white",
+  reference: "text-slate-400",
+  dates: "text-slate-300 tabular-nums",
+  platformAirbnb:
+    "border border-rose-400/30 bg-rose-500/15 text-rose-200",
+  platformBooking:
+    "border border-sky-400/30 bg-sky-500/15 text-sky-200",
+  platformDirect:
+    "border border-emerald-400/30 bg-emerald-500/15 text-emerald-200",
+  platformOther:
+    "border border-white/10 bg-white/[0.06] text-slate-200",
+  statusArriving:
+    "border border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+  statusArrivingDot: "bg-emerald-400",
+  statusLeaving:
+    "border border-amber-400/30 bg-amber-500/10 text-amber-200",
+  statusLeavingDot: "bg-amber-400",
+  statusIdle:
+    "border border-white/[0.08] bg-white/[0.04] text-slate-300",
+  statusIdleDot: "bg-slate-400",
+  focusRing:
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
+} as const;
+
+/**
  * Sidebar dark — direction "Payoneer-style" : fond noir bleuté uni,
  * bord-à-bord, navigation directe, accent émeraude.
  */

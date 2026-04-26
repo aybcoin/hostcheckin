@@ -77,6 +77,22 @@ export const fr = {
       help: "Centre d'aide",
       logout: "Déconnexion",
     },
+    propertyCard: {
+      ariaLabel: "Voir le logement {name}",
+      referenceLabel: "Réf. : {reference}",
+      arrivingToday: "Arrivée aujourd’hui",
+      leavingToday: "Départ aujourd’hui",
+      freeStatus: "Libre",
+      noUpcoming: "Aucune réservation",
+      platform: {
+        airbnb: "Airbnb",
+        booking: "Booking",
+        vrbo: "Vrbo",
+        direct: "Direct",
+        other: "Autre",
+      },
+      imageAlt: "",
+    },
   },
   sidebar: {
     menu: {

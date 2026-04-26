@@ -272,6 +272,34 @@ function App() {
     [autoLinkPropertyId, properties],
   );
 
+  const sidebarActiveProperty = useMemo(() => {
+    if (properties.length === 0) return null;
+    if (selectedPropertyId) {
+      const match = properties.find((property) => property.id === selectedPropertyId);
+      if (match) return match;
+    }
+    return properties[0];
+  }, [properties, selectedPropertyId]);
+
+  const sidebarActiveReservation = useMemo(() => {
+    if (!sidebarActiveProperty) return null;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const candidates = reservations
+      .filter((reservation) => reservation.property_id === sidebarActiveProperty.id)
+      .filter((reservation) => reservation.status !== 'cancelled')
+      .filter((reservation) => reservation.check_out_date >= todayStr)
+      .sort((a, b) => a.check_in_date.localeCompare(b.check_in_date));
+    return candidates[0] ?? null;
+  }, [reservations, sidebarActiveProperty]);
+
+  const handleSelectSidebarProperty = useCallback(
+    (propertyId: string) => {
+      setSelectedPropertyId(propertyId);
+      setCurrentPage('properties');
+    },
+    [],
+  );
+
   const reservationsActionCount = useMemo(() => {
     const dayMs = 24 * 60 * 60 * 1000;
     const today = new Date();
@@ -342,6 +370,9 @@ function App() {
           onLogout={handleSignOut}
           hostName={host?.full_name}
           reservationsActionCount={reservationsActionCount}
+          activeProperty={sidebarActiveProperty}
+          activeReservation={sidebarActiveReservation}
+          onSelectProperty={handleSelectSidebarProperty}
         />
 
         {/* Main content — offset by sidebar width on desktop */}
