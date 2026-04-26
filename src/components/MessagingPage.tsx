@@ -31,10 +31,21 @@ type LocaleFilter = MessageLocale | 'all';
 type ChannelFilter = MessageChannel | 'all';
 
 function topKey<T extends string>(entries: Record<T, number>): T | null {
-  const sorted = Object.entries(entries).sort((left, right) => right[1] - left[1]);
-  const [key, count] = sorted[0] ?? [];
-  if (!key || !count) return null;
-  return key as T;
+  let bestKey: T | null = null;
+  let bestCount = 0;
+
+  for (const key in entries) {
+    const count = entries[key];
+    if (count <= bestCount) continue;
+    /**
+     * `key` provient d'une itération sur `Record<T, number>`.
+     * On le ré-associe à `T` pour conserver le type d'index des dictionnaires i18n.
+     */
+    bestKey = key as T;
+    bestCount = count;
+  }
+
+  return bestKey;
 }
 
 function SummaryCard({

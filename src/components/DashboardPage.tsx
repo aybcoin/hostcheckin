@@ -1,7 +1,13 @@
-import { AlertCircle, ArrowRight } from 'lucide-react';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Calendar,
+  FileSignature,
+  ShieldCheck,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { clsx } from '../lib/clsx';
-import { borderTokens, stateFillTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
+import { borderTokens, textTokens } from '../lib/design-tokens';
 import { fr } from '../lib/i18n/fr';
 import type { Host, Property } from '../lib/supabase';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -18,11 +24,11 @@ import { PricingHealthCard } from './dashboard/PricingHealthCard';
 import { TodaySection } from './dashboard/TodaySection';
 import { WeekSection } from './dashboard/WeekSection';
 import { PropertySelector } from './properties/PropertySelector';
-import { TrustBar } from './trust/TrustBar';
-import { Button } from './ui/Button';
+import { DataBoundary } from './ui/DataBoundary';
 import { Card } from './ui/Card';
-import { EmptyState } from './ui/EmptyState';
+import { KpiCard } from './ui/KpiCard';
 import { Skeleton } from './ui/Skeleton';
+import { StatusBadge } from './ui/StatusBadge';
 
 interface DashboardPageProps {
   host: Host | null;
@@ -32,6 +38,9 @@ interface DashboardPageProps {
   onOpenReservation: (reservationId: string) => void;
   onSelectedPropertyIdChange?: (propertyId: string | null) => void;
   onNavigateToPortfolio: () => void;
+  onNavigateToContracts: () => void;
+  onNavigateToCheckins: () => void;
+  onNavigateToReservations: () => void;
   onNavigateToHousekeeping: () => void;
   onNavigateToMaintenance: () => void;
   onNavigateToLinen: () => void;
@@ -83,16 +92,44 @@ function TimelineSkeleton() {
   );
 }
 
-function TrustBarSkeleton() {
+function KpiGridSkeleton() {
   return (
-    <section
-      aria-hidden="true"
-      className={clsx('flex w-full gap-2 rounded-xl border p-2', surfaceTokens.panel, borderTokens.subtle)}
-    >
-      {[1, 2, 3].map((index) => (
-        <Skeleton key={index} variant="rect" className="h-10 flex-1 rounded-lg" />
+    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-hidden="true">
+      {[1, 2, 3, 4].map((index) => (
+        <Card key={index} variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-2">
+              <Skeleton variant="text" className="h-3 w-24" />
+              <Skeleton variant="text" className="h-8 w-16" />
+            </div>
+            <Skeleton variant="circle" className="h-8 w-8" />
+          </div>
+        </Card>
       ))}
     </section>
+  );
+}
+
+function DashboardSectionsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <TodaySectionSkeleton />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 9 }).map((_, index) => (
+          <Card key={index} variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>
+            <Skeleton variant="text" className="h-4 w-32" />
+            <Skeleton variant="text" className="h-8 w-16" />
+            <Skeleton variant="text" className="h-4 w-full" />
+          </Card>
+        ))}
+      </div>
+      <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>
+        <WeekSectionSkeleton />
+      </Card>
+      <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>
+        <TimelineSkeleton />
+      </Card>
+    </div>
   );
 }
 
@@ -108,33 +145,10 @@ function LiveBadge({
   }
 
   if (isRealtimeActive) {
-    return (
-      <span
-        className={clsx(
-          'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium',
-          borderTokens.success,
-          textTokens.success,
-          surfaceTokens.panel,
-        )}
-      >
-        <span className={clsx('inline-flex h-2 w-2 rounded-full', stateFillTokens.success)} aria-hidden="true" />
-        {fr.realtime.live} 🟢
-      </span>
-    );
+    return <StatusBadge variant="success">{fr.realtime.live}</StatusBadge>;
   }
 
-  return (
-    <span
-      className={clsx(
-        'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium',
-        borderTokens.warning,
-        textTokens.warning,
-        surfaceTokens.panel,
-      )}
-    >
-      {fr.realtime.reconnecting}
-    </span>
-  );
+  return <StatusBadge variant="warning">{fr.realtime.reconnecting}</StatusBadge>;
 }
 
 export function DashboardPage({
@@ -145,6 +159,9 @@ export function DashboardPage({
   onOpenReservation,
   onSelectedPropertyIdChange,
   onNavigateToPortfolio,
+  onNavigateToContracts,
+  onNavigateToCheckins,
+  onNavigateToReservations,
   onNavigateToHousekeeping,
   onNavigateToMaintenance,
   onNavigateToLinen,
@@ -161,12 +178,15 @@ export function DashboardPage({
     weekItems,
     timeline,
     trustMetrics,
+    activeReservationsThisMonth,
     isLoading,
     error,
     isRealtimeActive,
     isRealtimeReconnecting,
     refresh,
   } = useDashboardData(selectedPropertyId);
+  const todayPreviewItems = todayItems.slice(0, 3);
+  const hiddenTodayItems = Math.max(0, todayItems.length - todayPreviewItems.length);
 
   useEffect(() => {
     setSelectedPropertyId(initialPropertyId);
@@ -192,7 +212,6 @@ export function DashboardPage({
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        {isLoading ? <TrustBarSkeleton /> : <TrustBar metrics={trustMetrics} />}
         <PropertySelector
           properties={properties}
           selectedPropertyId={selectedPropertyId}
@@ -200,7 +219,7 @@ export function DashboardPage({
         />
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className={clsx('font-display text-3xl font-medium tracking-tight sm:text-4xl', textTokens.title)}>{fr.dashboard.title}</h1>
+            <h1 className={clsx('text-3xl font-semibold', textTokens.title)}>{fr.dashboard.title}</h1>
             {properties.length > 1 ? (
               <button
                 type="button"
@@ -220,47 +239,72 @@ export function DashboardPage({
             {fr.dashboard.subtitle(host?.full_name || fr.app.hostFallbackName)}
           </p>
         </div>
+
+        {isLoading ? (
+          <KpiGridSkeleton />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              label={fr.dashboard.kpis.signatures}
+              value={trustMetrics.signatures}
+              icon={<FileSignature />}
+              onClick={onNavigateToContracts}
+              variant="accent"
+            />
+            <KpiCard
+              label={fr.dashboard.kpis.identities}
+              value={trustMetrics.identities}
+              icon={<BadgeCheck />}
+              onClick={onNavigateToCheckins}
+            />
+            <KpiCard
+              label={fr.dashboard.kpis.deposits}
+              value={trustMetrics.deposits}
+              icon={<ShieldCheck />}
+            />
+            <KpiCard
+              label={fr.dashboard.kpis.activeReservations}
+              value={activeReservationsThisMonth}
+              icon={<Calendar />}
+              onClick={onNavigateToReservations}
+            />
+          </div>
+        )}
       </header>
 
-      {isLoading ? (
-        <>
-          <TodaySectionSkeleton />
-          <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default, surfaceTokens.panel)}>
-            <WeekSectionSkeleton />
-          </Card>
-          <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default, surfaceTokens.panel)}>
-            <TimelineSkeleton />
-          </Card>
-        </>
-      ) : error ? (
-        <EmptyState
-          icon={<AlertCircle size={20} className={textTokens.warning} aria-hidden="true" />}
-          title={fr.errors.dashboard}
-          description={error}
-          action={(
-            <Button variant="secondary" onClick={refresh}>
-              {fr.errors.retry}
-            </Button>
-          )}
-        />
-      ) : (
-        <>
-          <TodaySection items={todayItems} onAction={handleAction} />
-          <HousekeepingTodayCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToHousekeeping} />
-          <MaintenanceUrgentCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToMaintenance} />
-          <LinenLowStockCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToLinen} />
-          <FinanceSnapshotCard hostId={hostId} onSeeAll={onNavigateToFinance} />
-          <IcalSyncCard hostId={hostId} onSeeAll={onNavigateToIcal} />
-          <PricingHealthCard hostId={hostId} onSeeAll={onNavigateToPricing} />
-          <MessagingHealthCard hostId={hostId} onSeeAll={onNavigateToMessaging} />
-          {onNavigateToAnalytics ? (
-            <AnalyticsSnapshotCard hostId={hostId} onSeeAll={onNavigateToAnalytics} />
-          ) : null}
-          <InventoryLowStockCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToInventory} />
+      <DataBoundary
+        loading={isLoading}
+        error={error}
+        onRetry={refresh}
+        errorDescription={error ?? fr.errors.dashboard}
+        loadingFallback={<DashboardSectionsSkeleton />}
+      >
+        <div className="space-y-6">
+          <TodaySection
+            items={todayPreviewItems}
+            onAction={handleAction}
+            onViewAll={onNavigateToReservations}
+            overflowCount={hiddenTodayItems}
+          />
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <HousekeepingTodayCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToHousekeeping} />
+            <MaintenanceUrgentCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToMaintenance} />
+            <LinenLowStockCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToLinen} />
+            <FinanceSnapshotCard hostId={hostId} onSeeAll={onNavigateToFinance} />
+            <IcalSyncCard hostId={hostId} onSeeAll={onNavigateToIcal} />
+            <PricingHealthCard hostId={hostId} onSeeAll={onNavigateToPricing} />
+            <MessagingHealthCard hostId={hostId} onSeeAll={onNavigateToMessaging} />
+            {onNavigateToAnalytics ? (
+              <AnalyticsSnapshotCard hostId={hostId} onSeeAll={onNavigateToAnalytics} />
+            ) : null}
+            <InventoryLowStockCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToInventory} />
+          </div>
+
           <WeekSection items={weekItems} onAction={handleAction} />
           <ActivityTimeline events={timeline} />
-        </>
-      )}
+        </div>
+      </DataBoundary>
     </div>
   );
 }

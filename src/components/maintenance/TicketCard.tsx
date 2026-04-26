@@ -15,9 +15,7 @@ import {
 import { clsx } from '../../lib/clsx';
 import {
   cardTokens,
-  statusTokens,
   textTokens,
-  warningTokens,
 } from '../../lib/design-tokens';
 import { fr } from '../../lib/i18n/fr';
 import { formatCurrency } from '../../lib/maintenance-logic';
@@ -29,6 +27,7 @@ import type {
 } from '../../types/maintenance';
 import type { TicketTransition } from '../../lib/maintenance-logic';
 import { Button } from '../ui/Button';
+import { StatusBadge, type StatusBadgeVariant } from '../ui/StatusBadge';
 
 interface TicketCardProps {
   ticket: MaintenanceTicketWithRelations;
@@ -36,12 +35,12 @@ interface TicketCardProps {
   onAdvance: (ticket: MaintenanceTicketWithRelations, transition: TicketTransition) => void;
 }
 
-const STATUS_CHIP_CLASS: Record<MaintenanceStatus, string> = {
-  open: statusTokens.pending,
-  in_progress: statusTokens.info,
-  waiting_parts: warningTokens.badge,
-  resolved: statusTokens.success,
-  closed: statusTokens.neutral,
+const STATUS_CHIP_CLASS: Record<MaintenanceStatus, StatusBadgeVariant> = {
+  open: 'warning',
+  in_progress: 'info',
+  waiting_parts: 'warning',
+  resolved: 'success',
+  closed: 'neutral',
 };
 
 const CATEGORY_ICON: Record<MaintenanceCategory, LucideIcon> = {
@@ -54,11 +53,11 @@ const CATEGORY_ICON: Record<MaintenanceCategory, LucideIcon> = {
   other: Wrench,
 };
 
-function priorityChipClass(priority: MaintenancePriority): string {
-  if (priority === 'urgent') return statusTokens.danger;
-  if (priority === 'high') return warningTokens.badge;
-  if (priority === 'low') return statusTokens.neutral;
-  return statusTokens.neutral;
+function priorityChipClass(priority: MaintenancePriority): StatusBadgeVariant {
+  if (priority === 'urgent') return 'danger';
+  if (priority === 'high') return 'warning';
+  if (priority === 'low') return 'neutral';
+  return 'neutral';
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -112,23 +111,12 @@ export function TicketCard({ ticket, onOpen, onAdvance }: TicketCardProps) {
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span
-            className={clsx(
-              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
-              priorityChipClass(ticket.priority),
-            )}
-          >
-            {ticket.priority === 'urgent' ? <AlertTriangle aria-hidden size={12} /> : null}
+          <StatusBadge variant={priorityChipClass(ticket.priority)} icon={ticket.priority === 'urgent' ? <AlertTriangle /> : undefined}>
             {fr.maintenance.priorityShort[ticket.priority]}
-          </span>
-          <span
-            className={clsx(
-              'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium',
-              STATUS_CHIP_CLASS[ticket.status],
-            )}
-          >
+          </StatusBadge>
+          <StatusBadge variant={STATUS_CHIP_CLASS[ticket.status]}>
             {fr.maintenance.status[ticket.status]}
-          </span>
+          </StatusBadge>
         </div>
       </header>
 

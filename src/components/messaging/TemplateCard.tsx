@@ -1,11 +1,11 @@
 import { PencilLine, Star, Trash2 } from 'lucide-react';
 import { clsx } from '../../lib/clsx';
-import { borderTokens, statusTokens, textTokens } from '../../lib/design-tokens';
+import { borderTokens, textTokens } from '../../lib/design-tokens';
 import { fr } from '../../lib/i18n/fr';
 import type { MessageTemplate } from '../../types/messaging';
-import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { StatusBadge } from '../ui/StatusBadge';
 import { LocaleFlag } from './LocaleFlag';
 
 interface TemplateCardProps {
@@ -34,15 +34,15 @@ export function TemplateCard({
             {fr.automations.triggers[template.trigger]}
           </h3>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={template.channel === 'email' ? 'info' : 'warning'}>
+            <StatusBadge variant={template.channel === 'email' ? 'info' : 'warning'}>
               {fr.messaging.channels[template.channel]}
-            </Badge>
+            </StatusBadge>
             <LocaleFlag locale={template.locale} showLabel />
-            <Badge variant={template.is_active ? 'success' : 'locked'}>
+            <StatusBadge variant={template.is_active ? 'success' : 'neutral'}>
               {template.is_active ? fr.messaging.templateCard.active : fr.messaging.templateCard.inactive}
-            </Badge>
+            </StatusBadge>
             {template.is_default ? (
-              <Badge variant="active">{fr.messaging.templateCard.isDefault}</Badge>
+              <StatusBadge variant="info">{fr.messaging.templateCard.isDefault}</StatusBadge>
             ) : null}
           </div>
         </div>

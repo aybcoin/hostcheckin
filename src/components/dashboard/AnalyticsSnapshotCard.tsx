@@ -1,17 +1,16 @@
-import { ArrowRight, BarChart3 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { clsx } from '../../lib/clsx';
 import { computeAvgLengthOfStay, computeOccupancyTrend } from '../../lib/analytics-logic';
-import { borderTokens, textTokens } from '../../lib/design-tokens';
+import { displayTokens, textTokens } from '../../lib/design-tokens';
 import { formatCurrency } from '../../lib/format';
 import { resolvePeriod } from '../../lib/finance-logic';
 import { fr } from '../../lib/i18n/fr';
 import { formatOccupancyPct } from '../../lib/property-stats-logic';
 import { supabase, type Property, type Reservation } from '../../lib/supabase';
 import type { FinanceTransaction, Period } from '../../types/finance';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
-import { Skeleton } from '../ui/Skeleton';
+import { StatusBadge } from '../ui/StatusBadge';
+import { DashboardWidgetCard } from './DashboardWidgetCard';
 
 interface AnalyticsSnapshotCardProps {
   hostId: string;
@@ -117,12 +116,15 @@ function inflateReservation(row: ReservationRow): Reservation {
 export function AnalyticsSnapshotCard({ hostId, onSeeAll }: AnalyticsSnapshotCardProps) {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<SnapshotMetrics>({ revenue: 0, occupancy: 0, avgStay: 0 });
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
 
     const fetchMetrics = async () => {
       setLoading(true);
+      setError(null);
 
       try {
         const [propertiesResult, transactionsResult] = await Promise.all([
@@ -183,6 +185,7 @@ export function AnalyticsSnapshotCard({ hostId, onSeeAll }: AnalyticsSnapshotCar
         console.error('[AnalyticsSnapshotCard] Failed to load analytics snapshot:', fetchError);
         if (!active) return;
         setMetrics({ revenue: 0, occupancy: 0, avgStay: 0 });
+        setError(fr.errors.analyticsUnavailable);
       } finally {
         if (active) {
           setLoading(false);
@@ -195,7 +198,7 @@ export function AnalyticsSnapshotCard({ hostId, onSeeAll }: AnalyticsSnapshotCar
     return () => {
       active = false;
     };
-  }, [hostId]);
+  }, [hostId, refreshKey]);
 
   const hasData = useMemo(
     () => metrics.revenue > 0 || metrics.occupancy > 0 || metrics.avgStay > 0,
@@ -203,49 +206,37 @@ export function AnalyticsSnapshotCard({ hostId, onSeeAll }: AnalyticsSnapshotCar
   );
 
   return (
-    <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>
-      <header className="flex items-center justify-between gap-2">
-        <h2 className={clsx('flex items-center gap-2 text-base font-semibold', textTokens.title)}>
-          <BarChart3 aria-hidden size={16} />
-          {fr.analytics.snapshot.cardTitle}
-        </h2>
-        <Button variant="tertiary" size="sm" onClick={onSeeAll}>
-          {fr.analytics.snapshot.seeAll}
-          <ArrowRight aria-hidden size={14} />
-        </Button>
-      </header>
+    <DashboardWidgetCard
+      title={fr.analytics.snapshot.cardTitle}
+      icon={BarChart3}
+      seeAllLabel={fr.analytics.snapshot.seeAll}
+      onSeeAll={onSeeAll}
+      loading={loading}
+      error={error}
+      onRetry={() => setRefreshKey((current) => current + 1)}
+      errorDescription={fr.errors.analyticsUnavailable}
+      isEmpty={!hasData}
+      emptyFallback={<p className={clsx('text-sm', textTokens.muted)}>{fr.errors.analyticsUnavailable}</p>}
+    >
+      <div className="space-y-1">
+        <p className={clsx('text-xs uppercase tracking-wide', textTokens.subtle)}>
+          {fr.analytics.snapshot.revenue}
+        </p>
+        <p className={clsx('text-2xl', displayTokens.number, textTokens.title)}>
+          {hasData ? formatCurrency(metrics.revenue) : '—'}
+        </p>
+        <p className={clsx('text-sm', textTokens.muted)}>
+          {fr.analytics.snapshot.occupancy}: {formatOccupancyPct(metrics.occupancy)} · {fr.analytics.snapshot.avgStay}:{' '}
+          {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(metrics.avgStay)} j
+        </p>
+      </div>
 
-      {loading ? (
-        <div className="space-y-2" aria-hidden="true">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} variant="text" className="h-4 w-full" />
-          ))}
-        </div>
-      ) : !hasData ? (
-        <div className="grid grid-cols-3 gap-2 text-sm">
-          <MiniMetric label={fr.analytics.snapshot.revenue} value="—" />
-          <MiniMetric label={fr.analytics.snapshot.occupancy} value="—" />
-          <MiniMetric label={fr.analytics.snapshot.avgStay} value="—" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-2 text-sm">
-          <MiniMetric label={fr.analytics.snapshot.revenue} value={formatCurrency(metrics.revenue)} />
-          <MiniMetric label={fr.analytics.snapshot.occupancy} value={formatOccupancyPct(metrics.occupancy)} />
-          <MiniMetric
-            label={fr.analytics.snapshot.avgStay}
-            value={`${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(metrics.avgStay)} j`}
-          />
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function MiniMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={clsx('rounded-lg border px-2 py-2', borderTokens.subtle)}>
-      <p className={clsx('text-[11px]', textTokens.subtle)}>{label}</p>
-      <p className={clsx('text-sm font-semibold', textTokens.title)}>{value}</p>
-    </div>
+      <div className="flex flex-wrap gap-2">
+        <StatusBadge variant="info">{fr.analytics.snapshot.occupancy}: {formatOccupancyPct(metrics.occupancy)}</StatusBadge>
+        <StatusBadge variant="neutral">
+          {fr.analytics.snapshot.avgStay}: {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(metrics.avgStay)} j
+        </StatusBadge>
+      </div>
+    </DashboardWidgetCard>
   );
 }

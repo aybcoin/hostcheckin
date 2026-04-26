@@ -1,10 +1,8 @@
-import { ArrowRight, Calendar, RefreshCw } from 'lucide-react';
+import { Calendar, RefreshCw } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { clsx } from '../../lib/clsx';
 import {
-  borderTokens,
-  stateFillTokens,
-  statusTokens,
+  displayTokens,
   textTokens,
 } from '../../lib/design-tokens';
 import { formatPlatform } from '../../lib/ical-logic';
@@ -13,8 +11,8 @@ import { toast } from '../../lib/toast';
 import { useIcalFeeds } from '../../hooks/useIcalFeeds';
 import type { IcalFeedWithRelations, IcalPlatform } from '../../types/ical';
 import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
-import { Skeleton } from '../ui/Skeleton';
+import { StatusBadge } from '../ui/StatusBadge';
+import { DashboardWidgetCard } from './DashboardWidgetCard';
 
 interface IcalSyncCardProps {
   hostId: string;
@@ -25,22 +23,6 @@ function resolvePlatformLabel(platform: IcalPlatform): string {
   const key = formatPlatform(platform);
   const suffix = key.replace('ical.platform.', '') as IcalPlatform;
   return fr.ical.platform[suffix] || fr.ical.platform.other;
-}
-
-function statusChip(feed: IcalFeedWithRelations): string {
-  if (!feed.last_sync_at || !feed.last_sync_status) {
-    return statusTokens.neutral;
-  }
-
-  if (feed.last_sync_status === 'success') {
-    return clsx('border', borderTokens.success, stateFillTokens.success, textTokens.success);
-  }
-
-  if (feed.last_sync_status === 'partial') {
-    return statusTokens.warning;
-  }
-
-  return statusTokens.danger;
 }
 
 function statusLabel(feed: IcalFeedWithRelations): string {
@@ -78,7 +60,13 @@ function successTimestamp(feed: IcalFeedWithRelations): number {
 }
 
 export function IcalSyncCard({ hostId, onSeeAll }: IcalSyncCardProps) {
-  const { feeds, loading, triggerSync } = useIcalFeeds(hostId);
+  const {
+    feeds,
+    loading,
+    error,
+    refresh,
+    triggerSync,
+  } = useIcalFeeds(hostId);
   const [syncingAll, setSyncingAll] = useState(false);
 
   const activeFeeds = feeds.filter((feed) => feed.is_active);
@@ -93,6 +81,7 @@ export function IcalSyncCard({ hostId, onSeeAll }: IcalSyncCardProps) {
       .slice(0, 4),
     [feeds],
   );
+  const latestFeed = visibleFeeds[0];
 
   const handleSyncAll = async () => {
     if (syncingAll || activeFeeds.length === 0) return;
@@ -121,26 +110,18 @@ export function IcalSyncCard({ hostId, onSeeAll }: IcalSyncCardProps) {
   };
 
   return (
-    <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>
-      <header className="flex items-center justify-between gap-2">
-        <h2 className={clsx('flex items-center gap-2 text-base font-semibold', textTokens.title)}>
-          <Calendar aria-hidden size={16} />
-          {fr.dashboardIcal.cardTitle}
-        </h2>
-        <Button variant="tertiary" size="sm" onClick={onSeeAll}>
-          {fr.dashboardIcal.cardSeeAll}
-          <ArrowRight aria-hidden size={14} />
-        </Button>
-      </header>
-
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className={clsx('rounded-full border px-2 py-0.5', statusTokens.info)}>
-          {fr.ical.feed.active}: <strong>{activeFeeds.length}</strong>
-        </span>
-        <span className={clsx('rounded-full border px-2 py-0.5', feedsWithErrors > 0 ? statusTokens.danger : statusTokens.neutral)}>
-          {fr.dashboardIcal.errors}: <strong>{feedsWithErrors}</strong>
-        </span>
-
+    <DashboardWidgetCard
+      title={fr.dashboardIcal.cardTitle}
+      icon={Calendar}
+      seeAllLabel={fr.dashboardIcal.cardSeeAll}
+      onSeeAll={onSeeAll}
+      loading={loading}
+      error={error}
+      onRetry={refresh}
+      errorDescription={fr.errors.genericDescription}
+      isEmpty={visibleFeeds.length === 0}
+      emptyFallback={<p className={clsx('text-sm', textTokens.muted)}>{fr.dashboardIcal.cardEmpty}</p>}
+      footer={(
         <Button
           variant="secondary"
           size="sm"
@@ -148,46 +129,33 @@ export function IcalSyncCard({ hostId, onSeeAll }: IcalSyncCardProps) {
             void handleSyncAll();
           }}
           disabled={syncingAll || activeFeeds.length === 0}
-          className="ml-auto"
         >
           <RefreshCw aria-hidden size={14} className={clsx(syncingAll && 'animate-spin')} />
           {fr.dashboardIcal.syncAll}
         </Button>
+      )}
+    >
+      <div className="space-y-1">
+        <p className={clsx('text-xs uppercase tracking-wide', textTokens.subtle)}>{fr.ical.feed.active}</p>
+        <p className={clsx('text-2xl', displayTokens.number, textTokens.title)}>{activeFeeds.length}</p>
+        <p className={clsx('text-sm', textTokens.muted)}>
+          {latestFeed
+            ? `${latestFeed.display_name || resolvePlatformLabel(latestFeed.platform)} · ${relativeTime(latestFeed.last_sync_at)}`
+            : fr.dashboardIcal.cardEmpty}
+        </p>
       </div>
 
-      {loading ? (
-        <div className="space-y-2" aria-hidden="true">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} variant="text" className="h-4 w-full" />
-          ))}
-        </div>
-      ) : visibleFeeds.length === 0 ? (
-        <p className={clsx('text-sm', textTokens.muted)}>{fr.dashboardIcal.cardEmpty}</p>
-      ) : (
-        <ul className="space-y-2">
-          {visibleFeeds.map((feed) => (
-            <li key={feed.id} className={clsx('flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2', borderTokens.subtle)}>
-              <div className="min-w-0">
-                <p className={clsx('truncate text-sm font-medium', textTokens.title)}>
-                  {feed.display_name || resolvePlatformLabel(feed.platform)}
-                </p>
-                <p className={clsx('truncate text-xs', textTokens.muted)}>
-                  {feed.property_name || '—'}
-                </p>
-              </div>
-
-              <div className="flex shrink-0 flex-col items-end gap-1">
-                <span className={clsx('inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium', statusChip(feed))}>
-                  {statusLabel(feed)}
-                </span>
-                <span className={clsx('text-[11px]', textTokens.subtle)}>
-                  {fr.dashboardIcal.lastSync}: {relativeTime(feed.last_sync_at)}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
+      <div className="flex flex-wrap gap-2">
+        <StatusBadge variant="info">{fr.ical.feed.active}: {activeFeeds.length}</StatusBadge>
+        <StatusBadge variant={feedsWithErrors > 0 ? 'danger' : 'neutral'}>
+          {fr.dashboardIcal.errors}: {feedsWithErrors}
+        </StatusBadge>
+        {latestFeed ? (
+          <StatusBadge variant={latestFeed.last_sync_status === 'failed' ? 'danger' : latestFeed.last_sync_status === 'partial' ? 'warning' : 'success'}>
+            {statusLabel(latestFeed)}
+          </StatusBadge>
+        ) : null}
+      </div>
+    </DashboardWidgetCard>
   );
 }

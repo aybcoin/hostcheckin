@@ -96,6 +96,7 @@ export interface DashboardData {
   weekItems: WeekItem[];
   timeline: ActivityEvent[];
   trustMetrics: TrustMetrics;
+  activeReservationsThisMonth: number;
   isLoading: boolean;
   error: string | null;
   isRealtimeActive: boolean;
@@ -108,6 +109,27 @@ interface ComputedDashboardPayload {
   weekItems: WeekItem[];
   timeline: ActivityEvent[];
   trustMetrics: TrustMetrics;
+  activeReservationsThisMonth: number;
+}
+
+function countActiveReservationsThisMonth(reservations: Reservation[], now: Date = new Date()): number {
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  return reservations.reduce((count, reservation) => {
+    if (reservation.status === 'cancelled') {
+      return count;
+    }
+
+    const checkIn = new Date(reservation.check_in_date);
+    const checkOut = new Date(reservation.check_out_date);
+    if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
+      return count;
+    }
+
+    const overlapsMonth = checkIn < nextMonthStart && checkOut >= monthStart;
+    return overlapsMonth ? count + 1 : count;
+  }, 0);
 }
 
 function computeDashboardPayload(rows: DashboardReservationRow[]): ComputedDashboardPayload {
@@ -257,6 +279,7 @@ function computeDashboardPayload(rows: DashboardReservationRow[]): ComputedDashb
     weekItems: computeWeekItems(decoratedReservations),
     timeline: computeActivityTimeline(contractSummaries, verificationSummaries, timelineAuxEvents, 10),
     trustMetrics: computeTrustMetrics(baseReservations, contractSummaries, verificationSummaries, 30),
+    activeReservationsThisMonth: countActiveReservationsThisMonth(baseReservations),
   };
 }
 
@@ -265,6 +288,7 @@ export function useDashboardData(propertyId?: string | null): DashboardData {
   const [weekItems, setWeekItems] = useState<WeekItem[]>([]);
   const [timeline, setTimeline] = useState<ActivityEvent[]>([]);
   const [trustMetrics, setTrustMetrics] = useState<TrustMetrics>(EMPTY_TRUST_METRICS);
+  const [activeReservationsThisMonth, setActiveReservationsThisMonth] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRealtimeActive, setIsRealtimeActive] = useState(false);
@@ -299,6 +323,7 @@ export function useDashboardData(propertyId?: string | null): DashboardData {
       setWeekItems(payload.weekItems);
       setTimeline(payload.timeline);
       setTrustMetrics(payload.trustMetrics);
+      setActiveReservationsThisMonth(payload.activeReservationsThisMonth);
       setError(null);
     } catch (fetchError) {
       console.error('[useDashboardData] Failed to load dashboard data:', fetchError);
@@ -307,6 +332,7 @@ export function useDashboardData(propertyId?: string | null): DashboardData {
       setWeekItems([]);
       setTimeline([]);
       setTrustMetrics(EMPTY_TRUST_METRICS);
+      setActiveReservationsThisMonth(0);
     } finally {
       if (showLoader) {
         setIsLoading(false);
@@ -366,6 +392,7 @@ export function useDashboardData(propertyId?: string | null): DashboardData {
     weekItems,
     timeline,
     trustMetrics,
+    activeReservationsThisMonth,
     isLoading,
     error,
     isRealtimeActive,

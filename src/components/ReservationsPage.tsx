@@ -39,6 +39,7 @@ import { ReservationDocuments } from './ReservationDocuments';
 import { ShareLinkModal } from './reservations/ShareLinkModal';
 import { RatingModal } from './reservations/RatingModal';
 import { CreateReservationModal } from './reservations/CreateReservationModal';
+import { CalendarView } from './reservations/CalendarView';
 import { Button } from './ui/Button';
 import { fr } from '../lib/i18n/fr';
 import { borderTokens, chipTokens, inputTokens, stateFillTokens, textTokens } from '../lib/design-tokens';
@@ -48,6 +49,7 @@ import { toast } from '../lib/toast';
 
 /** Nombre de cartes rendues par "page" (load-more). */
 const PAGE_SIZE = 20;
+const RESERVATIONS_VIEW_STORAGE_KEY = 'hostcheckin:reservations-view';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -93,7 +95,7 @@ function QuickFilterChips({
 }) {
   return (
     <div
-      className="flex flex-wrap gap-2"
+      className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
       role="group"
       aria-label="Filtre rapide des réservations"
     >
@@ -172,12 +174,21 @@ export function ReservationsPage({
   }, [housekeepingTasks]);
   // ── État UI ───────────────────────────────────────────────────────────────
   const [quickFilter, setQuickFilter] = useState<ReservationCategory | 'all'>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>(() => {
+    try {
+      const storedView = window.localStorage.getItem(RESERVATIONS_VIEW_STORAGE_KEY);
+      return storedView === 'calendar' ? 'calendar' : 'list';
+    } catch {
+      return 'list';
+    }
+  });
   const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewingDocuments, setViewingDocuments] = useState<{ id: string; ref: string } | null>(null);
   const [shareModal, setShareModal] = useState<{ link: string; guestName: string; propertyName: string } | null>(null);
   const [ratingModal, setRatingModal] = useState<{ id: string; ref: string; rating?: number } | null>(null);
+  const [calendarFocusedReservationId, setCalendarFocusedReservationId] = useState<string | null>(null);
 
   // ── Données secondaires (batch-load sans N+1) ─────────────────────────────
   const [guests, setGuests] = useState<Record<string, GuestInfo>>({});
@@ -228,14 +239,23 @@ export function ReservationsPage({
 
   // ── Focus depuis navigation externe ──────────────────────────────────────
   useEffect(() => {
-    if (!focusedReservationId) return;
+    const targetReservationId = calendarFocusedReservationId ?? focusedReservationId;
+    if (!targetReservationId) return;
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>(
-        `[data-testid="reservation-card-${focusedReservationId}"]`
+        `[data-testid="reservation-card-${targetReservationId}"]`
       );
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
-  }, [focusedReservationId]);
+  }, [calendarFocusedReservationId, focusedReservationId]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(RESERVATIONS_VIEW_STORAGE_KEY, viewMode);
+    } catch {
+      // Ignore localStorage failures and keep the in-memory selection.
+    }
+  }, [viewMode]);
 
   // ── Calcul des métadonnées enrichies (mémoïsé) ───────────────────────────
   const now = useMemo(() => new Date(), []);
@@ -275,11 +295,11 @@ export function ReservationsPage({
   );
 
   const chips: QuickFilter[] = [
-    { label: 'Toutes', value: 'all', count: reservations.length },
-    { label: 'À traiter', value: 'to_handle', count: categoryCounts.to_handle },
-    { label: 'À venir', value: 'upcoming', count: categoryCounts.upcoming },
-    { label: 'En cours', value: 'in_progress', count: categoryCounts.in_progress },
-    { label: 'Passées', value: 'past', count: categoryCounts.past },
+    { label: fr.reservations.quickFilters.all, value: 'all', count: reservations.length },
+    { label: fr.reservations.quickFilters.toHandle, value: 'to_handle', count: categoryCounts.to_handle },
+    { label: fr.reservations.quickFilters.upcoming, value: 'upcoming', count: categoryCounts.upcoming },
+    { label: fr.reservations.quickFilters.inProgress, value: 'in_progress', count: categoryCounts.in_progress },
+    { label: fr.reservations.quickFilters.past, value: 'past', count: categoryCounts.past },
   ];
 
   const trustMetrics = useMemo(() => {
@@ -323,6 +343,11 @@ export function ReservationsPage({
 
   const visibleItems = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
+
+  const handleSelectReservationFromCalendar = useCallback((reservation: Reservation) => {
+    setCalendarFocusedReservationId(reservation.id);
+    setViewMode('list');
+  }, []);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleDelete = useCallback(
@@ -408,7 +433,46 @@ export function ReservationsPage({
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                className={clsx(
+                  'inline-flex items-center rounded-full border px-3.5 py-1.5 text-sm font-medium',
+                  viewMode === 'list' ? chipTokens.active : chipTokens.primary,
+                )}
+              >
+                {fr.reservations.viewList}
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('calendar')}
+                aria-pressed={viewMode === 'calendar'}
+                className={clsx(
+                  'inline-flex items-center rounded-full border px-3.5 py-1.5 text-sm font-medium',
+                  viewMode === 'calendar' ? chipTokens.active : chipTokens.primary,
+                )}
+              >
+                {fr.reservations.viewCalendar}
+              </button>
+            </div>
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={() => setShowCreateModal(true)}
+            aria-label={fr.reservations.newReservation}
+            className="flex-shrink-0"
+          >
+            <Plus size={16} aria-hidden="true" />
+            {fr.reservations.newReservation}
+          </Button>
+        </div>
+
         <div>
           <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>
             {fr.reservations.title}
@@ -420,44 +484,40 @@ export function ReservationsPage({
             {fr.reservations.totalCount(reservations.length)}
           </p>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => setShowCreateModal(true)}
-          aria-label={fr.reservations.newReservation}
-        >
-          <Plus size={16} aria-hidden="true" />
-          {fr.reservations.newReservation}
-        </Button>
       </div>
 
       {/* Chips + barre de recherche */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <QuickFilterChips chips={chips} active={quickFilter} onChange={setQuickFilter} />
-        <div className="relative w-full sm:w-64">
+      <div className="flex flex-wrap gap-3">
+        <div className="relative min-w-[200px] flex-1">
           <Search
             size={15}
-            className={clsx('absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none', textTokens.subtle)}
+            className={clsx('pointer-events-none absolute left-3 top-1/2 -translate-y-1/2', textTokens.subtle)}
             aria-hidden="true"
           />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Voyageur, logement…"
-            aria-label="Rechercher une réservation"
+            placeholder={fr.reservations.searchPlaceholder}
+            aria-label={fr.reservations.searchAria}
             className={clsx(inputTokens.base, 'py-2 pl-8 pr-8')}
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
-              aria-label="Effacer la recherche"
-              className={clsx('absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:opacity-90', textTokens.subtle)}
+              aria-label={fr.reservations.clearSearch}
+              className={clsx(
+                'absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
+                textTokens.subtle,
+              )}
             >
               <X size={14} aria-hidden="true" />
             </button>
           )}
         </div>
+
+        <QuickFilterChips chips={chips} active={quickFilter} onChange={setQuickFilter} />
       </div>
 
       {/* Liste */}
@@ -467,18 +527,25 @@ export function ReservationsPage({
             <Calendar className={clsx('w-10 h-10 mx-auto mb-3', textTokens.subtle)} aria-hidden="true" />
             <p className={clsx('font-medium', textTokens.subtle)}>
               {search
-                ? 'Aucun résultat pour cette recherche'
+                ? fr.reservations.emptySearch
                 : quickFilter === 'to_handle'
-                ? 'Aucune réservation à traiter'
+                ? fr.reservations.emptyToHandle
                 : quickFilter === 'upcoming'
-                ? 'Aucune réservation à venir'
+                ? fr.reservations.emptyUpcoming
                 : quickFilter === 'in_progress'
-                ? 'Aucune réservation en cours'
+                ? fr.reservations.emptyInProgress
                 : quickFilter === 'past'
-                ? 'Aucune réservation passée'
+                ? fr.reservations.emptyPast
                 : fr.reservations.empty}
             </p>
           </div>
+        ) : viewMode === 'calendar' ? (
+          <CalendarView
+            reservations={filtered.map((item) => item.reservation)}
+            properties={properties}
+            guests={guests}
+            onSelectReservation={handleSelectReservationFromCalendar}
+          />
         ) : (
           <>
             {visibleItems.map(({ reservation, steps, cta }) => (
@@ -508,8 +575,7 @@ export function ReservationsPage({
             {/* Compteur + load-more */}
             <div className="flex items-center justify-between pt-1">
               <p className={clsx('text-xs', textTokens.subtle)} aria-live="polite">
-                {Math.min(visibleCount, filtered.length)} / {filtered.length}{' '}
-                réservation{filtered.length > 1 ? 's' : ''}
+                {fr.reservations.showingCount(Math.min(visibleCount, filtered.length), filtered.length)}
               </p>
               {hasMore && (
                 <Button
@@ -517,7 +583,7 @@ export function ReservationsPage({
                   size="sm"
                   onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
                 >
-                  Charger {Math.min(PAGE_SIZE, filtered.length - visibleCount)} de plus
+                  {fr.reservations.loadMore(Math.min(PAGE_SIZE, filtered.length - visibleCount))}
                 </Button>
               )}
             </div>

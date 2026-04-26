@@ -15,6 +15,7 @@
 
 import { Check, Clock, AlertCircle } from 'lucide-react';
 import type { ReservationStep, StepStatus } from '../../lib/reservations-status';
+import { StatusBadge, type StatusBadgeVariant } from '../ui/StatusBadge';
 
 interface PillProps {
   step: ReservationStep;
@@ -24,24 +25,18 @@ interface PillProps {
 
 const STEP_VISUAL: Record<
   StepStatus,
-  { bg: string; text: string; border: string; icon: typeof Check }
+  { variant: StatusBadgeVariant; icon: typeof Check }
 > = {
   ok: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
+    variant: 'success',
     icon: Check,
   },
   pending: {
-    bg: 'bg-slate-50',
-    text: 'text-slate-500',
-    border: 'border-slate-200',
+    variant: 'neutral',
     icon: Clock,
   },
   blocking: {
-    bg: 'bg-red-50',
-    text: 'text-red-700',
-    border: 'border-red-200',
+    variant: 'danger',
     icon: AlertCircle,
   },
 };
@@ -71,18 +66,9 @@ function StatusPill({ step }: PillProps) {
   return (
     <span className="relative group inline-block">
       {/* Pastille */}
-      <span
-        role="status"
-        aria-label={step.label}
-        className={`
-          inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium
-          ${visual.bg} ${visual.text} ${visual.border}
-          cursor-default select-none
-        `}
-      >
-        <Icon size={11} aria-hidden="true" />
-        <span>{step.shortLabel}</span>
-      </span>
+      <StatusBadge variant={visual.variant} icon={<Icon size={11} />} className="cursor-default select-none" size="sm">
+        {step.shortLabel}
+      </StatusBadge>
 
       {/* Tooltip CSS-only (pas de JS, pas de dépendance) */}
       <span
