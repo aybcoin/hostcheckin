@@ -111,7 +111,7 @@ interface SidebarPropertyCardProps {
 function SidebarPropertyCard({ property, reservation, today, onSelect }: SidebarPropertyCardProps) {
   const status = computePropertyStatus(reservation, today);
   const platform = platformVariant(reservation?.external_source ?? undefined);
-  const reference = property.id.slice(0, 6).toUpperCase();
+  const reference = reservation?.booking_reference ?? `#${property.id.slice(0, 6).toUpperCase()}`;
   const ariaLabel = fr.topnav.propertyCard.ariaLabel.replace('{name}', property.name);
 
   const statusLabel =
@@ -136,13 +136,13 @@ function SidebarPropertyCard({ property, reservation, today, onSelect }: Sidebar
       : sidebarPropertyTokens.statusIdleDot;
 
   return (
-    <div className="px-4 pb-3">
+    <div className="px-4 pb-4 pt-1">
       <button
         type="button"
         aria-label={ariaLabel}
         onClick={() => onSelect?.(property.id)}
         className={clsx(
-          'flex w-full flex-col gap-2.5 rounded-2xl p-3 text-left',
+          'flex w-full flex-col gap-3 rounded-2xl p-3 text-left',
           sidebarPropertyTokens.card,
           sidebarPropertyTokens.focusRing,
         )}
@@ -152,52 +152,59 @@ function SidebarPropertyCard({ property, reservation, today, onSelect }: Sidebar
             <img
               src={property.image_url}
               alt={fr.topnav.propertyCard.imageAlt}
-              className="h-14 w-14 shrink-0 rounded-xl object-cover"
+              className="h-16 w-16 shrink-0 rounded-xl object-cover"
             />
           ) : (
             <div
               className={clsx(
-                'flex h-14 w-14 shrink-0 items-center justify-center rounded-xl',
+                'flex h-16 w-16 shrink-0 items-center justify-center rounded-xl',
                 sidebarPropertyTokens.imageFallback,
               )}
               aria-hidden="true"
             >
-              <Home size={22} />
+              <Home size={26} />
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className={clsx('truncate text-sm font-semibold leading-tight', sidebarPropertyTokens.title)}>
+            <p
+              className={clsx(
+                'text-[13px] font-semibold leading-snug line-clamp-2',
+                sidebarPropertyTokens.title,
+              )}
+            >
               {property.name}
             </p>
             {platform ? (
               <span
                 className={clsx(
-                  'mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                  'mt-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
                   platform.className,
                 )}
               >
                 {platform.label}
               </span>
             ) : null}
-            <p className={clsx('mt-1.5 text-[11px]', sidebarPropertyTokens.reference)}>
-              {fr.topnav.propertyCard.referenceLabel.replace('{reference}', reference)}
-            </p>
-            {reservation ? (
-              <p className={clsx('mt-0.5 text-[11px]', sidebarPropertyTokens.dates)}>
-                {formatShortDate(reservation.check_in_date)}
-                {' → '}
-                {formatShortDate(reservation.check_out_date)}
-              </p>
-            ) : (
-              <p className={clsx('mt-0.5 text-[11px]', sidebarPropertyTokens.reference)}>
-                {fr.topnav.propertyCard.noUpcoming}
-              </p>
-            )}
           </div>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <p className={clsx('text-[11px] leading-tight', sidebarPropertyTokens.reference)}>
+            {fr.topnav.propertyCard.referenceLabel.replace('{reference}', reference)}
+          </p>
+          {reservation ? (
+            <p className={clsx('text-[11px] leading-tight', sidebarPropertyTokens.dates)}>
+              {formatShortDate(reservation.check_in_date)}
+              {' → '}
+              {formatShortDate(reservation.check_out_date)}
+            </p>
+          ) : (
+            <p className={clsx('text-[11px] leading-tight', sidebarPropertyTokens.reference)}>
+              {fr.topnav.propertyCard.noUpcoming}
+            </p>
+          )}
         </div>
         <span
           className={clsx(
-            'inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-[11px] font-medium',
+            'inline-flex w-full items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium',
             statusClass,
           )}
         >
