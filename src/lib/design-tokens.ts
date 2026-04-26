@@ -179,53 +179,41 @@ export const accentTokens = {
   activeNavText: "text-emerald-800",
 } as const;
 
+/**
+ * Sidebar dark — direction "Payoneer-style" : fond noir bleuté uni,
+ * bord-à-bord, navigation directe, accent émeraude.
+ */
 export const sidebarTokens = {
-  shell: "bg-stone-100",
-  panel:
-    "bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800",
-  panelBorder: "border-white/10",
-  panelShadow:
-    "shadow-[0_32px_96px_-36px_rgba(15,23,42,0.75)]",
-  divider: "border-white/10",
-  glowPrimary: "bg-emerald-300/12",
-  glowSecondary: "bg-amber-200/12",
-  brandTile:
-    "border border-white/10 bg-white/10 text-white shadow-[0_16px_40px_-24px_rgba(248,250,252,0.45)]",
+  shell: "bg-slate-950",
+  panel: "bg-slate-950",
+  panelBorder: "border-transparent",
+  panelShadow: "",
+  divider: "border-white/[0.06]",
+  brandTile: "bg-emerald-500 text-white",
   brandText: "text-white",
   closeButton:
-    "text-slate-300 hover:bg-white/5 hover:text-white",
+    "text-slate-400 hover:bg-white/[0.06] hover:text-white",
   focusRing:
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
-  heroPanel: "border border-white/10 bg-white/5 backdrop-blur-sm",
-  heroEyebrow: "text-slate-300",
-  heroTitle: "text-stone-50",
-  heroSubtitle: "text-slate-200",
-  heroMetaLabel: "text-slate-400",
-  heroMetaValue: "text-stone-100",
-  heroIconTile:
-    "border border-white/10 bg-white/10 text-white",
-  navGroupLabel: "text-slate-400",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
+  navGroupLabel: "text-slate-500",
   navItem:
-    "border border-transparent text-slate-300 hover:bg-white/5 hover:text-white",
-  navItemActive:
-    "border border-white/10 bg-white/10 text-white shadow-[0_18px_40px_-28px_rgba(248,250,252,0.55)]",
-  navIcon: "text-slate-400 group-hover:text-stone-100",
-  navIconActive: "text-stone-50",
-  navBadge: "border border-white/10 bg-white/10 text-stone-50",
+    "text-slate-300 hover:bg-white/[0.04] hover:text-white",
+  navItemActive: "bg-white/[0.06] text-white font-semibold",
+  navIcon: "text-slate-500 group-hover:text-slate-200",
+  navIconActive: "text-emerald-400",
+  navBadge: "bg-emerald-500 text-slate-950 border-transparent",
   promoCard:
-    "border border-amber-100/15 bg-gradient-to-br from-white/8 via-amber-50/10 to-emerald-50/10 backdrop-blur-sm",
-  promoIcon:
-    "border border-amber-100/15 bg-amber-100/10 text-amber-50",
-  promoTitle: "text-stone-50",
-  promoBody: "text-slate-300",
-  userPanel: "border border-white/10 bg-white/5 backdrop-blur-sm",
-  avatar:
-    "border border-white/10 bg-white/10 text-white",
-  userName: "text-stone-50",
+    "border border-emerald-500/20 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800",
+  promoIcon: "bg-white/20 text-white",
+  promoTitle: "text-white",
+  promoBody: "text-emerald-100/80",
+  userPanel: "border-t border-white/[0.06]",
+  avatar: "bg-white text-slate-900",
+  userName: "text-white",
   userMeta: "text-slate-400",
   logout:
-    "text-slate-300 hover:bg-white/10 hover:text-white",
-  mobileTopBar: "bg-white/90 backdrop-blur-md",
+    "text-slate-400 hover:bg-red-500/10 hover:text-red-300",
+  mobileTopBar: "bg-white/95 backdrop-blur-md",
 } as const;
 
 /**

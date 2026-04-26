@@ -345,7 +345,7 @@ function App() {
         />
 
         {/* Main content — offset by sidebar width on desktop */}
-        <div className="flex min-w-0 flex-1 flex-col lg:pl-72">
+        <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
         <main id="main-content" className="mx-auto w-full max-w-6xl px-4 py-6 md:py-8">
           {autoLinkPropertyId ? (
             <AutoLinkGenerator
