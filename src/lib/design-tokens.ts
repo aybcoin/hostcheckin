@@ -179,6 +179,55 @@ export const accentTokens = {
   activeNavText: "text-emerald-800",
 } as const;
 
+export const sidebarTokens = {
+  shell: "bg-stone-100",
+  panel:
+    "bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800",
+  panelBorder: "border-white/10",
+  panelShadow:
+    "shadow-[0_32px_96px_-36px_rgba(15,23,42,0.75)]",
+  divider: "border-white/10",
+  glowPrimary: "bg-emerald-300/12",
+  glowSecondary: "bg-amber-200/12",
+  brandTile:
+    "border border-white/10 bg-white/10 text-white shadow-[0_16px_40px_-24px_rgba(248,250,252,0.45)]",
+  brandText: "text-white",
+  closeButton:
+    "text-slate-300 hover:bg-white/5 hover:text-white",
+  focusRing:
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
+  heroPanel: "border border-white/10 bg-white/5 backdrop-blur-sm",
+  heroEyebrow: "text-slate-300",
+  heroTitle: "text-stone-50",
+  heroSubtitle: "text-slate-200",
+  heroMetaLabel: "text-slate-400",
+  heroMetaValue: "text-stone-100",
+  heroIconTile:
+    "border border-white/10 bg-white/10 text-white",
+  navGroupLabel: "text-slate-400",
+  navItem:
+    "border border-transparent text-slate-300 hover:bg-white/5 hover:text-white",
+  navItemActive:
+    "border border-white/10 bg-white/10 text-white shadow-[0_18px_40px_-28px_rgba(248,250,252,0.55)]",
+  navIcon: "text-slate-400 group-hover:text-stone-100",
+  navIconActive: "text-stone-50",
+  navBadge: "border border-white/10 bg-white/10 text-stone-50",
+  promoCard:
+    "border border-amber-100/15 bg-gradient-to-br from-white/8 via-amber-50/10 to-emerald-50/10 backdrop-blur-sm",
+  promoIcon:
+    "border border-amber-100/15 bg-amber-100/10 text-amber-50",
+  promoTitle: "text-stone-50",
+  promoBody: "text-slate-300",
+  userPanel: "border border-white/10 bg-white/5 backdrop-blur-sm",
+  avatar:
+    "border border-white/10 bg-white/10 text-white",
+  userName: "text-stone-50",
+  userMeta: "text-slate-400",
+  logout:
+    "text-slate-300 hover:bg-white/10 hover:text-white",
+  mobileTopBar: "bg-white/90 backdrop-blur-md",
+} as const;
+
 /**
  * Accent secondaire — Or chaud (champagne) pour moments éditoriaux,
  * badges premium, ratings, distinctions.

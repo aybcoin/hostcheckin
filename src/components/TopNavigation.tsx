@@ -1,5 +1,5 @@
 /**
- * SideNavigation — left sidebar (Payoneer-style)
+ * SideNavigation — premium editorial sidebar
  *
  * Desktop (≥1024px): fixed 256px sidebar, always visible.
  * Mobile (<1024px): thin top bar with hamburger → overlay drawer slides from left.
@@ -31,14 +31,15 @@ import { clsx } from '../lib/clsx';
 import {
   accentTokens,
   borderTokens,
-  iconButtonToken,
+  displayTokens,
+  sidebarTokens,
   surfaceTokens,
   textTokens,
+  transitionTokens,
 } from '../lib/design-tokens';
 import type { AppPage } from '../lib/navigation';
 import { fr } from '../lib/i18n/fr';
 import { Badge } from './ui/Badge';
-import { Card } from './ui/Card';
 
 const UPGRADE_BANNER_DISMISSED_KEY = 'hostcheckin:upgrade-banner-dismissed';
 
@@ -88,15 +89,12 @@ function SideNavItem({ item, isActive, onSelect }: SideNavItemProps) {
         aria-current={isActive ? 'page' : undefined}
         onClick={onSelect}
         className={clsx(
-          'group flex w-full items-center gap-3 rounded-lg py-2.5 text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
+          'group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm',
+          transitionTokens.base,
+          sidebarTokens.focusRing,
           isActive
-            ? clsx(
-              'border-l-[3px] pl-[9px] pr-3 font-semibold',
-              accentTokens.bgLight,
-              accentTokens.activeNavBorder,
-              accentTokens.activeNavText,
-            )
-            : clsx('px-3 font-medium', textTokens.muted, 'hover:bg-slate-100 hover:text-slate-900'),
+            ? clsx('font-semibold', sidebarTokens.navItemActive)
+            : clsx('font-medium', sidebarTokens.navItem),
         )}
       >
         <Icon
@@ -104,12 +102,12 @@ function SideNavItem({ item, isActive, onSelect }: SideNavItemProps) {
           aria-hidden="true"
           className={clsx(
             'shrink-0',
-            isActive ? 'text-emerald-700' : 'text-slate-400 group-hover:text-slate-600',
+            isActive ? sidebarTokens.navIconActive : sidebarTokens.navIcon,
           )}
         />
         <span className="truncate">{item.label}</span>
         {item.badgeCount != null && item.badgeCount > 0 ? (
-          <Badge variant="active" className="ml-auto shrink-0">
+          <Badge variant="active" className={clsx('ml-auto shrink-0', sidebarTokens.navBadge)}>
             {item.badgeCount}
           </Badge>
         ) : null}
@@ -159,24 +157,50 @@ function SidebarContent({
     }
   };
 
+  const currentGroup = groups.find((group) => group.items.some((item) => item.id === currentPage));
+  const currentItem = currentGroup?.items.find((item) => item.id === currentPage);
+  const CurrentIcon = currentItem?.icon ?? LayoutDashboard;
+
   return (
-    <div className="flex h-full flex-col">
-      {/* Logo */}
-      <div className={clsx('flex h-16 shrink-0 items-center gap-3 border-b px-5', borderTokens.subtle)}>
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 shadow-sm shadow-emerald-900/20">
-          <span className="font-display text-base font-medium text-white">H</span>
+    <div
+      className={clsx(
+        'relative flex h-full flex-col overflow-hidden rounded-[2rem] border',
+        sidebarTokens.panel,
+        sidebarTokens.panelBorder,
+        sidebarTokens.panelShadow,
+      )}
+    >
+      <div
+        aria-hidden="true"
+        className={clsx('pointer-events-none absolute -right-16 top-20 h-40 w-40 rounded-full blur-3xl', sidebarTokens.glowPrimary)}
+      />
+      <div
+        aria-hidden="true"
+        className={clsx('pointer-events-none absolute -left-12 top-56 h-44 w-44 rounded-full blur-3xl', sidebarTokens.glowSecondary)}
+      />
+
+      <div className={clsx('relative flex h-20 shrink-0 items-center gap-3 border-b px-5', sidebarTokens.divider)}>
+        <div className={clsx('flex h-11 w-11 items-center justify-center rounded-2xl', sidebarTokens.brandTile)}>
+          <span className={clsx('text-base font-medium', displayTokens.title, textTokens.inverse)}>H</span>
         </div>
-        <span className={clsx('font-display text-lg font-medium tracking-tight', textTokens.title)}>
-          {fr.app.brand}
-        </span>
+        <div className="min-w-0">
+          <p className={clsx('text-[11px] font-semibold uppercase tracking-[0.22em]', sidebarTokens.heroEyebrow)}>
+            {fr.app.brand}
+          </p>
+          <p className={clsx('truncate text-base', displayTokens.title, sidebarTokens.brandText)}>
+            {fr.topnav.signature}
+          </p>
+        </div>
         {onClose != null ? (
           <button
             type="button"
             aria-label={fr.topnav.closeMobileMenu}
             onClick={onClose}
             className={clsx(
-              'ml-auto rounded-lg p-1.5 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
-              textTokens.muted,
+              'ml-auto rounded-xl p-2',
+              transitionTokens.color,
+              sidebarTokens.closeButton,
+              sidebarTokens.focusRing,
             )}
           >
             <X size={18} aria-hidden="true" />
@@ -184,18 +208,54 @@ function SidebarContent({
         ) : null}
       </div>
 
-      {/* Nav groups */}
-      <nav
-        aria-label={fr.topnav.primaryNav}
-        className="flex-1 overflow-y-auto px-3 py-4"
-      >
-        <ul className="space-y-8">
+      <div className="relative px-4 pb-4 pt-4">
+        <div className={clsx('overflow-hidden rounded-[1.75rem] border p-5', sidebarTokens.heroPanel)}>
+          <div className="flex items-start gap-4">
+            <div className={clsx('mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', sidebarTokens.heroIconTile)}>
+              <CurrentIcon size={20} aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className={clsx('text-[11px] font-semibold uppercase tracking-[0.22em]', sidebarTokens.heroEyebrow)}>
+                {fr.app.brand}
+              </p>
+              <h2 className={clsx('mt-3 text-[1.95rem] leading-[1.02]', displayTokens.title, sidebarTokens.heroTitle)}>
+                {currentItem?.label ?? fr.sidebar.menu.dashboard}
+              </h2>
+              <p className={clsx('mt-3 text-sm leading-6', sidebarTokens.heroSubtitle)}>
+                {hostName ?? fr.app.hostFallbackName}
+              </p>
+            </div>
+          </div>
+
+          <div className={clsx('mt-6 grid grid-cols-2 gap-3 border-t pt-4', sidebarTokens.divider)}>
+            <div className="min-w-0">
+              <p className={clsx('text-[10px] font-semibold uppercase tracking-[0.18em]', sidebarTokens.heroMetaLabel)}>
+                {currentGroup?.label ?? fr.topnav.primaryNav}
+              </p>
+              <p className={clsx('mt-1 truncate text-sm font-medium', sidebarTokens.heroMetaValue)}>
+                {currentItem?.label ?? fr.sidebar.menu.dashboard}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <p className={clsx('text-[10px] font-semibold uppercase tracking-[0.18em]', sidebarTokens.heroMetaLabel)}>
+                {fr.topnav.userMenu.profile}
+              </p>
+              <p className={clsx('mt-1 truncate text-sm font-medium', sidebarTokens.heroMetaValue)}>
+                {hostName ?? fr.app.hostFallbackName}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav aria-label={fr.topnav.primaryNav} className="relative flex-1 overflow-y-auto px-3 pb-4">
+        <ul className="space-y-6">
           {groups.map((group, index) => (
-            <li key={group.label} className={clsx(index > 0 && 'border-t border-stone-100 pt-6')}>
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-stone-400">
+            <li key={group.label} className={clsx(index > 0 && clsx('pt-5', 'border-t', sidebarTokens.divider))}>
+              <p className={clsx('mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em]', sidebarTokens.navGroupLabel)}>
                 {group.label}
               </p>
-              <ul className="space-y-0.5">
+              <ul className="space-y-1.5">
                 {group.items.map((item) => (
                   <SideNavItem
                     key={item.id}
@@ -211,21 +271,21 @@ function SidebarContent({
       </nav>
 
       {!isUpgradeBannerDismissed ? (
-        <div className={clsx('shrink-0 px-3 pb-3', borderTokens.subtle)}>
-          <Card variant="default" padding="sm" className="relative overflow-hidden">
+        <div className="relative shrink-0 px-4 pb-4">
+          <div className={clsx('relative overflow-hidden rounded-[1.5rem] border p-4', sidebarTokens.promoCard)}>
             <button
               type="button"
               onClick={() => handleNavigate('pricing')}
-              className="flex w-full items-start gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2"
+              className={clsx('flex w-full items-start gap-3 rounded-2xl text-left', sidebarTokens.focusRing)}
             >
-              <span className={clsx('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full', accentTokens.bgLight, accentTokens.text)}>
+              <span className={clsx('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full', sidebarTokens.promoIcon)}>
                 <Sparkles size={16} aria-hidden="true" />
               </span>
               <span className="min-w-0">
-                <span className={clsx('block text-sm font-semibold', textTokens.title)}>
+                <span className={clsx('block text-sm font-semibold', sidebarTokens.promoTitle)}>
                   {fr.topnav.upgrade}
                 </span>
-                <span className={clsx('block text-xs', textTokens.muted)}>
+                <span className={clsx('mt-1 block text-xs leading-5', sidebarTokens.promoBody)}>
                   {fr.topnav.upgradeSubtitle}
                 </span>
               </span>
@@ -237,31 +297,35 @@ function SidebarContent({
                 event.stopPropagation();
                 dismissUpgradeBanner();
               }}
-              className={clsx('absolute right-2 top-2', iconButtonToken)}
+              className={clsx(
+                'absolute right-2 top-2 rounded-xl p-1.5',
+                transitionTokens.color,
+                sidebarTokens.closeButton,
+                sidebarTokens.focusRing,
+              )}
             >
               <X size={14} aria-hidden="true" />
             </button>
-          </Card>
+          </div>
         </div>
       ) : null}
 
-      {/* User footer */}
-      <div className={clsx('shrink-0 border-t px-3 py-3', borderTokens.default)}>
-        <div className="flex items-center gap-3">
+      <div className="relative shrink-0 px-4 pb-4">
+        <div className={clsx('flex items-center gap-3 rounded-[1.4rem] border px-3 py-3', sidebarTokens.userPanel)}>
           <button
             type="button"
             aria-label={fr.topnav.viewProfile}
             onClick={() => handleNavigate('profile')}
-            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2"
+            className={clsx('flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1 py-1 text-left', sidebarTokens.focusRing)}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+            <div className={clsx('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold', sidebarTokens.avatar)}>
               {initialsFromName(hostName)}
             </div>
-            <div className="min-w-0 text-left">
-              <p className={clsx('truncate text-sm font-semibold leading-tight', textTokens.title)}>
+            <div className="min-w-0">
+              <p className={clsx('truncate text-sm font-semibold leading-tight', sidebarTokens.userName)}>
                 {hostName ?? fr.app.hostFallbackName}
               </p>
-              <p className={clsx('truncate text-xs leading-tight', textTokens.subtle)}>
+              <p className={clsx('truncate text-xs leading-tight', sidebarTokens.userMeta)}>
                 {fr.topnav.userMenu.profile}
               </p>
             </div>
@@ -271,9 +335,10 @@ function SidebarContent({
             aria-label={fr.topnav.userMenu.logout}
             onClick={onLogout}
             className={clsx(
-              'shrink-0 rounded-lg p-2 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2',
-              textTokens.subtle,
-              'hover:text-red-600',
+              'shrink-0 rounded-2xl p-2',
+              transitionTokens.color,
+              sidebarTokens.logout,
+              sidebarTokens.focusRing,
             )}
           >
             <LogOut size={16} aria-hidden="true" />
@@ -345,9 +410,8 @@ export function TopNavigation({
       <aside
         aria-label={fr.topnav.primaryNav}
         className={clsx(
-          'fixed inset-y-0 left-0 z-40 hidden w-64 border-r lg:flex lg:flex-col',
-          surfaceTokens.panel,
-          borderTokens.default,
+          'fixed inset-y-0 left-0 z-40 hidden w-72 p-3 lg:flex lg:flex-col',
+          sidebarTokens.shell,
         )}
       >
         <SidebarContent
@@ -364,6 +428,7 @@ export function TopNavigation({
         className={clsx(
           'sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 lg:hidden',
           surfaceTokens.panel,
+          sidebarTokens.mobileTopBar,
           borderTokens.default,
         )}
       >
@@ -386,8 +451,8 @@ export function TopNavigation({
           onClick={() => handleNavigate('dashboard')}
           className="flex items-center gap-2 rounded-lg px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-700 shadow-sm shadow-emerald-900/20">
-            <span className="font-display text-sm font-medium text-white">H</span>
+          <div className={clsx('flex h-8 w-8 items-center justify-center rounded-lg shadow-sm shadow-emerald-900/20', accentTokens.bg)}>
+            <span className={clsx('font-display text-sm font-medium', textTokens.inverse)}>H</span>
           </div>
           <span className={clsx('font-display text-base font-medium tracking-tight', textTokens.title)}>
             {fr.app.brand}
@@ -414,9 +479,8 @@ export function TopNavigation({
             aria-modal="true"
             aria-label={fr.topnav.mobileMenuTitle}
             className={clsx(
-              'absolute inset-y-0 left-0 w-72 border-r shadow-xl',
-              surfaceTokens.panel,
-              borderTokens.default,
+              'absolute inset-y-0 left-0 w-80 p-3 shadow-xl',
+              sidebarTokens.shell,
             )}
           >
             <SidebarContent

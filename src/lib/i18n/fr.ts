@@ -43,6 +43,7 @@ export const fr = {
     primaryNav: 'Navigation principale',
     viewProfile: 'Voir mon profil',
     more: "Plus",
+    signature: 'Pilotage premium',
     upgrade: "Passer en Pro",
     upgradeSubtitle: "Logements illimités + analytics avancés",
     rentiq: "RentIQ Maroc",
