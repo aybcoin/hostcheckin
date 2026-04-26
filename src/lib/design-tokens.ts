@@ -187,7 +187,8 @@ export const accentTokens = {
 export const sidebarPropertyTokens = {
   card:
     "border border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.06] transition-colors duration-200",
-  imageFallback: "bg-white/[0.06] text-slate-300",
+  imageFallback:
+    "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-slate-200 ring-1 ring-inset ring-white/[0.04]",
   title: "text-white",
   reference: "text-slate-400",
   dates: "text-slate-300 tabular-nums",
