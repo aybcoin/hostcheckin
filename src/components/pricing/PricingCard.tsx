@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
 import { clsx } from '../../lib/clsx';
 import { borderTokens, surfaceTokens, textTokens } from '../../lib/design-tokens';
+import { fr } from '../../lib/i18n/fr';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 
@@ -34,14 +35,14 @@ export function PricingCard({
       variant={recommended ? 'highlight' : 'default'}
       padding="lg"
       interactive
-      className={recommended ? clsx(borderTokens.strong, 'ring-1 ring-black/10') : ''}
+      className={recommended ? clsx(borderTokens.strong) : ''}
     >
       <div className="mb-5">
         <div className="flex items-center justify-between">
           <h3 className={clsx('text-xl font-semibold', textTokens.title)}>{name}</h3>
           {recommended ? (
             <span className={clsx('rounded-full border px-3 py-1 text-xs font-medium', borderTokens.strong, surfaceTokens.subtle, textTokens.body)}>
-              Recommandé
+              {fr.subscriptionPricing.recommended}
             </span>
           ) : null}
         </div>
@@ -55,7 +56,7 @@ export function PricingCard({
 
       {features.length === 0 ? (
         <p className={clsx('rounded-lg p-3 text-sm', surfaceTokens.subtle, textTokens.subtle)}>
-          Aucune fonctionnalité renseignée.
+          {fr.subscriptionPricing.noFeatures}
         </p>
       ) : (
         <ul className="space-y-2.5">
@@ -69,7 +70,7 @@ export function PricingCard({
       )}
 
       <Button type="button" variant={recommended ? 'primary' : 'secondary'} className="mt-6 w-full justify-center">
-        Choisir ce plan
+        {fr.subscriptionPricing.choosePlan}
       </Button>
     </Card>
   );

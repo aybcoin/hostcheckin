@@ -105,7 +105,7 @@ export function CalendarGrid({ currentMonth, reservations, guests, filter, onRes
               </div>
               <div className="space-y-0.5">
                 {dayReservations.slice(0, 3).map((r) => {
-                  const guest = guests[r.guest_id];
+                  const guest = r.guest_id ? guests[r.guest_id] : undefined;
                   const name = guest?.full_name?.split(' ')[0] || 'Voyageur';
                   return (
                     <button

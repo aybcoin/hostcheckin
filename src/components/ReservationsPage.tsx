@@ -303,7 +303,7 @@ export function ReservationsPage({
     const result = enriched.filter((item) => {
       if (quickFilter !== 'all' && item.category !== quickFilter) return false;
       if (searchLower) {
-        const guest = guests[item.reservation.guest_id];
+        const guest = item.reservation.guest_id ? guests[item.reservation.guest_id] : undefined;
         const property = properties.find((p) => p.id === item.reservation.property_id);
         const haystack = [
           guest?.full_name ?? '',
@@ -486,7 +486,7 @@ export function ReservationsPage({
                 key={reservation.id}
                 reservation={reservation}
                 property={properties.find((p) => p.id === reservation.property_id)}
-                guest={guests[reservation.guest_id]}
+                guest={reservation.guest_id ? guests[reservation.guest_id] : undefined}
                 verification={verifications[reservation.id]}
                 contract={contracts[reservation.id]}
                 steps={steps}

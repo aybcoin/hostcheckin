@@ -52,8 +52,26 @@ const HelpPage = lazy(() =>
 const HousekeepingPage = lazy(() =>
   import('./components/HousekeepingPage').then((module) => ({ default: module.HousekeepingPage })),
 );
+const MaintenancePage = lazy(() =>
+  import('./components/MaintenancePage').then((module) => ({ default: module.MaintenancePage })),
+);
+const LinenPage = lazy(() =>
+  import('./components/LinenPage').then((module) => ({ default: module.LinenPage })),
+);
+const FinancePage = lazy(() =>
+  import('./components/FinancePage').then((module) => ({ default: module.FinancePage })),
+);
+const InventoryPage = lazy(() =>
+  import('./components/InventoryPage').then((module) => ({ default: module.InventoryPage })),
+);
+const IcalPage = lazy(() =>
+  import('./components/IcalPage').then((module) => ({ default: module.IcalPage })),
+);
 const PricingPage = lazy(() =>
   import('./components/PricingPage').then((module) => ({ default: module.PricingPage })),
+);
+const SubscriptionPricingPage = lazy(() =>
+  import('./components/SubscriptionPricingPage').then((module) => ({ default: module.SubscriptionPricingPage })),
 );
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const AutoLinkGenerator = lazy(() =>
@@ -330,6 +348,12 @@ function App() {
               hostId={user.id}
               onOpenReservation={openReservationFromDashboard}
               onNavigateToHousekeeping={() => navigateToPage('housekeeping')}
+              onNavigateToMaintenance={() => navigateToPage('maintenance')}
+              onNavigateToLinen={() => navigateToPage('linen')}
+              onNavigateToFinance={() => navigateToPage('finance')}
+              onNavigateToIcal={() => navigateToPage('ical')}
+              onNavigateToInventory={() => navigateToPage('inventory')}
+              onNavigateToPricing={() => navigateToPage('pricing-engine')}
             />
           ) : null}
 
@@ -403,7 +427,7 @@ function App() {
             <SettingsPage />
           ) : null}
 
-          {!autoLinkPropertyId && currentPage === 'pricing' ? <PricingPage /> : null}
+          {!autoLinkPropertyId && currentPage === 'pricing' ? <SubscriptionPricingPage /> : null}
 
           {!autoLinkPropertyId && currentPage === 'blacklist' ? (
             <BlacklistPage hostId={user.id} />
@@ -423,6 +447,43 @@ function App() {
               properties={properties}
               reservations={reservations}
             />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'maintenance' ? (
+            <MaintenancePage
+              hostId={user.id}
+              properties={properties}
+              reservations={reservations}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'linen' ? (
+            <LinenPage
+              hostId={user.id}
+              properties={properties}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'finance' ? (
+            <FinancePage hostId={user.id} />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'inventory' ? (
+            <InventoryPage
+              hostId={user.id}
+              properties={properties}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'ical' ? (
+            <IcalPage
+              hostId={user.id}
+              properties={properties}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'pricing-engine' ? (
+            <PricingPage hostId={user.id} />
           ) : null}
         </main>
       </div>

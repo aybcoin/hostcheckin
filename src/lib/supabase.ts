@@ -40,6 +40,8 @@ export interface Property {
   verification_mode?: 'simple' | 'complete';
   auto_link_active?: boolean;
   auto_link_regenerated_at?: string | null;
+  base_nightly_rate?: number | null;
+  pricing_currency?: string;
   image_url?: string;
   created_at: string;
   updated_at: string;
@@ -62,19 +64,27 @@ export interface Guest {
 export interface Reservation {
   id: string;
   property_id: string;
-  guest_id: string;
+  /**
+   * FK to guests. NULL allowed for reservations imported from external sources (iCal sync)
+   * before the host enriches them with guest details.
+   */
+  guest_id: string | null;
   check_in_date: string;
   check_out_date: string;
   number_of_guests: number;
   booking_reference: string;
   unique_link: string;
   status: 'pending' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
+  total_amount?: number | null;
   verification_type?: 'simple' | 'complete';
   verification_mode?: 'simple' | 'complete';
   smart_lock_code?: string | null;
   guest_rating?: number;
   cancelled_at?: string;
-  notes?: string;
+  notes?: string | null;
+  external_source?: 'manual' | 'airbnb' | 'booking' | 'vrbo' | 'other' | null;
+  external_uid?: string | null;
+  external_feed_id?: string | null;
   created_at: string;
   updated_at: string;
 }

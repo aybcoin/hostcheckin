@@ -1,5 +1,6 @@
 import { clsx } from '../../lib/clsx';
-import { stateFillTokens, textTokens } from '../../lib/design-tokens';
+import { chipTokens, stateFillTokens, textTokens } from '../../lib/design-tokens';
+import { fr } from '../../lib/i18n/fr';
 import { Card } from '../ui/Card';
 
 interface PricingToggleProps {
@@ -13,27 +14,25 @@ export function PricingToggle({ billingCycle, onChange }: PricingToggleProps) {
       <button
         type="button"
         onClick={() => onChange('monthly')}
-        className={clsx(`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-          billingCycle === 'monthly'
-            ? 'bg-current text-white'
-            : 'hover:bg-white/70'
-        }`, billingCycle === 'monthly' ? textTokens.title : textTokens.muted)}
+        className={clsx(
+          'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+          billingCycle === 'monthly' ? chipTokens.active : chipTokens.primary,
+        )}
       >
-        Mensuel
+        {fr.subscriptionPricing.monthly}
       </button>
       <button
         type="button"
         onClick={() => onChange('yearly')}
-        className={clsx(`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-          billingCycle === 'yearly'
-            ? 'bg-current text-white'
-            : 'hover:bg-white/70'
-        }`, billingCycle === 'yearly' ? textTokens.title : textTokens.muted)}
+        className={clsx(
+          'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+          billingCycle === 'yearly' ? chipTokens.active : chipTokens.primary,
+        )}
       >
-        Annuel
+        {fr.subscriptionPricing.yearly}
       </button>
       <span className={clsx('ml-2 rounded-full px-2.5 py-1 text-xs font-semibold', stateFillTokens.warning, textTokens.warning)}>
-        Économisez 20 %
+        {fr.subscriptionPricing.saveBadge}
       </span>
     </Card>
   );

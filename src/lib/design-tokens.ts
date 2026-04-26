@@ -52,6 +52,28 @@ export const stateFillTokens = {
   neutral: "bg-slate-200",
 } as const;
 
+export const chartTokens = {
+  revenue: 'fill-emerald-500',
+  revenueStroke: 'stroke-emerald-500',
+  expenses: 'fill-red-500',
+  expensesStroke: 'stroke-red-500',
+  net: 'fill-slate-700',
+  netStroke: 'stroke-slate-700',
+  axis: 'stroke-slate-300',
+  grid: 'stroke-slate-200',
+  donutSlices: [
+    'stroke-emerald-500',
+    'stroke-red-500',
+    'stroke-slate-700',
+    'stroke-sky-500',
+    'stroke-amber-500',
+    'stroke-indigo-500',
+    'stroke-teal-500',
+    'stroke-rose-500',
+    'stroke-orange-500',
+  ],
+} as const;
+
 export const ctaTokens = {
   primary:
     "bg-slate-900 text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2",

@@ -5,7 +5,13 @@ import { fr } from '../lib/i18n/fr';
 import type { Host } from '../lib/supabase';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { ActivityTimeline } from './dashboard/ActivityTimeline';
+import { FinanceSnapshotCard } from './dashboard/FinanceSnapshotCard';
 import { HousekeepingTodayCard } from './dashboard/HousekeepingTodayCard';
+import { IcalSyncCard } from './dashboard/IcalSyncCard';
+import { InventoryLowStockCard } from './dashboard/InventoryLowStockCard';
+import { LinenLowStockCard } from './dashboard/LinenLowStockCard';
+import { MaintenanceUrgentCard } from './dashboard/MaintenanceUrgentCard';
+import { PricingHealthCard } from './dashboard/PricingHealthCard';
 import { TodaySection } from './dashboard/TodaySection';
 import { WeekSection } from './dashboard/WeekSection';
 import { TrustBar } from './trust/TrustBar';
@@ -19,6 +25,12 @@ interface DashboardPageProps {
   hostId: string;
   onOpenReservation: (reservationId: string) => void;
   onNavigateToHousekeeping: () => void;
+  onNavigateToMaintenance: () => void;
+  onNavigateToLinen: () => void;
+  onNavigateToFinance: () => void;
+  onNavigateToIcal: () => void;
+  onNavigateToInventory: () => void;
+  onNavigateToPricing: () => void;
 }
 
 function TodaySectionSkeleton() {
@@ -115,7 +127,18 @@ function LiveBadge({
   );
 }
 
-export function DashboardPage({ host, hostId, onOpenReservation, onNavigateToHousekeeping }: DashboardPageProps) {
+export function DashboardPage({
+  host,
+  hostId,
+  onOpenReservation,
+  onNavigateToHousekeeping,
+  onNavigateToMaintenance,
+  onNavigateToLinen,
+  onNavigateToFinance,
+  onNavigateToIcal,
+  onNavigateToInventory,
+  onNavigateToPricing,
+}: DashboardPageProps) {
   const {
     todayItems,
     weekItems,
@@ -175,6 +198,12 @@ export function DashboardPage({ host, hostId, onOpenReservation, onNavigateToHou
         <>
           <TodaySection items={todayItems} onAction={handleAction} />
           <HousekeepingTodayCard hostId={hostId} onSeeAll={onNavigateToHousekeeping} />
+          <MaintenanceUrgentCard hostId={hostId} onSeeAll={onNavigateToMaintenance} />
+          <LinenLowStockCard hostId={hostId} onSeeAll={onNavigateToLinen} />
+          <FinanceSnapshotCard hostId={hostId} onSeeAll={onNavigateToFinance} />
+          <IcalSyncCard hostId={hostId} onSeeAll={onNavigateToIcal} />
+          <PricingHealthCard hostId={hostId} onSeeAll={onNavigateToPricing} />
+          <InventoryLowStockCard hostId={hostId} onSeeAll={onNavigateToInventory} />
           <WeekSection items={weekItems} onAction={handleAction} />
           <ActivityTimeline events={timeline} />
         </>

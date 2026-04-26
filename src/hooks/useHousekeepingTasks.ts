@@ -130,8 +130,8 @@ export function useHousekeepingTasks(hostId: string | null): UseHousekeepingTask
         if (tasksRes.error) throw tasksRes.error;
         if (reservationsRes.error) throw reservationsRes.error;
 
-        setRawTasks((tasksRes.data || []) as RawTaskRow[]);
-        setReservations((reservationsRes.data || []) as typeof reservations);
+        setRawTasks((tasksRes.data || []) as unknown as RawTaskRow[]);
+        setReservations((reservationsRes.data || []) as unknown as typeof reservations);
         setError(null);
       } catch (fetchError) {
         console.error('[useHousekeepingTasks] Failed to load tasks:', fetchError);

@@ -199,7 +199,7 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
                   </span>
                 </div>
               </div>
-              {guests[selectedReservation.guest_id] && (
+              {selectedReservation.guest_id && guests[selectedReservation.guest_id] && (
                 <Card variant="ghost" padding="sm">
                   <p className={clsx('text-xs mb-1', textTokens.subtle)}>{fr.calendar.fields.guest}</p>
                   <p className={clsx('text-sm font-medium', textTokens.title)}>{guests[selectedReservation.guest_id].full_name}</p>

@@ -189,7 +189,7 @@ export function useDashboardSignals({ reservations, properties }: UseDashboardSi
 
       return {
         reservation,
-        guestName: payload.guestNameById[reservation.guest_id] || 'Voyageur',
+        guestName: (reservation.guest_id ? payload.guestNameById[reservation.guest_id] : undefined) || 'Voyageur',
         propertyName: propertyNameById.get(reservation.property_id) || 'Logement',
         verification,
         contract,

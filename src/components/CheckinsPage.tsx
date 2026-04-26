@@ -184,7 +184,7 @@ export function CheckinsPage({
 
               <CheckinMessageTemplates
                 checkinLink={`${APP_BASE_URL}/checkin/${reservation.unique_link}`}
-                guestName={guestNames[reservation.guest_id] || fr.app.guestFallbackName}
+                guestName={(reservation.guest_id ? guestNames[reservation.guest_id] : undefined) || fr.app.guestFallbackName}
                 propertyName={getPropertyName(reservation.property_id)}
                 smartLockCode={reservation.smart_lock_code}
               />

@@ -7,6 +7,12 @@ export type AppPage =
   | 'calendar'
   | 'contracts'
   | 'housekeeping'
+  | 'maintenance'
+  | 'linen'
+  | 'finance'
+  | 'inventory'
+  | 'ical'
+  | 'pricing-engine'
   | 'profile'
   | 'settings'
   | 'pricing'
@@ -24,6 +30,12 @@ export const APP_PAGE_PATHS: Record<AppPage, string> = {
   calendar: '/calendar',
   contracts: '/contracts',
   housekeeping: '/menage',
+  maintenance: '/maintenance',
+  linen: '/linge',
+  finance: '/finance',
+  inventory: '/inventaire',
+  ical: '/calendriers',
+  'pricing-engine': '/tarification',
   profile: '/profil',
   settings: '/parametres',
   pricing: '/pricing',
