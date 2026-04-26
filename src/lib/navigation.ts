@@ -1,6 +1,7 @@
 export type AppPage =
   | 'dashboard'
   | 'portfolio'
+  | 'analytics'
   | 'properties'
   | 'reservations'
   | 'checkins'
@@ -26,6 +27,7 @@ export type AppPage =
 export const APP_PAGE_PATHS: Record<AppPage, string> = {
   dashboard: '/',
   portfolio: '/portefeuille',
+  analytics: '/analytics',
   properties: '/properties',
   reservations: '/reservations',
   checkins: '/checkins',

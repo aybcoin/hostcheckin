@@ -13,6 +13,7 @@ import { InventoryLowStockCard } from './dashboard/InventoryLowStockCard';
 import { LinenLowStockCard } from './dashboard/LinenLowStockCard';
 import { MaintenanceUrgentCard } from './dashboard/MaintenanceUrgentCard';
 import { MessagingHealthCard } from './dashboard/MessagingHealthCard';
+import { AnalyticsSnapshotCard } from './dashboard/AnalyticsSnapshotCard';
 import { PricingHealthCard } from './dashboard/PricingHealthCard';
 import { TodaySection } from './dashboard/TodaySection';
 import { WeekSection } from './dashboard/WeekSection';
@@ -39,6 +40,7 @@ interface DashboardPageProps {
   onNavigateToInventory: () => void;
   onNavigateToPricing: () => void;
   onNavigateToMessaging: () => void;
+  onNavigateToAnalytics?: () => void;
 }
 
 function TodaySectionSkeleton() {
@@ -151,6 +153,7 @@ export function DashboardPage({
   onNavigateToInventory,
   onNavigateToPricing,
   onNavigateToMessaging,
+  onNavigateToAnalytics,
 }: DashboardPageProps) {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(initialPropertyId);
   const {
@@ -250,6 +253,9 @@ export function DashboardPage({
           <IcalSyncCard hostId={hostId} onSeeAll={onNavigateToIcal} />
           <PricingHealthCard hostId={hostId} onSeeAll={onNavigateToPricing} />
           <MessagingHealthCard hostId={hostId} onSeeAll={onNavigateToMessaging} />
+          {onNavigateToAnalytics ? (
+            <AnalyticsSnapshotCard hostId={hostId} onSeeAll={onNavigateToAnalytics} />
+          ) : null}
           <InventoryLowStockCard hostId={hostId} propertyId={selectedPropertyId} onSeeAll={onNavigateToInventory} />
           <WeekSection items={weekItems} onAction={handleAction} />
           <ActivityTimeline events={timeline} />
