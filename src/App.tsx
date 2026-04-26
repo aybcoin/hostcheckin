@@ -16,6 +16,7 @@ import { APP_PAGE_PATHS, AppPage } from './lib/navigation';
 const DashboardPage = lazy(() =>
   import('./components/DashboardPage').then((module) => ({ default: module.DashboardPage })),
 );
+const PropertiesOverviewPage = lazy(() => import('./components/PropertiesOverviewPage'));
 const ReservationsPage = lazy(() =>
   import('./components/ReservationsPage').then((module) => ({ default: module.ReservationsPage })),
 );
@@ -69,6 +70,9 @@ const IcalPage = lazy(() =>
 );
 const PricingPage = lazy(() =>
   import('./components/PricingPage').then((module) => ({ default: module.PricingPage })),
+);
+const MessagingPage = lazy(() =>
+  import('./components/MessagingPage').then((module) => ({ default: module.MessagingPage })),
 );
 const SubscriptionPricingPage = lazy(() =>
   import('./components/SubscriptionPricingPage').then((module) => ({ default: module.SubscriptionPricingPage })),
@@ -126,6 +130,7 @@ function App() {
   const [guestPortalToken, setGuestPortalToken] = useState<string | null>(null);
   const [autoLinkPropertyId, setAutoLinkPropertyId] = useState<string | null>(null);
   const [focusedReservationId, setFocusedReservationId] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
 
   const applyRoute = useCallback((pathname: string, search: string = '') => {
     const params = new URLSearchParams(search);
@@ -346,7 +351,11 @@ function App() {
             <DashboardPage
               host={host}
               hostId={user.id}
+              properties={properties}
+              initialPropertyId={selectedPropertyId}
               onOpenReservation={openReservationFromDashboard}
+              onSelectedPropertyIdChange={setSelectedPropertyId}
+              onNavigateToPortfolio={() => navigateToPage('portfolio')}
               onNavigateToHousekeeping={() => navigateToPage('housekeeping')}
               onNavigateToMaintenance={() => navigateToPage('maintenance')}
               onNavigateToLinen={() => navigateToPage('linen')}
@@ -354,6 +363,17 @@ function App() {
               onNavigateToIcal={() => navigateToPage('ical')}
               onNavigateToInventory={() => navigateToPage('inventory')}
               onNavigateToPricing={() => navigateToPage('pricing-engine')}
+              onNavigateToMessaging={() => navigateToPage('messaging')}
+            />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'portfolio' ? (
+            <PropertiesOverviewPage
+              hostId={user.id}
+              onNavigateToDashboard={(propertyId) => {
+                setSelectedPropertyId(propertyId);
+                navigateToPage('dashboard');
+              }}
             />
           ) : null}
 
@@ -484,6 +504,10 @@ function App() {
 
           {!autoLinkPropertyId && currentPage === 'pricing-engine' ? (
             <PricingPage hostId={user.id} />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'messaging' ? (
+            <MessagingPage hostId={user.id} />
           ) : null}
         </main>
       </div>

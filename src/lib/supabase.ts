@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { MessageLocale } from '../types/messaging';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -55,6 +56,7 @@ export interface Guest {
   full_name: string;
   phone?: string;
   country?: string;
+  preferred_locale?: MessageLocale | null;
   date_of_birth?: string;
   profile_image_url?: string;
   created_at: string;

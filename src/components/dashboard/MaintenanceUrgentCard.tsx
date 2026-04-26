@@ -25,6 +25,7 @@ import { Skeleton } from '../ui/Skeleton';
 interface MaintenanceUrgentCardProps {
   hostId: string;
   onSeeAll: () => void;
+  propertyId?: string | null;
 }
 
 const CATEGORY_ICON: Record<MaintenanceCategory, LucideIcon> = {
@@ -37,10 +38,11 @@ const CATEGORY_ICON: Record<MaintenanceCategory, LucideIcon> = {
   other: Wrench,
 };
 
-export function MaintenanceUrgentCard({ hostId, onSeeAll }: MaintenanceUrgentCardProps) {
+export function MaintenanceUrgentCard({ hostId, onSeeAll, propertyId }: MaintenanceUrgentCardProps) {
   const { tickets, loading } = useMaintenanceTickets(hostId);
-  const urgentItems = computeUrgentTickets(tickets, 4);
-  const summary = computeMaintenanceSummary(tickets);
+  const filteredTickets = tickets.filter((ticket) => !propertyId || ticket.property_id === propertyId);
+  const urgentItems = computeUrgentTickets(filteredTickets, 4);
+  const summary = computeMaintenanceSummary(filteredTickets);
 
   return (
     <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>

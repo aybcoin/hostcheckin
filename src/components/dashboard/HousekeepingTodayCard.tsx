@@ -14,12 +14,14 @@ import { Skeleton } from '../ui/Skeleton';
 interface HousekeepingTodayCardProps {
   hostId: string;
   onSeeAll: () => void;
+  propertyId?: string | null;
 }
 
-export function HousekeepingTodayCard({ hostId, onSeeAll }: HousekeepingTodayCardProps) {
+export function HousekeepingTodayCard({ hostId, onSeeAll, propertyId }: HousekeepingTodayCardProps) {
   const { tasks, loading } = useHousekeepingTasks(hostId);
-  const todayItems = computeHousekeepingToday(tasks, new Date(), 4);
-  const summary = computeHousekeepingSummary(tasks);
+  const filteredTasks = tasks.filter((task) => !propertyId || task.property_id === propertyId);
+  const todayItems = computeHousekeepingToday(filteredTasks, new Date(), 4);
+  const summary = computeHousekeepingSummary(filteredTasks);
 
   return (
     <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>

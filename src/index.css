@@ -16,9 +16,26 @@
   animation: slide-in-right 0.2s ease-out;
 }
 
+/* Focus ring brand-aligned (indigo accent — matches ctaTokens.primary) */
 :focus-visible {
-  outline: 2px solid #0f172a;
+  outline: 2px solid #4F46E5;
   outline-offset: 2px;
+}
+
+/* Plus Jakarta Sans font-feature optimizations */
+body {
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reduced motion — respect OS preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .secure-document-preview::after {

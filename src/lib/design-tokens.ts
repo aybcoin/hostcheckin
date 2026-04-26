@@ -27,12 +27,12 @@ export const textTokens = {
 } as const;
 
 export const surfaceTokens = {
-  app: "bg-slate-100",
+  app: "bg-slate-50",
   panel: "bg-white",
   subtle: "bg-slate-50",
   muted: "bg-slate-100",
   elevated: "bg-slate-200",
-  overlay: "bg-slate-950/55",
+  overlay: "bg-slate-950/60",
 } as const;
 
 export const borderTokens = {
@@ -76,16 +76,16 @@ export const chartTokens = {
 
 export const ctaTokens = {
   primary:
-    "bg-slate-900 text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2",
+    "bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2",
   secondary:
-    "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2",
+    "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2",
   tertiary:
-    "bg-transparent text-slate-700 hover:text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2",
+    "bg-transparent text-slate-600 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2",
   destructive:
     "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
   warning: warningTokens.cta,
   subtle:
-    "bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2",
+    "bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2",
   success:
     "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2",
   danger:
@@ -96,10 +96,11 @@ export const ctaTokens = {
 
 export const cardTokens = {
   base: "rounded-xl border border-slate-200",
+  elevated: "bg-white shadow-sm shadow-slate-200/60",
   radius: "rounded-xl",
   variants: {
     default: "bg-white",
-    highlight: "bg-white shadow-sm",
+    highlight: "bg-white shadow-md shadow-slate-200/80",
     danger: "border-red-200 bg-red-50",
     warning: warningTokens.card,
     info: infoTokens.card,
@@ -111,17 +112,17 @@ export const cardTokens = {
     lg: "p-6",
   },
   interactive:
-    "transition-shadow duration-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-slate-300",
+    "transition-all duration-200 hover:shadow-md hover:shadow-slate-200/70 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-indigo-200",
 } as const;
 
 export const chipTokens = {
-  primary: "bg-slate-100 text-slate-700 border border-slate-200",
-  active: "bg-slate-900 text-white border border-slate-900",
+  primary: "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition-colors duration-150",
+  active: "bg-indigo-600 text-white border border-indigo-600",
 } as const;
 
 export const statusTokens = {
   pending: "border border-amber-200 bg-amber-50 text-amber-800",
-  success: "border border-slate-300 bg-slate-100 text-slate-800",
+  success: "border border-emerald-200 bg-emerald-50 text-emerald-800",
   neutral: "border border-slate-200 bg-slate-50 text-slate-700",
   warning: warningTokens.status,
   info: infoTokens.status,
@@ -142,4 +143,36 @@ export const modalTokens = {
   overlay: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4",
   panel:
     "w-full max-h-[90vh] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl",
+} as const;
+
+/**
+ * Couleur accent de la marque HostCheckIn (Indigo).
+ * Utiliser pour les éléments de mise en valeur, indicateurs actifs,
+ * liens texte et états de sélection.
+ */
+export const accentTokens = {
+  bg: "bg-indigo-600",
+  bgLight: "bg-indigo-50",
+  bgHover: "hover:bg-indigo-700",
+  text: "text-indigo-600",
+  textDark: "text-indigo-700",
+  border: "border-indigo-300",
+  borderLight: "border-indigo-200",
+  ring: "ring-indigo-400",
+  badge: "border border-indigo-200 bg-indigo-50 text-indigo-700",
+  activeNavBorder: "border-indigo-600",
+  activeNavText: "text-indigo-700",
+} as const;
+
+/**
+ * Durées de transition standardisées.
+ * Utiliser systématiquement pour garantir une sensation de mouvement cohérente.
+ */
+export const transitionTokens = {
+  fast: "transition-all duration-150 ease-out",
+  base: "transition-all duration-200 ease-out",
+  slow: "transition-all duration-300 ease-out",
+  color: "transition-colors duration-150 ease-out",
+  shadow: "transition-shadow duration-200 ease-out",
+  transform: "transition-transform duration-200 ease-out",
 } as const;

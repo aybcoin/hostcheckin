@@ -15,7 +15,12 @@ interface NotificationPayload {
   hostEmail: string;
   hostPhone?: string;
   senderName: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  smartLockCode?: string;
 }
+
+type MessageLocale = 'fr' | 'en' | 'ar' | 'darija';
 
 type DeliveryStatus = 'sent' | 'failed' | 'pending' | 'skipped';
 
@@ -53,6 +58,27 @@ interface NotificationLogInsert {
   error: string | null;
 }
 
+interface MessageTemplateRow {
+  id: string;
+  host_id: string;
+  trigger: Trigger;
+  channel: SendChannel;
+  locale: MessageLocale;
+  subject: string | null;
+  body: string;
+  is_active: boolean;
+  is_default: boolean;
+}
+
+interface ReservationTemplateContext {
+  host_id: string;
+  guest_country: string | null;
+  guest_preferred_locale: MessageLocale | null;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  smart_lock_code: string | null;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -66,6 +92,8 @@ const ALLOWED_TRIGGERS: Trigger[] = [
   'contract_signed',
   'verification_complete',
 ];
+
+const PLACEHOLDER_PATTERN = /\{([a-z0-9_]+)\}/gi;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -163,6 +191,123 @@ function buildEmailSubject(payload: NotificationPayload): string {
   }
 }
 
+function normalizeCountry(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase();
+}
+
+function detectLocaleFromCountry(country: string | null | undefined): MessageLocale | null {
+  const normalized = normalizeCountry(country);
+
+  if (!normalized) return null;
+
+  if ([
+    'maroc',
+    'morocco',
+    'المغرب',
+  ].includes(normalized)) {
+    return 'darija';
+  }
+
+  if ([
+    'france',
+    'fr',
+  ].includes(normalized)) {
+    return 'fr';
+  }
+
+  if ([
+    'united kingdom',
+    'uk',
+    'england',
+    'ireland',
+    'united states',
+    'usa',
+    'canada',
+  ].includes(normalized)) {
+    return 'en';
+  }
+
+  if ([
+    'saudi arabia',
+    'saudi',
+    'uae',
+    'united arab emirates',
+    'qatar',
+    'egypt',
+    'jordan',
+    'algeria',
+    'tunisia',
+    'arabie saoudite',
+    'الامارات',
+    'السعودية',
+    'مصر',
+  ].includes(normalized)) {
+    return 'ar';
+  }
+
+  return null;
+}
+
+function resolveLocale(context: ReservationTemplateContext | null): MessageLocale {
+  return context?.guest_preferred_locale
+    ?? detectLocaleFromCountry(context?.guest_country)
+    ?? 'fr';
+}
+
+function pickTemplate(
+  templates: MessageTemplateRow[],
+  channel: SendChannel,
+  locale: MessageLocale,
+): MessageTemplateRow | null {
+  const scoped = templates.filter(
+    (template) => template.channel === channel && template.is_active && template.is_default,
+  );
+
+  const exact = scoped.find((template) => template.locale === locale);
+  if (exact) return exact;
+
+  return scoped.find((template) => template.locale === 'fr') ?? null;
+}
+
+function renderText(
+  text: string | null | undefined,
+  variables: Record<string, string | undefined>,
+): string | undefined {
+  if (!text) return undefined;
+
+  return text.replace(PLACEHOLDER_PATTERN, (rawMatch, rawKey: string) => {
+    const key = rawKey.trim();
+    const value = variables[key];
+    return typeof value === 'string' ? value : rawMatch;
+  });
+}
+
+function renderMessageTemplate(
+  template: MessageTemplateRow,
+  variables: Record<string, string | undefined>,
+): { subject?: string; body: string } {
+  return {
+    subject: renderText(template.subject, variables),
+    body: renderText(template.body, variables) ?? '',
+  };
+}
+
+function buildTemplateVariables(
+  payload: NotificationPayload,
+  context: ReservationTemplateContext | null,
+): Record<string, string | undefined> {
+  return {
+    guest_name: payload.guestName,
+    property_name: payload.propertyName,
+    check_in_date: payload.checkinDate,
+    check_out_date: payload.checkoutDate,
+    sender_name: payload.senderName,
+    check_in_time: context?.check_in_time ?? payload.checkInTime,
+    check_out_time: context?.check_out_time ?? payload.checkOutTime,
+    smart_lock_code: context?.smart_lock_code ?? payload.smartLockCode,
+  };
+}
+
 function resolveRecipients(payload: NotificationPayload, channel: SendChannel): string[] {
   const recipients = new Set<string>();
 
@@ -189,6 +334,79 @@ function resolveRecipients(payload: NotificationPayload, channel: SendChannel): 
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+async function fetchReservationTemplateContext(
+  supabase: ReturnType<typeof createClient>,
+  reservationId: string,
+): Promise<ReservationTemplateContext | null> {
+  try {
+    const { data: reservation, error: reservationError } = await supabase
+      .from('reservations')
+      .select('property_id, guest_id, smart_lock_code')
+      .eq('id', reservationId)
+      .maybeSingle();
+
+    if (reservationError || !reservation?.property_id || !reservation?.guest_id) {
+      return null;
+    }
+
+    const [propertyResult, guestResult] = await Promise.all([
+      supabase
+        .from('properties')
+        .select('host_id, check_in_time, check_out_time')
+        .eq('id', reservation.property_id)
+        .maybeSingle(),
+      supabase
+        .from('guests')
+        .select('country, preferred_locale')
+        .eq('id', reservation.guest_id)
+        .maybeSingle(),
+    ]);
+
+    if (propertyResult.error || !propertyResult.data) {
+      return null;
+    }
+
+    return {
+      host_id: propertyResult.data.host_id as string,
+      guest_country: (guestResult.data?.country as string | null | undefined) ?? null,
+      guest_preferred_locale:
+        (guestResult.data?.preferred_locale as MessageLocale | null | undefined) ?? null,
+      check_in_time: (propertyResult.data.check_in_time as string | null | undefined) ?? null,
+      check_out_time: (propertyResult.data.check_out_time as string | null | undefined) ?? null,
+      smart_lock_code: (reservation.smart_lock_code as string | null | undefined) ?? null,
+    };
+  } catch (error) {
+    console.error('Failed to fetch reservation template context', error);
+    return null;
+  }
+}
+
+async function fetchMessageTemplates(
+  supabase: ReturnType<typeof createClient>,
+  hostId: string,
+  trigger: Trigger,
+): Promise<MessageTemplateRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from('message_templates')
+      .select('id, host_id, trigger, channel, locale, subject, body, is_active, is_default')
+      .eq('host_id', hostId)
+      .eq('trigger', trigger)
+      .eq('is_active', true)
+      .eq('is_default', true);
+
+    if (error) {
+      console.error('Failed to fetch message templates', error);
+      return [];
+    }
+
+    return (data ?? []) as MessageTemplateRow[];
+  } catch (error) {
+    console.error('Failed to fetch message templates', error);
+    return [];
+  }
 }
 
 async function insertNotificationLog(
@@ -417,8 +635,14 @@ serve(async (req: Request) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const requestBrevoApiKey = req.headers.get('x-brevo-api-key')?.trim();
   const brevoApiKey = requestBrevoApiKey || Deno.env.get('BREVO_API_KEY');
-  const message = buildNotificationMessage(payload);
-  const subject = buildEmailSubject(payload);
+  const templateContext = isUuid(payload.reservationId)
+    ? await fetchReservationTemplateContext(supabase, payload.reservationId)
+    : null;
+  const resolvedLocale = resolveLocale(templateContext);
+  const messageTemplates = templateContext?.host_id
+    ? await fetchMessageTemplates(supabase, templateContext.host_id, payload.trigger)
+    : [];
+  const templateVariables = buildTemplateVariables(payload, templateContext);
 
   const channels: SendChannel[] = payload.channel === 'both' ? ['email', 'sms'] : [payload.channel];
   const channelResults: ChannelResult[] = [];
@@ -459,6 +683,10 @@ serve(async (req: Request) => {
 
     const outcomes: DeliveryOutcome[] = [];
     const messageIds: string[] = [];
+    const template = pickTemplate(messageTemplates, channel, resolvedLocale);
+    const renderedTemplate = template ? renderMessageTemplate(template, templateVariables) : null;
+    const message = renderedTemplate?.body || buildNotificationMessage(payload);
+    const subject = renderedTemplate?.subject || buildEmailSubject(payload);
 
     for (const recipient of recipients) {
       const outcome = channel === 'email'

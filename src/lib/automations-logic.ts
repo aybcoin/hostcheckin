@@ -3,6 +3,8 @@ import type {
   AutomationTrigger,
   NotificationChannel,
 } from '../types/automations';
+import { renderTemplate } from './messaging-logic';
+import type { MessageTemplate, RenderedMessage } from '../types/messaging';
 
 export interface NotificationMessagePayload {
   guestName: string;
@@ -10,6 +12,9 @@ export interface NotificationMessagePayload {
   checkinDate: string;
   checkoutDate: string;
   senderName: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  smartLockCode?: string;
 }
 
 export interface NotificationPayload {
@@ -26,6 +31,9 @@ export interface NotificationPayload {
   hostEmail: string;
   hostPhone?: string;
   senderName: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  smartLockCode?: string;
 }
 
 const AUTOMATION_TRIGGERS: AutomationTrigger[] = [
@@ -75,6 +83,28 @@ export function buildNotificationMessage(
   payload: NotificationMessagePayload,
 ): string {
   return TEMPLATE_BY_TRIGGER[trigger](payload);
+}
+
+export function buildNotificationTemplateVariables(
+  payload: NotificationMessagePayload,
+): Record<string, string | undefined> {
+  return {
+    guest_name: payload.guestName,
+    property_name: payload.propertyName,
+    check_in_date: payload.checkinDate,
+    check_out_date: payload.checkoutDate,
+    sender_name: payload.senderName,
+    check_in_time: payload.checkInTime,
+    check_out_time: payload.checkOutTime,
+    smart_lock_code: payload.smartLockCode,
+  };
+}
+
+export function buildNotificationMessageFromTemplate(
+  template: Pick<MessageTemplate, 'subject' | 'body'>,
+  variables: Record<string, string | undefined>,
+): RenderedMessage {
+  return renderTemplate(template, variables);
 }
 
 export function getNotificationPayloadValidationErrors(

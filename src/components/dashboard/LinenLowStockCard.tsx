@@ -15,12 +15,14 @@ import { Skeleton } from '../ui/Skeleton';
 interface LinenLowStockCardProps {
   hostId: string;
   onSeeAll: () => void;
+  propertyId?: string | null;
 }
 
-export function LinenLowStockCard({ hostId, onSeeAll }: LinenLowStockCardProps) {
+export function LinenLowStockCard({ hostId, onSeeAll, propertyId }: LinenLowStockCardProps) {
   const { items, loading } = useLinenItems(hostId);
-  const summary = computeLinenSummary(items);
-  const lowStockItems = sortLinenItems(items.filter((item) => isLowStock(item))).slice(0, 4);
+  const filteredItems = items.filter((item) => !propertyId || item.property_id === propertyId);
+  const summary = computeLinenSummary(filteredItems);
+  const lowStockItems = sortLinenItems(filteredItems.filter((item) => isLowStock(item))).slice(0, 4);
   const divideClass = borderTokens.subtle.replace('border-', 'divide-');
 
   return (

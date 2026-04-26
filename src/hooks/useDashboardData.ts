@@ -260,7 +260,7 @@ function computeDashboardPayload(rows: DashboardReservationRow[]): ComputedDashb
   };
 }
 
-export function useDashboardData(): DashboardData {
+export function useDashboardData(propertyId?: string | null): DashboardData {
   const [todayItems, setTodayItems] = useState<TodayItem[]>([]);
   const [weekItems, setWeekItems] = useState<WeekItem[]>([]);
   const [timeline, setTimeline] = useState<ActivityEvent[]>([]);
@@ -276,11 +276,17 @@ export function useDashboardData(): DashboardData {
     }
 
     try {
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('reservations')
         .select('*, properties(name), guests(full_name), contracts(*), verifications:identity_verification(*)')
         .order('check_in_date', { ascending: true })
         .limit(50);
+
+      if (propertyId) {
+        query = query.eq('property_id', propertyId);
+      }
+
+      const { data, error: fetchError } = await query;
 
       if (fetchError) {
         throw fetchError;
@@ -306,7 +312,7 @@ export function useDashboardData(): DashboardData {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [propertyId]);
 
   const refresh = useCallback(() => {
     void fetchDashboardData(true);

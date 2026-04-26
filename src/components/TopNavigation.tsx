@@ -54,6 +54,8 @@ export function TopNavigation({
    */
   const primaryLinks = useMemo<PrimaryLink[]>(
     () => [
+      { id: 'dashboard', label: fr.sidebar.menu.dashboard },
+      { id: 'portfolio', label: fr.topnav.links.portfolio },
       { id: 'reservations', label: fr.topnav.links.reservations, showBadge: true },
       { id: 'properties', label: fr.topnav.links.properties },
       { id: 'housekeeping', label: fr.topnav.links.housekeeping },
@@ -63,6 +65,7 @@ export function TopNavigation({
       { id: 'inventory', label: fr.topnav.links.inventory },
       { id: 'ical', label: fr.topnav.links.ical },
       { id: 'pricing-engine', label: fr.topnav.links.pricingEngine },
+      { id: 'messaging', label: fr.topnav.links.messaging },
       { id: 'contracts', label: fr.topnav.links.documents },
       { id: 'checkins', label: fr.topnav.links.automations },
       { id: 'profile', label: fr.topnav.links.account },

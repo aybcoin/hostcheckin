@@ -1,5 +1,6 @@
 export type AppPage =
   | 'dashboard'
+  | 'portfolio'
   | 'properties'
   | 'reservations'
   | 'checkins'
@@ -13,6 +14,7 @@ export type AppPage =
   | 'inventory'
   | 'ical'
   | 'pricing-engine'
+  | 'messaging'
   | 'profile'
   | 'settings'
   | 'pricing'
@@ -23,6 +25,7 @@ export type AppPage =
 
 export const APP_PAGE_PATHS: Record<AppPage, string> = {
   dashboard: '/',
+  portfolio: '/portefeuille',
   properties: '/properties',
   reservations: '/reservations',
   checkins: '/checkins',
@@ -36,6 +39,7 @@ export const APP_PAGE_PATHS: Record<AppPage, string> = {
   inventory: '/inventaire',
   ical: '/calendriers',
   'pricing-engine': '/tarification',
+  messaging: '/messages',
   profile: '/profil',
   settings: '/parametres',
   pricing: '/pricing',
