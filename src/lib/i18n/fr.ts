@@ -76,6 +76,7 @@ export const fr = {
       billing: "Facturation",
       help: "Centre d'aide",
       logout: "Déconnexion",
+      role: "Propriétaire",
     },
     propertyCard: {
       ariaLabel: "Voir le logement {name}",

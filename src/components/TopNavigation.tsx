@@ -13,6 +13,7 @@ import {
   CalendarDays,
   FileText,
   Home,
+  Hotel,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -42,7 +43,12 @@ import { fr } from '../lib/i18n/fr';
 import type { Property, Reservation } from '../lib/supabase';
 import { Badge } from './ui/Badge';
 
-const UPGRADE_BANNER_DISMISSED_KEY = 'hostcheckin:upgrade-banner-dismissed';
+interface NavBadgeCounts {
+  housekeepingPending?: number;
+  maintenanceUrgent?: number;
+  inventoryLow?: number;
+  propertiesTotal?: number;
+}
 
 interface TopNavigationProps {
   currentPage: AppPage;
@@ -50,6 +56,8 @@ interface TopNavigationProps {
   onLogout: () => void;
   hostName?: string;
   reservationsActionCount?: number;
+  /** Optional badge counts for the operations / portfolio nav items. */
+  navBadgeCounts?: NavBadgeCounts;
   /** Currently focused property to surface in the sidebar context card. */
   activeProperty?: Property | null;
   /** Next or current reservation tied to the active property. */
@@ -221,6 +229,7 @@ interface NavItem {
   label: string;
   icon: LucideIcon;
   badgeCount?: number;
+  badgeVariant?: 'default' | 'urgent';
 }
 
 interface NavGroup {
@@ -276,7 +285,13 @@ function SideNavItem({ item, isActive, onSelect }: SideNavItemProps) {
         />
         <span className="truncate">{item.label}</span>
         {item.badgeCount != null && item.badgeCount > 0 ? (
-          <Badge variant="active" className={clsx('ml-auto shrink-0', sidebarTokens.navBadge)}>
+          <Badge
+            variant="active"
+            className={clsx(
+              'ml-auto shrink-0',
+              item.badgeVariant === 'urgent' ? sidebarTokens.navBadgeUrgent : sidebarTokens.navBadge,
+            )}
+          >
             {item.badgeCount}
           </Badge>
         ) : null}
@@ -312,26 +327,9 @@ function SidebarContent({
   today,
   onSelectProperty,
 }: SidebarContentProps) {
-  const [isUpgradeBannerDismissed, setIsUpgradeBannerDismissed] = useState(() => {
-    try {
-      return window.localStorage.getItem(UPGRADE_BANNER_DISMISSED_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
-
   const handleNavigate = (page: AppPage) => {
     onNavigate(page);
     onClose?.();
-  };
-
-  const dismissUpgradeBanner = () => {
-    setIsUpgradeBannerDismissed(true);
-    try {
-      window.localStorage.setItem(UPGRADE_BANNER_DISMISSED_KEY, 'true');
-    } catch {
-      // Ignore storage failures and only dismiss for the current session.
-    }
   };
 
   return (
@@ -343,7 +341,7 @@ function SidebarContent({
     >
       <div className={clsx('relative flex h-16 shrink-0 items-center gap-3 px-6')}>
         <div className={clsx('flex h-9 w-9 items-center justify-center rounded-xl', sidebarTokens.brandTile)}>
-          <span className={clsx('text-base font-bold', textTokens.inverse)}>H</span>
+          <Hotel size={18} aria-hidden="true" className={textTokens.inverse} />
         </div>
         <p className={clsx('truncate text-lg font-semibold tracking-tight', sidebarTokens.brandText)}>
           {fr.app.brand}
@@ -396,46 +394,6 @@ function SidebarContent({
         </ul>
       </nav>
 
-      {!isUpgradeBannerDismissed ? (
-        <div className="relative shrink-0 px-4 pb-4">
-          <div className={clsx('relative overflow-hidden rounded-[1.5rem] border p-4', sidebarTokens.promoCard)}>
-            <button
-              type="button"
-              onClick={() => handleNavigate('pricing')}
-              className={clsx('flex w-full items-start gap-3 rounded-2xl text-left', sidebarTokens.focusRing)}
-            >
-              <span className={clsx('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full', sidebarTokens.promoIcon)}>
-                <Sparkles size={16} aria-hidden="true" />
-              </span>
-              <span className="min-w-0">
-                <span className={clsx('block text-sm font-semibold', sidebarTokens.promoTitle)}>
-                  {fr.topnav.upgrade}
-                </span>
-                <span className={clsx('mt-1 block text-xs leading-5', sidebarTokens.promoBody)}>
-                  {fr.topnav.upgradeSubtitle}
-                </span>
-              </span>
-            </button>
-            <button
-              type="button"
-              aria-label={fr.a11y.close}
-              onClick={(event) => {
-                event.stopPropagation();
-                dismissUpgradeBanner();
-              }}
-              className={clsx(
-                'absolute right-2 top-2 rounded-xl p-1.5',
-                transitionTokens.color,
-                sidebarTokens.closeButton,
-                sidebarTokens.focusRing,
-              )}
-            >
-              <X size={14} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      ) : null}
-
       <div className={clsx('relative shrink-0 px-4 py-4', sidebarTokens.userPanel)}>
         <div className="flex items-center gap-3">
           <button
@@ -452,7 +410,7 @@ function SidebarContent({
                 {hostName ?? fr.app.hostFallbackName}
               </p>
               <p className={clsx('truncate text-xs leading-tight', sidebarTokens.userMeta)}>
-                {fr.topnav.userMenu.profile}
+                {fr.topnav.userMenu.role}
               </p>
             </div>
           </button>
@@ -483,6 +441,7 @@ export function TopNavigation({
   onLogout,
   hostName,
   reservationsActionCount = 0,
+  navBadgeCounts,
   activeProperty,
   activeReservation,
   today,
@@ -504,11 +463,17 @@ export function TopNavigation({
       label: fr.topnav.groups.operations,
       items: [
         { id: 'reservations', label: fr.topnav.links.reservations, icon: Calendar, badgeCount: reservationsActionCount },
-        { id: 'properties', label: fr.topnav.links.properties, icon: Home },
-        { id: 'housekeeping', label: fr.topnav.links.housekeeping, icon: Sparkles },
-        { id: 'maintenance', label: fr.topnav.links.maintenance, icon: Wrench },
+        { id: 'properties', label: fr.topnav.links.properties, icon: Home, badgeCount: navBadgeCounts?.propertiesTotal },
+        { id: 'housekeeping', label: fr.topnav.links.housekeeping, icon: Sparkles, badgeCount: navBadgeCounts?.housekeepingPending },
+        {
+          id: 'maintenance',
+          label: fr.topnav.links.maintenance,
+          icon: Wrench,
+          badgeCount: navBadgeCounts?.maintenanceUrgent,
+          badgeVariant: navBadgeCounts?.maintenanceUrgent ? 'urgent' : 'default',
+        },
         { id: 'linen', label: fr.topnav.links.linen, icon: Wind },
-        { id: 'inventory', label: fr.topnav.links.inventory, icon: Package },
+        { id: 'inventory', label: fr.topnav.links.inventory, icon: Package, badgeCount: navBadgeCounts?.inventoryLow },
       ],
     },
     {

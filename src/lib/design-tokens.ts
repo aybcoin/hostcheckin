@@ -235,7 +235,8 @@ export const sidebarTokens = {
   navItemActive: "bg-white/[0.06] text-white font-semibold",
   navIcon: "text-slate-500 group-hover:text-slate-200",
   navIconActive: "text-emerald-400",
-  navBadge: "bg-emerald-500 text-slate-950 border-transparent",
+  navBadge: "bg-rose-500/15 text-rose-300 border border-rose-400/30",
+  navBadgeUrgent: "bg-red-500 text-white border border-red-500",
   promoCard:
     "border border-emerald-500/20 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800",
   promoIcon: "bg-white/20 text-white",

@@ -4,6 +4,7 @@ import { borderTokens, surfaceTokens, textTokens } from './lib/design-tokens';
 import { useAuth } from './hooks/useAuth';
 import { useHost } from './hooks/useHost';
 import { useOnboarding } from './hooks/useOnboarding';
+import { useNavBadgeCounts } from './hooks/useNavBadgeCounts';
 import { useProperties } from './hooks/useProperties';
 import { useReservations } from './hooks/useReservations';
 import { AuthForm } from './components/AuthForm';
@@ -126,6 +127,7 @@ function App() {
     updateReservation,
     deleteReservation,
   } = useReservations();
+  const navBadgeCounts = useNavBadgeCounts(user?.id ?? null);
 
   const [currentPage, setCurrentPage] = useState<AppPage>('dashboard');
   const [verificationLink, setVerificationLink] = useState<string | null>(null);
@@ -370,6 +372,12 @@ function App() {
           onLogout={handleSignOut}
           hostName={host?.full_name}
           reservationsActionCount={reservationsActionCount}
+          navBadgeCounts={{
+            propertiesTotal: properties.length,
+            housekeepingPending: navBadgeCounts.housekeepingPending,
+            maintenanceUrgent: navBadgeCounts.maintenanceUrgent,
+            inventoryLow: navBadgeCounts.inventoryLow,
+          }}
           activeProperty={sidebarActiveProperty}
           activeReservation={sidebarActiveReservation}
           onSelectProperty={handleSelectSidebarProperty}
