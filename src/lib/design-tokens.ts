@@ -1,6 +1,19 @@
+/**
+ * HostCheckIn — Design tokens
+ *
+ * Direction: "Hospitality Editorial" — luxe sobre inspiré des marques d'hôtellerie
+ * de prestige (Aman, Soho House, Aesop). Crème chaud + émeraude profond +
+ * Plus Jakarta Sans (corps) + Fraunces (display sérif éditorial).
+ *
+ * Règles :
+ * - 0 couleur hardcodée hors de ce fichier.
+ * - Palette stone (chaude) pour surfaces/bordures, slate pour texte.
+ * - Émeraude pour la marque (actions primaires, éléments actifs).
+ */
+
 export const warningTokens = {
   cta:
-    "bg-amber-500 text-white hover:bg-amber-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2",
+    "bg-amber-600 text-white hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2",
   status: "border border-amber-200 bg-amber-50 text-amber-800",
   badge: "border border-amber-200 bg-amber-50 text-amber-700",
   card: "border-amber-200 bg-amber-50",
@@ -8,7 +21,7 @@ export const warningTokens = {
 
 export const infoTokens = {
   cta:
-    "bg-sky-600 text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2",
+    "bg-sky-700 text-white hover:bg-sky-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2",
   status: "border border-sky-200 bg-sky-50 text-sky-800",
   badge: "border border-sky-200 bg-sky-50 text-sky-700",
   card: "border-sky-200 bg-sky-50",
@@ -27,18 +40,18 @@ export const textTokens = {
 } as const;
 
 export const surfaceTokens = {
-  app: "bg-slate-50",
+  app: "bg-stone-50",
   panel: "bg-white",
-  subtle: "bg-slate-50",
-  muted: "bg-slate-100",
-  elevated: "bg-slate-200",
-  overlay: "bg-slate-950/60",
+  subtle: "bg-stone-50",
+  muted: "bg-stone-100",
+  elevated: "bg-stone-200",
+  overlay: "bg-stone-950/60 backdrop-blur-sm",
 } as const;
 
 export const borderTokens = {
-  default: "border-slate-200",
-  subtle: "border-slate-100",
-  strong: "border-slate-300",
+  default: "border-stone-200",
+  subtle: "border-stone-100",
+  strong: "border-stone-300",
   danger: "border-red-200",
   warning: "border-amber-200",
   success: "border-emerald-200",
@@ -49,25 +62,25 @@ export const stateFillTokens = {
   success: "bg-emerald-100",
   warning: "bg-amber-100",
   danger: "bg-red-100",
-  neutral: "bg-slate-200",
+  neutral: "bg-stone-200",
 } as const;
 
 export const chartTokens = {
-  revenue: 'fill-emerald-500',
-  revenueStroke: 'stroke-emerald-500',
+  revenue: 'fill-emerald-600',
+  revenueStroke: 'stroke-emerald-600',
   expenses: 'fill-red-500',
   expensesStroke: 'stroke-red-500',
   net: 'fill-slate-700',
   netStroke: 'stroke-slate-700',
-  axis: 'stroke-slate-300',
-  grid: 'stroke-slate-200',
+  axis: 'stroke-stone-300',
+  grid: 'stroke-stone-200',
   donutSlices: [
-    'stroke-emerald-500',
+    'stroke-emerald-600',
     'stroke-red-500',
     'stroke-slate-700',
-    'stroke-sky-500',
     'stroke-amber-500',
-    'stroke-indigo-500',
+    'stroke-sky-500',
+    'stroke-stone-500',
     'stroke-teal-500',
     'stroke-rose-500',
     'stroke-orange-500',
@@ -76,54 +89,56 @@ export const chartTokens = {
 
 export const ctaTokens = {
   primary:
-    "bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2",
+    "bg-emerald-700 text-white hover:bg-emerald-800 active:bg-emerald-900 shadow-sm shadow-emerald-900/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2",
   secondary:
-    "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2",
+    "border border-stone-300 bg-white text-slate-800 hover:bg-stone-50 hover:border-stone-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2",
   tertiary:
-    "bg-transparent text-slate-600 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2",
+    "bg-transparent text-slate-600 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2",
   destructive:
-    "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
+    "bg-red-700 text-white hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
   warning: warningTokens.cta,
   subtle:
-    "bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2",
+    "bg-stone-100 text-slate-700 hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2",
   success:
-    "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2",
+    "bg-emerald-700 text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2",
   danger:
-    "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
+    "bg-red-700 text-white hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
   dangerSoft:
     "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2",
 } as const;
 
 export const cardTokens = {
-  base: "rounded-xl border border-slate-200",
-  elevated: "bg-white shadow-sm shadow-slate-200/60",
-  radius: "rounded-xl",
+  base: "rounded-2xl border border-stone-200",
+  elevated: "bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-4px_rgba(15,23,42,0.06)]",
+  radius: "rounded-2xl",
   variants: {
     default: "bg-white",
-    highlight: "bg-white shadow-md shadow-slate-200/80",
+    highlight:
+      "bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-8px_rgba(15,23,42,0.08)]",
     danger: "border-red-200 bg-red-50",
     warning: warningTokens.card,
     info: infoTokens.card,
-    ghost: "bg-slate-50",
+    ghost: "bg-stone-50",
   },
   padding: {
-    sm: "p-3",
-    md: "p-5",
-    lg: "p-6",
+    sm: "p-4",
+    md: "p-6",
+    lg: "p-8",
   },
   interactive:
-    "transition-all duration-200 hover:shadow-md hover:shadow-slate-200/70 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-indigo-200",
+    "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[0_2px_4px_rgba(15,23,42,0.04),0_16px_40px_-8px_rgba(15,23,42,0.10)] hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-200",
 } as const;
 
 export const chipTokens = {
-  primary: "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition-colors duration-150",
-  active: "bg-indigo-600 text-white border border-indigo-600",
+  primary:
+    "bg-stone-100 text-slate-700 border border-stone-200 hover:bg-stone-200 transition-colors duration-200",
+  active: "bg-emerald-700 text-white border border-emerald-700 shadow-sm shadow-emerald-900/10",
 } as const;
 
 export const statusTokens = {
   pending: "border border-amber-200 bg-amber-50 text-amber-800",
   success: "border border-emerald-200 bg-emerald-50 text-emerald-800",
-  neutral: "border border-slate-200 bg-slate-50 text-slate-700",
+  neutral: "border border-stone-200 bg-stone-50 text-slate-700",
   warning: warningTokens.status,
   info: infoTokens.status,
   danger: "border border-red-200 bg-red-50 text-red-700",
@@ -131,48 +146,67 @@ export const statusTokens = {
 
 export const inputTokens = {
   base:
-    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300",
+    "w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-colors duration-200 focus-visible:outline-none focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-200",
   readOnly:
-    "w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300",
+    "w-full rounded-lg border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200",
 } as const;
 
 export const iconButtonToken =
-  "rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300";
+  "rounded-lg p-2 text-slate-600 transition-colors duration-200 hover:bg-stone-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300";
 
 export const modalTokens = {
-  overlay: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4",
+  overlay:
+    "fixed inset-0 z-50 flex items-center justify-center bg-stone-950/50 backdrop-blur-sm p-4 animate-in fade-in duration-200",
   panel:
-    "w-full max-h-[90vh] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl",
+    "w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-stone-200 bg-white shadow-[0_24px_64px_-12px_rgba(15,23,42,0.25)]",
 } as const;
 
 /**
- * Couleur accent de la marque HostCheckIn (Indigo).
- * Utiliser pour les éléments de mise en valeur, indicateurs actifs,
- * liens texte et états de sélection.
+ * Couleur accent de la marque HostCheckIn — Émeraude profond (Hospitality).
+ * Utiliser pour les actions primaires, éléments actifs, indicateurs sélectionnés.
  */
 export const accentTokens = {
-  bg: "bg-indigo-600",
-  bgLight: "bg-indigo-50",
-  bgHover: "hover:bg-indigo-700",
-  text: "text-indigo-600",
-  textDark: "text-indigo-700",
-  border: "border-indigo-300",
-  borderLight: "border-indigo-200",
-  ring: "ring-indigo-400",
-  badge: "border border-indigo-200 bg-indigo-50 text-indigo-700",
-  activeNavBorder: "border-indigo-600",
-  activeNavText: "text-indigo-700",
+  bg: "bg-emerald-700",
+  bgLight: "bg-emerald-50",
+  bgHover: "hover:bg-emerald-800",
+  text: "text-emerald-700",
+  textDark: "text-emerald-900",
+  border: "border-emerald-300",
+  borderLight: "border-emerald-200",
+  ring: "ring-emerald-400",
+  badge: "border border-emerald-200 bg-emerald-50 text-emerald-800",
+  activeNavBorder: "border-emerald-700",
+  activeNavText: "text-emerald-800",
 } as const;
 
 /**
- * Durées de transition standardisées.
- * Utiliser systématiquement pour garantir une sensation de mouvement cohérente.
+ * Accent secondaire — Or chaud (champagne) pour moments éditoriaux,
+ * badges premium, ratings, distinctions.
+ */
+export const goldTokens = {
+  text: "text-amber-700",
+  bg: "bg-amber-600",
+  bgLight: "bg-amber-50",
+  badge: "border border-amber-200 bg-amber-50 text-amber-800",
+} as const;
+
+/**
+ * Durées de transition — courbes refined (cubic-bezier expo-out).
  */
 export const transitionTokens = {
-  fast: "transition-all duration-150 ease-out",
-  base: "transition-all duration-200 ease-out",
-  slow: "transition-all duration-300 ease-out",
-  color: "transition-colors duration-150 ease-out",
-  shadow: "transition-shadow duration-200 ease-out",
-  transform: "transition-transform duration-200 ease-out",
+  fast: "transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
+  base: "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+  slow: "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+  color: "transition-colors duration-200 ease-out",
+  shadow: "transition-shadow duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+  transform: "transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+} as const;
+
+/**
+ * Classes typographiques spéciales — Fraunces pour le rendu éditorial.
+ */
+export const displayTokens = {
+  hero: "font-display font-light tracking-tightest-display",
+  title: "font-display font-medium tracking-tight",
+  number: "font-display font-medium tabular-nums",
 } as const;

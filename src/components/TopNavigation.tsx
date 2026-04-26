@@ -84,7 +84,7 @@ function SideNavItem({ item, isActive, onSelect }: SideNavItemProps) {
         aria-current={isActive ? 'page' : undefined}
         onClick={onSelect}
         className={clsx(
-          'group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+          'group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
           isActive
             ? clsx(accentTokens.bgLight, accentTokens.activeNavText)
             : clsx(textTokens.muted, 'hover:bg-slate-100 hover:text-slate-900'),
@@ -136,11 +136,11 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className={clsx('flex h-16 shrink-0 items-center gap-2.5 border-b px-5', borderTokens.subtle)}>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-          <span className="text-sm font-bold text-white">H</span>
+      <div className={clsx('flex h-16 shrink-0 items-center gap-3 border-b px-5', borderTokens.subtle)}>
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 shadow-sm shadow-emerald-900/20">
+          <span className="font-display text-base font-medium text-white">H</span>
         </div>
-        <span className={clsx('text-base font-semibold', textTokens.title)}>
+        <span className={clsx('font-display text-lg font-medium tracking-tight', textTokens.title)}>
           {fr.app.brand}
         </span>
         {onClose != null ? (
@@ -149,7 +149,7 @@ function SidebarContent({
             aria-label={fr.topnav.closeMobileMenu}
             onClick={onClose}
             className={clsx(
-              'ml-auto rounded-lg p-1.5 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+              'ml-auto rounded-lg p-1.5 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
               textTokens.muted,
             )}
           >
@@ -189,9 +189,9 @@ function SidebarContent({
         <button
           type="button"
           onClick={() => handleNavigate('pricing')}
-          className="flex w-full items-center gap-2.5 rounded-lg bg-indigo-50 px-3 py-2.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+          className="flex w-full items-center gap-2.5 rounded-lg bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
         >
-          <Zap size={16} aria-hidden="true" className="shrink-0 text-indigo-500" />
+          <Zap size={16} aria-hidden="true" className="shrink-0 text-emerald-600" />
           <span className="truncate">{fr.topnav.upgrade}</span>
         </button>
       </div>
@@ -203,7 +203,7 @@ function SidebarContent({
             type="button"
             aria-label="Voir mon profil"
             onClick={() => handleNavigate('profile')}
-            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
               {initialsFromName(hostName)}
@@ -324,7 +324,7 @@ export function TopNavigation({
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen(true)}
           className={clsx(
-            'rounded-lg p-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+            'rounded-lg p-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
             textTokens.body,
           )}
         >
@@ -335,12 +335,12 @@ export function TopNavigation({
           type="button"
           aria-label={fr.topnav.logoAria}
           onClick={() => handleNavigate('dashboard')}
-          className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 rounded-lg px-1"
+          className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 rounded-lg px-1"
         >
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-600">
-            <span className="text-xs font-bold text-white">H</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-700 shadow-sm shadow-emerald-900/20">
+            <span className="font-display text-sm font-medium text-white">H</span>
           </div>
-          <span className={clsx('text-sm font-semibold', textTokens.title)}>
+          <span className={clsx('font-display text-base font-medium tracking-tight', textTokens.title)}>
             {fr.app.brand}
           </span>
         </button>

@@ -16,17 +16,44 @@
   animation: slide-in-right 0.2s ease-out;
 }
 
-/* Focus ring brand-aligned (indigo accent — matches ctaTokens.primary) */
+/* Focus ring brand-aligned (Emerald — matches ctaTokens.primary) */
 :focus-visible {
-  outline: 2px solid #4F46E5;
+  outline: 2px solid #047857;
   outline-offset: 2px;
 }
 
-/* Plus Jakarta Sans font-feature optimizations */
+/* Body — Plus Jakarta Sans (corps) avec optimisations + warm cream background */
 body {
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Premium scrollbar — discret, chaud */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 113, 108, 0.25);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 113, 108, 0.45);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* Selection — accent émeraude */
+::selection {
+  background: rgba(4, 120, 87, 0.18);
+  color: #064e3b;
 }
 
 /* Reduced motion — respect OS preference */

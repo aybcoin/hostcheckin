@@ -200,7 +200,7 @@ export function DashboardPage({
         />
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className={clsx('text-2xl font-bold sm:text-3xl', textTokens.title)}>{fr.dashboard.title}</h1>
+            <h1 className={clsx('font-display text-3xl font-medium tracking-tight sm:text-4xl', textTokens.title)}>{fr.dashboard.title}</h1>
             {properties.length > 1 ? (
               <button
                 type="button"

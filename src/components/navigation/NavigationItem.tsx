@@ -15,13 +15,13 @@ interface NavigationItemProps {
 
 const baseByVariant: Record<NavigationItemVariant, string> = {
   desktop:
-    'inline-flex items-center gap-2 border-b-2 px-0.5 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+    'inline-flex items-center gap-2 border-b-2 px-0.5 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
   tablet:
-    'inline-flex items-center gap-2 border-b-2 px-0.5 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+    'inline-flex items-center gap-2 border-b-2 px-0.5 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
   mobile:
-    'w-full border-l-4 px-4 py-3 text-left text-base font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+    'w-full border-l-4 px-4 py-3 text-left text-base font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
   menu:
-    'w-full border-l-4 px-3 py-2 text-left text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+    'w-full border-l-4 px-3 py-2 text-left text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
 };
 
 export function NavigationItem({
