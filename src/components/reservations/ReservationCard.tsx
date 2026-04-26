@@ -593,7 +593,7 @@ export function ReservationCard({
           <div className="flex gap-2 pt-1">
             {reservation.status === 'pending' && (
               <Button
-                variant="secondary"
+                variant="primary"
                 size="sm"
                 onClick={() => void onUpdate(reservation.id, { status: 'checked_in' })}
               >

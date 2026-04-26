@@ -364,6 +364,9 @@ function App() {
               onOpenReservation={openReservationFromDashboard}
               onSelectedPropertyIdChange={setSelectedPropertyId}
               onNavigateToPortfolio={() => navigateToPage('portfolio')}
+              onNavigateToContracts={() => navigateToPage('contracts')}
+              onNavigateToCheckins={() => navigateToPage('checkins')}
+              onNavigateToReservations={() => navigateToPage('reservations')}
               onNavigateToHousekeeping={() => navigateToPage('housekeeping')}
               onNavigateToMaintenance={() => navigateToPage('maintenance')}
               onNavigateToLinen={() => navigateToPage('linen')}

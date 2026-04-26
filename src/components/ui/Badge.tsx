@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { infoTokens, warningTokens } from '../../lib/design-tokens';
+import { infoTokens, statusTokens, warningTokens } from '../../lib/design-tokens';
 import { clsx } from '../../lib/clsx';
 
 type BadgeVariant = 'neutral' | 'warning' | 'info' | 'success' | 'active' | 'locked';
@@ -11,10 +11,10 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  neutral: 'border border-slate-200 bg-slate-50 text-slate-600',
+  neutral: statusTokens.neutral,
   warning: warningTokens.badge,
   info: infoTokens.badge,
-  success: 'border border-emerald-200 bg-emerald-50 text-emerald-700',
+  success: statusTokens.success,
   active: 'border border-slate-300 bg-slate-50 text-slate-800',
   locked: 'border border-slate-200 bg-slate-100 text-slate-500',
 };

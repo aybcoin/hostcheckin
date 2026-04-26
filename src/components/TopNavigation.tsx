@@ -31,12 +31,16 @@ import { clsx } from '../lib/clsx';
 import {
   accentTokens,
   borderTokens,
+  iconButtonToken,
   surfaceTokens,
   textTokens,
 } from '../lib/design-tokens';
 import type { AppPage } from '../lib/navigation';
 import { fr } from '../lib/i18n/fr';
 import { Badge } from './ui/Badge';
+import { Card } from './ui/Card';
+
+const UPGRADE_BANNER_DISMISSED_KEY = 'hostcheckin:upgrade-banner-dismissed';
 
 interface TopNavigationProps {
   currentPage: AppPage;
@@ -84,10 +88,15 @@ function SideNavItem({ item, isActive, onSelect }: SideNavItemProps) {
         aria-current={isActive ? 'page' : undefined}
         onClick={onSelect}
         className={clsx(
-          'group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
+          'group flex w-full items-center gap-3 rounded-lg py-2.5 text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
           isActive
-            ? clsx(accentTokens.bgLight, accentTokens.activeNavText)
-            : clsx(textTokens.muted, 'hover:bg-slate-100 hover:text-slate-900'),
+            ? clsx(
+              'border-l-[3px] pl-[9px] pr-3 font-semibold',
+              accentTokens.bgLight,
+              accentTokens.activeNavBorder,
+              accentTokens.activeNavText,
+            )
+            : clsx('px-3 font-medium', textTokens.muted, 'hover:bg-slate-100 hover:text-slate-900'),
         )}
       >
         <Icon
@@ -95,7 +104,7 @@ function SideNavItem({ item, isActive, onSelect }: SideNavItemProps) {
           aria-hidden="true"
           className={clsx(
             'shrink-0',
-            isActive ? accentTokens.text : 'text-slate-400 group-hover:text-slate-600',
+            isActive ? 'text-emerald-700' : 'text-slate-400 group-hover:text-slate-600',
           )}
         />
         <span className="truncate">{item.label}</span>
@@ -128,9 +137,26 @@ function SidebarContent({
   onLogout,
   onClose,
 }: SidebarContentProps) {
+  const [isUpgradeBannerDismissed, setIsUpgradeBannerDismissed] = useState(() => {
+    try {
+      return window.localStorage.getItem(UPGRADE_BANNER_DISMISSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const handleNavigate = (page: AppPage) => {
     onNavigate(page);
     onClose?.();
+  };
+
+  const dismissUpgradeBanner = () => {
+    setIsUpgradeBannerDismissed(true);
+    try {
+      window.localStorage.setItem(UPGRADE_BANNER_DISMISSED_KEY, 'true');
+    } catch {
+      // Ignore storage failures and only dismiss for the current session.
+    }
   };
 
   return (
@@ -149,7 +175,7 @@ function SidebarContent({
             aria-label={fr.topnav.closeMobileMenu}
             onClick={onClose}
             className={clsx(
-              'ml-auto rounded-lg p-1.5 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
+              'ml-auto rounded-lg p-1.5 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
               textTokens.muted,
             )}
           >
@@ -160,13 +186,13 @@ function SidebarContent({
 
       {/* Nav groups */}
       <nav
-        aria-label="Navigation principale"
+        aria-label={fr.topnav.primaryNav}
         className="flex-1 overflow-y-auto px-3 py-4"
       >
-        <ul className="space-y-6">
-          {groups.map((group) => (
-            <li key={group.label}>
-              <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <ul className="space-y-8">
+          {groups.map((group, index) => (
+            <li key={group.label} className={clsx(index > 0 && 'border-t border-stone-100 pt-6')}>
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-stone-400">
                 {group.label}
               </p>
               <ul className="space-y-0.5">
@@ -184,26 +210,49 @@ function SidebarContent({
         </ul>
       </nav>
 
-      {/* Upgrade CTA */}
-      <div className={clsx('shrink-0 border-t px-3 py-3', borderTokens.subtle)}>
-        <button
-          type="button"
-          onClick={() => handleNavigate('pricing')}
-          className="flex w-full items-center gap-2.5 rounded-lg bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-        >
-          <Zap size={16} aria-hidden="true" className="shrink-0 text-emerald-600" />
-          <span className="truncate">{fr.topnav.upgrade}</span>
-        </button>
-      </div>
+      {!isUpgradeBannerDismissed ? (
+        <div className={clsx('shrink-0 px-3 pb-3', borderTokens.subtle)}>
+          <Card variant="default" padding="sm" className="relative overflow-hidden">
+            <button
+              type="button"
+              onClick={() => handleNavigate('pricing')}
+              className="flex w-full items-start gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2"
+            >
+              <span className={clsx('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full', accentTokens.bgLight, accentTokens.text)}>
+                <Sparkles size={16} aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className={clsx('block text-sm font-semibold', textTokens.title)}>
+                  {fr.topnav.upgrade}
+                </span>
+                <span className={clsx('block text-xs', textTokens.muted)}>
+                  {fr.topnav.upgradeSubtitle}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-label={fr.a11y.close}
+              onClick={(event) => {
+                event.stopPropagation();
+                dismissUpgradeBanner();
+              }}
+              className={clsx('absolute right-2 top-2', iconButtonToken)}
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          </Card>
+        </div>
+      ) : null}
 
       {/* User footer */}
       <div className={clsx('shrink-0 border-t px-3 py-3', borderTokens.default)}>
         <div className="flex items-center gap-3">
           <button
             type="button"
-            aria-label="Voir mon profil"
+            aria-label={fr.topnav.viewProfile}
             onClick={() => handleNavigate('profile')}
-            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
               {initialsFromName(hostName)}
@@ -222,7 +271,7 @@ function SidebarContent({
             aria-label={fr.topnav.userMenu.logout}
             onClick={onLogout}
             className={clsx(
-              'shrink-0 rounded-lg p-2 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300',
+              'shrink-0 rounded-lg p-2 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2',
               textTokens.subtle,
               'hover:text-red-600',
             )}
@@ -248,7 +297,7 @@ export function TopNavigation({
 
   const groups: NavGroup[] = [
     {
-      label: 'Vue d\'ensemble',
+      label: fr.topnav.groups.overview,
       items: [
         { id: 'dashboard', label: fr.sidebar.menu.dashboard, icon: LayoutDashboard },
         { id: 'portfolio', label: fr.topnav.links.portfolio, icon: Building2 },
@@ -256,7 +305,7 @@ export function TopNavigation({
       ],
     },
     {
-      label: 'Opérations',
+      label: fr.topnav.groups.operations,
       items: [
         { id: 'reservations', label: fr.topnav.links.reservations, icon: Calendar, badgeCount: reservationsActionCount },
         { id: 'properties', label: fr.topnav.links.properties, icon: Home },
@@ -267,7 +316,7 @@ export function TopNavigation({
       ],
     },
     {
-      label: 'Business',
+      label: fr.topnav.groups.business,
       items: [
         { id: 'finance', label: fr.topnav.links.finance, icon: TrendingUp },
         { id: 'pricing-engine', label: fr.topnav.links.pricingEngine, icon: Tag },
@@ -276,7 +325,7 @@ export function TopNavigation({
       ],
     },
     {
-      label: 'Configuration',
+      label: fr.topnav.groups.configuration,
       items: [
         { id: 'contracts', label: fr.topnav.links.documents, icon: FileText },
         { id: 'checkins', label: fr.topnav.links.automations, icon: Zap },
@@ -294,7 +343,7 @@ export function TopNavigation({
     <>
       {/* ── Desktop sidebar (fixed, always visible on lg+) ── */}
       <aside
-        aria-label="Barre de navigation"
+        aria-label={fr.topnav.primaryNav}
         className={clsx(
           'fixed inset-y-0 left-0 z-40 hidden w-64 border-r lg:flex lg:flex-col',
           surfaceTokens.panel,
@@ -324,7 +373,7 @@ export function TopNavigation({
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen(true)}
           className={clsx(
-            'rounded-lg p-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300',
+            'rounded-lg p-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
             textTokens.body,
           )}
         >
@@ -335,7 +384,7 @@ export function TopNavigation({
           type="button"
           aria-label={fr.topnav.logoAria}
           onClick={() => handleNavigate('dashboard')}
-          className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 rounded-lg px-1"
+          className="flex items-center gap-2 rounded-lg px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-700 shadow-sm shadow-emerald-900/20">
             <span className="font-display text-sm font-medium text-white">H</span>

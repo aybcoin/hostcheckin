@@ -14,7 +14,6 @@ import {
   cardTokens,
   statusTokens,
   textTokens,
-  warningTokens,
 } from '../../lib/design-tokens';
 import { fr } from '../../lib/i18n/fr';
 import {
@@ -28,6 +27,7 @@ import type {
   HousekeepingTaskWithRelations,
 } from '../../types/housekeeping';
 import { Button } from '../ui/Button';
+import { StatusBadge, type StatusBadgeVariant } from '../ui/StatusBadge';
 
 interface TaskCardProps {
   task: HousekeepingTaskWithRelations;
@@ -35,19 +35,19 @@ interface TaskCardProps {
   onAdvance: (task: HousekeepingTaskWithRelations, transition: 'start' | 'complete' | 'validate') => void;
 }
 
-const STATUS_CHIP_CLASS: Record<HousekeepingStatus, string> = {
-  pending: statusTokens.pending,
-  assigned: statusTokens.info,
-  in_progress: statusTokens.info,
-  completed: statusTokens.success,
-  validated: statusTokens.success,
-  issue_reported: statusTokens.danger,
+const STATUS_CHIP_CLASS: Record<HousekeepingStatus, StatusBadgeVariant> = {
+  pending: 'warning',
+  assigned: 'info',
+  in_progress: 'info',
+  completed: 'success',
+  validated: 'success',
+  issue_reported: 'danger',
 };
 
-function priorityChipClass(priority: HousekeepingPriority): string {
-  if (priority === 'critical') return statusTokens.danger;
-  if (priority === 'high') return warningTokens.badge;
-  return statusTokens.neutral;
+function priorityChipClass(priority: HousekeepingPriority): StatusBadgeVariant {
+  if (priority === 'critical') return 'danger';
+  if (priority === 'high') return 'warning';
+  return 'neutral';
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -101,23 +101,12 @@ export function TaskCard({ task, onOpen, onAdvance }: TaskCardProps) {
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span
-            className={clsx(
-              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
-              priorityChipClass(priority),
-            )}
-          >
-            {priority === 'critical' ? <AlertTriangle aria-hidden size={12} /> : null}
+          <StatusBadge variant={priorityChipClass(priority)} icon={priority === 'critical' ? <AlertTriangle /> : undefined}>
             {fr.housekeeping.priorityShort[priority]}
-          </span>
-          <span
-            className={clsx(
-              'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium',
-              STATUS_CHIP_CLASS[task.status],
-            )}
-          >
+          </StatusBadge>
+          <StatusBadge variant={STATUS_CHIP_CLASS[task.status]}>
             {fr.housekeeping.status[task.status]}
-          </span>
+          </StatusBadge>
         </div>
       </header>
 

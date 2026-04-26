@@ -1,12 +1,11 @@
-import { ArrowRight, MessageSquareText } from 'lucide-react';
+import { MessageSquareText } from 'lucide-react';
 import { clsx } from '../../lib/clsx';
 import { useMessageTemplates } from '../../hooks/useMessageTemplates';
-import { borderTokens, statusTokens, textTokens } from '../../lib/design-tokens';
+import { displayTokens, textTokens } from '../../lib/design-tokens';
 import { fr } from '../../lib/i18n/fr';
 import type { MessageLocale } from '../../types/messaging';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
-import { Skeleton } from '../ui/Skeleton';
+import { StatusBadge } from '../ui/StatusBadge';
+import { DashboardWidgetCard } from './DashboardWidgetCard';
 
 interface MessagingHealthCardProps {
   hostId: string;
@@ -21,49 +20,46 @@ function topLocaleKey(byLocale: Record<MessageLocale, number>): MessageLocale | 
 }
 
 export function MessagingHealthCard({ hostId, onSeeAll }: MessagingHealthCardProps) {
-  const { templates, summary, loading } = useMessageTemplates(hostId);
+  const {
+    templates,
+    summary,
+    loading,
+    error,
+    refresh,
+  } = useMessageTemplates(hostId);
   const topLocale = topLocaleKey(summary.byLocale);
   const hasContent = summary.active > 0 || templates.length > 0;
 
   return (
-    <Card variant="default" padding="md" className={clsx('space-y-3', borderTokens.default)}>
-      <header className="flex items-center justify-between gap-2">
-        <h2 className={clsx('flex items-center gap-2 text-base font-semibold', textTokens.title)}>
-          <MessageSquareText aria-hidden size={16} />
-          {fr.dashboardMessaging.cardTitle}
-        </h2>
-        <Button variant="tertiary" size="sm" onClick={onSeeAll}>
-          {fr.dashboardMessaging.cardSeeAll}
-          <ArrowRight aria-hidden size={14} />
-        </Button>
-      </header>
+    <DashboardWidgetCard
+      title={fr.dashboardMessaging.cardTitle}
+      icon={MessageSquareText}
+      seeAllLabel={fr.dashboardMessaging.cardSeeAll}
+      onSeeAll={onSeeAll}
+      loading={loading}
+      error={error}
+      onRetry={refresh}
+      errorDescription={fr.errors.genericDescription}
+      isEmpty={!hasContent}
+      emptyFallback={<p className={clsx('text-sm', textTokens.muted)}>{fr.dashboardMessaging.cardEmpty}</p>}
+    >
+      <div className="space-y-1">
+        <p className={clsx('text-xs uppercase tracking-wide', textTokens.subtle)}>
+          {fr.dashboardMessaging.activeTemplates}
+        </p>
+        <p className={clsx('text-2xl', displayTokens.number, textTokens.title)}>{summary.active}</p>
+        <p className={clsx('text-sm', textTokens.muted)}>
+          {topLocale ? fr.messaging.locales[topLocale] : '—'} · {fr.dashboardMessaging.missingDefaults}: {summary.missingDefaults.length}
+        </p>
+      </div>
 
-      {loading ? (
-        <div className="space-y-2" aria-hidden="true">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} variant="text" className="h-4 w-full" />
-          ))}
-        </div>
-      ) : !hasContent ? (
-        <p className={clsx('text-sm', textTokens.muted)}>{fr.dashboardMessaging.cardEmpty}</p>
-      ) : (
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className={clsx('rounded-full border px-2 py-0.5', statusTokens.info)}>
-            {fr.dashboardMessaging.activeTemplates}: <strong>{summary.active}</strong>
-          </span>
-          <span
-            className={clsx(
-              'rounded-full border px-2 py-0.5',
-              summary.missingDefaults.length > 0 ? statusTokens.warning : statusTokens.neutral,
-            )}
-          >
-            {fr.dashboardMessaging.missingDefaults}: <strong>{summary.missingDefaults.length}</strong>
-          </span>
-          <span className={clsx('rounded-full border px-2 py-0.5', statusTokens.neutral)}>
-            {fr.dashboardMessaging.topLocale}: <strong>{topLocale ? fr.messaging.locales[topLocale] : '—'}</strong>
-          </span>
-        </div>
-      )}
-    </Card>
+      <div className="flex flex-wrap gap-2">
+        <StatusBadge variant="info">{fr.dashboardMessaging.activeTemplates}: {summary.active}</StatusBadge>
+        <StatusBadge variant={summary.missingDefaults.length > 0 ? 'warning' : 'neutral'}>
+          {fr.dashboardMessaging.missingDefaults}: {summary.missingDefaults.length}
+        </StatusBadge>
+        <StatusBadge variant="neutral">{fr.dashboardMessaging.topLocale}: {topLocale ? fr.messaging.locales[topLocale] : '—'}</StatusBadge>
+      </div>
+    </DashboardWidgetCard>
   );
 }

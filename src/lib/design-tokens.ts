@@ -152,7 +152,7 @@ export const inputTokens = {
 } as const;
 
 export const iconButtonToken =
-  "rounded-lg p-2 text-slate-600 transition-colors duration-200 hover:bg-stone-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300";
+  "rounded-lg p-2 text-slate-600 transition-colors duration-200 hover:bg-stone-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2";
 
 export const modalTokens = {
   overlay:

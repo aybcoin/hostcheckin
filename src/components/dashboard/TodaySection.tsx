@@ -1,25 +1,28 @@
 import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Clock3 } from 'lucide-react';
 import type { TodayItem } from '../../lib/dashboard-data';
 import { clsx } from '../../lib/clsx';
-import { borderTokens, statusTokens, surfaceTokens, textTokens } from '../../lib/design-tokens';
+import { borderTokens, textTokens } from '../../lib/design-tokens';
 import { fr } from '../../lib/i18n/fr';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
+import { StatusBadge } from '../ui/StatusBadge';
 
 interface TodaySectionProps {
   items: TodayItem[];
   onAction: (id: string) => void;
+  onViewAll?: () => void;
+  overflowCount?: number;
 }
 
 function urgencyStyles(urgency: TodayItem['urgency']) {
   if (urgency === 'critical') {
-    return { icon: AlertTriangle, tone: statusTokens.danger, label: fr.dashboard.today.urgencyCritical };
+    return { icon: AlertTriangle, tone: 'danger' as const, label: fr.dashboard.today.urgencyCritical };
   }
   if (urgency === 'high') {
-    return { icon: Clock3, tone: statusTokens.warning, label: fr.dashboard.today.urgencyHigh };
+    return { icon: Clock3, tone: 'warning' as const, label: fr.dashboard.today.urgencyHigh };
   }
-  return { icon: Clock3, tone: statusTokens.neutral, label: fr.dashboard.today.urgencyNormal };
+  return { icon: Clock3, tone: 'neutral' as const, label: fr.dashboard.today.urgencyNormal };
 }
 
 function typeLabel(type: TodayItem['type']): string {
@@ -34,7 +37,12 @@ function typeIcon(type: TodayItem['type']) {
   return AlertTriangle;
 }
 
-export function TodaySection({ items, onAction }: TodaySectionProps) {
+export function TodaySection({
+  items,
+  onAction,
+  onViewAll,
+  overflowCount = 0,
+}: TodaySectionProps) {
   return (
     <section role="region" aria-label={fr.dashboard.today.region} className="space-y-3">
       <div>
@@ -59,10 +67,9 @@ export function TodaySection({ items, onAction }: TodaySectionProps) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className={clsx('inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium', surfaceTokens.subtle, borderTokens.subtle, textTokens.body)}>
-                        <TypeIcon size={12} aria-hidden="true" className="mr-1" />
+                      <StatusBadge variant="neutral" icon={<TypeIcon />}>
                         {typeLabel(item.type)}
-                      </span>
+                      </StatusBadge>
                       <span className={clsx('text-xs', textTokens.subtle)}>{item.time}</span>
                     </div>
 
@@ -70,10 +77,9 @@ export function TodaySection({ items, onAction }: TodaySectionProps) {
                     <p className={clsx('truncate text-sm', textTokens.muted)}>{item.propertyName}</p>
                   </div>
 
-                  <span className={clsx('inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium', urgency.tone)}>
-                    <UrgencyIcon size={12} aria-hidden="true" />
+                  <StatusBadge variant={urgency.tone} size="md" icon={<UrgencyIcon />}>
                     {urgency.label}
-                  </span>
+                  </StatusBadge>
                 </div>
 
                 {item.ctaLabel ? (
@@ -95,6 +101,28 @@ export function TodaySection({ items, onAction }: TodaySectionProps) {
           })}
         </div>
       )}
+
+      {onViewAll || overflowCount > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {overflowCount > 0 ? (
+            <p className={clsx('text-sm', textTokens.muted)}>
+              {fr.dashboard.today.moreItems(overflowCount)}
+            </p>
+          ) : <span />}
+          {onViewAll ? (
+            <button
+              type="button"
+              onClick={onViewAll}
+              className={clsx(
+                'text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
+                textTokens.body,
+              )}
+            >
+              {fr.dashboard.today.viewFullAgenda}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }
