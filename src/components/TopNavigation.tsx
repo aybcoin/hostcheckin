@@ -1,11 +1,42 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Menu, X } from 'lucide-react';
+/**
+ * SideNavigation — left sidebar (Payoneer-style)
+ *
+ * Desktop (≥1024px): fixed 256px sidebar, always visible.
+ * Mobile (<1024px): thin top bar with hamburger → overlay drawer slides from left.
+ */
+import { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import {
+  BarChart3,
+  Building2,
+  Calendar,
+  CalendarDays,
+  FileText,
+  Home,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+  Package,
+  Sparkles,
+  Tag,
+  TrendingUp,
+  User,
+  Wind,
+  Wrench,
+  X,
+  Zap,
+} from 'lucide-react';
 import { clsx } from '../lib/clsx';
-import { borderTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
-import { AppPage } from '../lib/navigation';
+import {
+  accentTokens,
+  borderTokens,
+  surfaceTokens,
+  textTokens,
+} from '../lib/design-tokens';
+import type { AppPage } from '../lib/navigation';
 import { fr } from '../lib/i18n/fr';
-import { Button } from './ui/Button';
-import { NavigationItem } from './navigation/NavigationItem';
+import { Badge } from './ui/Badge';
 
 interface TopNavigationProps {
   currentPage: AppPage;
@@ -15,21 +46,196 @@ interface TopNavigationProps {
   reservationsActionCount?: number;
 }
 
-interface PrimaryLink {
+interface NavItem {
   id: AppPage;
   label: string;
-  showBadge?: boolean;
+  icon: LucideIcon;
+  badgeCount?: number;
 }
 
-const TABLET_MAX_VISIBLE_LINKS = 5;
-const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
 
 function initialsFromName(name?: string) {
   if (!name) return 'H';
-  const [first = 'H'] = name.trim().split(/\s+/);
-  return first[0]?.toUpperCase() || 'H';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
+  }
+  return (parts[0]?.[0] ?? 'H').toUpperCase();
 }
+
+// ─── Sidebar nav item ──────────────────────────────────────────────────────────
+
+interface SideNavItemProps {
+  item: NavItem;
+  isActive: boolean;
+  onSelect: () => void;
+}
+
+function SideNavItem({ item, isActive, onSelect }: SideNavItemProps) {
+  const Icon = item.icon;
+  return (
+    <li>
+      <button
+        type="button"
+        aria-current={isActive ? 'page' : undefined}
+        onClick={onSelect}
+        className={clsx(
+          'group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+          isActive
+            ? clsx(accentTokens.bgLight, accentTokens.activeNavText)
+            : clsx(textTokens.muted, 'hover:bg-slate-100 hover:text-slate-900'),
+        )}
+      >
+        <Icon
+          size={18}
+          aria-hidden="true"
+          className={clsx(
+            'shrink-0',
+            isActive ? accentTokens.text : 'text-slate-400 group-hover:text-slate-600',
+          )}
+        />
+        <span className="truncate">{item.label}</span>
+        {item.badgeCount != null && item.badgeCount > 0 ? (
+          <Badge variant="active" className="ml-auto shrink-0">
+            {item.badgeCount}
+          </Badge>
+        ) : null}
+      </button>
+    </li>
+  );
+}
+
+// ─── Sidebar content (shared between desktop & mobile drawer) ─────────────────
+
+interface SidebarContentProps {
+  groups: NavGroup[];
+  currentPage: AppPage;
+  hostName?: string;
+  onNavigate: (page: AppPage) => void;
+  onLogout: () => void;
+  onClose?: () => void;
+}
+
+function SidebarContent({
+  groups,
+  currentPage,
+  hostName,
+  onNavigate,
+  onLogout,
+  onClose,
+}: SidebarContentProps) {
+  const handleNavigate = (page: AppPage) => {
+    onNavigate(page);
+    onClose?.();
+  };
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Logo */}
+      <div className={clsx('flex h-16 shrink-0 items-center gap-2.5 border-b px-5', borderTokens.subtle)}>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
+          <span className="text-sm font-bold text-white">H</span>
+        </div>
+        <span className={clsx('text-base font-semibold', textTokens.title)}>
+          {fr.app.brand}
+        </span>
+        {onClose != null ? (
+          <button
+            type="button"
+            aria-label={fr.topnav.closeMobileMenu}
+            onClick={onClose}
+            className={clsx(
+              'ml-auto rounded-lg p-1.5 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+              textTokens.muted,
+            )}
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        ) : null}
+      </div>
+
+      {/* Nav groups */}
+      <nav
+        aria-label="Navigation principale"
+        className="flex-1 overflow-y-auto px-3 py-4"
+      >
+        <ul className="space-y-6">
+          {groups.map((group) => (
+            <li key={group.label}>
+              <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                {group.label}
+              </p>
+              <ul className="space-y-0.5">
+                {group.items.map((item) => (
+                  <SideNavItem
+                    key={item.id}
+                    item={item}
+                    isActive={currentPage === item.id}
+                    onSelect={() => handleNavigate(item.id)}
+                  />
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* Upgrade CTA */}
+      <div className={clsx('shrink-0 border-t px-3 py-3', borderTokens.subtle)}>
+        <button
+          type="button"
+          onClick={() => handleNavigate('pricing')}
+          className="flex w-full items-center gap-2.5 rounded-lg bg-indigo-50 px-3 py-2.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+        >
+          <Zap size={16} aria-hidden="true" className="shrink-0 text-indigo-500" />
+          <span className="truncate">{fr.topnav.upgrade}</span>
+        </button>
+      </div>
+
+      {/* User footer */}
+      <div className={clsx('shrink-0 border-t px-3 py-3', borderTokens.default)}>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Voir mon profil"
+            onClick={() => handleNavigate('profile')}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+              {initialsFromName(hostName)}
+            </div>
+            <div className="min-w-0 text-left">
+              <p className={clsx('truncate text-sm font-semibold leading-tight', textTokens.title)}>
+                {hostName ?? fr.app.hostFallbackName}
+              </p>
+              <p className={clsx('truncate text-xs leading-tight', textTokens.subtle)}>
+                {fr.topnav.userMenu.profile}
+              </p>
+            </div>
+          </button>
+          <button
+            type="button"
+            aria-label={fr.topnav.userMenu.logout}
+            onClick={onLogout}
+            className={clsx(
+              'shrink-0 rounded-lg p-2 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300',
+              textTokens.subtle,
+              'hover:text-red-600',
+            )}
+          >
+            <LogOut size={16} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main export ───────────────────────────────────────────────────────────────
 
 export function TopNavigation({
   currentPage,
@@ -39,389 +245,142 @@ export function TopNavigation({
   reservationsActionCount = 0,
 }: TopNavigationProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [tabletMoreOpen, setTabletMoreOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const tabletMoreRef = useRef<HTMLDivElement | null>(null);
-  const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const mobilePanelRef = useRef<HTMLDivElement | null>(null);
-
-  /**
-   * Responsive logic:
-   * - <768px: header compact + hamburger, menu plein écran pour réduire la densité visuelle.
-   * - 768-1023px: topbar condensée, "More" protège la lisibilité si le nombre de liens augmente.
-   * - >=1024px: topbar complète, aucun hamburger (navigation directe visible).
-   */
-  const primaryLinks = useMemo<PrimaryLink[]>(
-    () => [
-      { id: 'dashboard', label: fr.sidebar.menu.dashboard },
-      { id: 'portfolio', label: fr.topnav.links.portfolio },
-      { id: 'reservations', label: fr.topnav.links.reservations, showBadge: true },
-      { id: 'properties', label: fr.topnav.links.properties },
-      { id: 'housekeeping', label: fr.topnav.links.housekeeping },
-      { id: 'maintenance', label: fr.topnav.links.maintenance },
-      { id: 'linen', label: fr.topnav.links.linen },
-      { id: 'finance', label: fr.topnav.links.finance },
-      { id: 'inventory', label: fr.topnav.links.inventory },
-      { id: 'ical', label: fr.topnav.links.ical },
-      { id: 'pricing-engine', label: fr.topnav.links.pricingEngine },
-      { id: 'messaging', label: fr.topnav.links.messaging },
-      { id: 'contracts', label: fr.topnav.links.documents },
-      { id: 'checkins', label: fr.topnav.links.automations },
-      { id: 'profile', label: fr.topnav.links.account },
-    ],
-    [],
-  );
-
-  const tabletVisibleLinks = primaryLinks.slice(0, TABLET_MAX_VISIBLE_LINKS);
-  const tabletOverflowLinks = primaryLinks.slice(TABLET_MAX_VISIBLE_LINKS);
-
-  useEffect(() => {
-    setMobileOpen(false);
-    setTabletMoreOpen(false);
-    setUserMenuOpen(false);
-  }, [currentPage]);
-
-  useEffect(() => {
-    const onClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (tabletMoreRef.current && !tabletMoreRef.current.contains(target)) {
-        setTabletMoreOpen(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
-        setUserMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (!mobileOpen) return;
-
-    const previousActiveElement = document.activeElement as HTMLElement | null;
-    const panel = mobilePanelRef.current;
-    const bodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const focusables = () =>
-      Array.from(panel?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) || []);
-
-    focusables()[0]?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        setMobileOpen(false);
-        return;
-      }
-
-      if (event.key !== 'Tab') return;
-      const elements = focusables();
-      if (elements.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const first = elements[0];
-      const last = elements[elements.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = bodyOverflow;
-      document.removeEventListener('keydown', onKeyDown);
-      previousActiveElement?.focus();
-    };
-  }, [mobileOpen]);
+  const groups: NavGroup[] = [
+    {
+      label: 'Vue d\'ensemble',
+      items: [
+        { id: 'dashboard', label: fr.sidebar.menu.dashboard, icon: LayoutDashboard },
+        { id: 'portfolio', label: fr.topnav.links.portfolio, icon: Building2 },
+        { id: 'analytics', label: fr.topnav.links.analytics, icon: BarChart3 },
+      ],
+    },
+    {
+      label: 'Opérations',
+      items: [
+        { id: 'reservations', label: fr.topnav.links.reservations, icon: Calendar, badgeCount: reservationsActionCount },
+        { id: 'properties', label: fr.topnav.links.properties, icon: Home },
+        { id: 'housekeeping', label: fr.topnav.links.housekeeping, icon: Sparkles },
+        { id: 'maintenance', label: fr.topnav.links.maintenance, icon: Wrench },
+        { id: 'linen', label: fr.topnav.links.linen, icon: Wind },
+        { id: 'inventory', label: fr.topnav.links.inventory, icon: Package },
+      ],
+    },
+    {
+      label: 'Business',
+      items: [
+        { id: 'finance', label: fr.topnav.links.finance, icon: TrendingUp },
+        { id: 'pricing-engine', label: fr.topnav.links.pricingEngine, icon: Tag },
+        { id: 'messaging', label: fr.topnav.links.messaging, icon: MessageSquare },
+        { id: 'ical', label: fr.topnav.links.ical, icon: CalendarDays },
+      ],
+    },
+    {
+      label: 'Configuration',
+      items: [
+        { id: 'contracts', label: fr.topnav.links.documents, icon: FileText },
+        { id: 'checkins', label: fr.topnav.links.automations, icon: Zap },
+        { id: 'profile', label: fr.topnav.links.account, icon: User },
+      ],
+    },
+  ];
 
   const handleNavigate = (page: AppPage) => {
     onNavigate(page);
     setMobileOpen(false);
-    setTabletMoreOpen(false);
-    setUserMenuOpen(false);
   };
 
   return (
-    <header className={clsx('sticky top-0 z-40 border-b bg-white/95 backdrop-blur', borderTokens.default)}>
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:rounded focus:ring-2 focus:ring-sky-500"
+    <>
+      {/* ── Desktop sidebar (fixed, always visible on lg+) ── */}
+      <aside
+        aria-label="Barre de navigation"
+        className={clsx(
+          'fixed inset-y-0 left-0 z-40 hidden w-64 border-r lg:flex lg:flex-col',
+          surfaceTokens.panel,
+          borderTokens.default,
+        )}
       >
-        Aller au contenu
-      </a>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
+        <SidebarContent
+          groups={groups}
+          currentPage={currentPage}
+          hostName={hostName}
+          onNavigate={handleNavigate}
+          onLogout={onLogout}
+        />
+      </aside>
+
+      {/* ── Mobile top bar ── */}
+      <div
+        className={clsx(
+          'sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 lg:hidden',
+          surfaceTokens.panel,
+          borderTokens.default,
+        )}
+      >
+        <button
+          type="button"
+          aria-label={fr.topnav.openMobileMenu}
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen(true)}
+          className={clsx(
+            'rounded-lg p-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+            textTokens.body,
+          )}
+        >
+          <Menu size={20} aria-hidden="true" />
+        </button>
+
         <button
           type="button"
           aria-label={fr.topnav.logoAria}
-          className={clsx('text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.title)}
           onClick={() => handleNavigate('dashboard')}
+          className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 rounded-lg px-1"
         >
-          {fr.app.brand}
-        </button>
-
-        <nav aria-label="Navigation principale desktop" className="hidden flex-1 items-center justify-center lg:flex">
-          <ul className="flex items-center gap-6">
-            {primaryLinks.map((item) => (
-              <li key={item.id}>
-                <NavigationItem
-                  variant="desktop"
-                  label={item.label}
-                  isActive={currentPage === item.id}
-                  badgeCount={item.showBadge ? reservationsActionCount : undefined}
-                  testId={`nav-link-${item.id}-desktop`}
-                  onSelect={() => handleNavigate(item.id)}
-                />
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <nav aria-label="Navigation principale tablette" className="hidden flex-1 items-center justify-center md:flex lg:hidden">
-          <ul className="flex items-center gap-5">
-            {tabletVisibleLinks.map((item) => (
-              <li key={item.id}>
-                <NavigationItem
-                  variant="tablet"
-                  label={item.label}
-                  isActive={currentPage === item.id}
-                  badgeCount={item.showBadge ? reservationsActionCount : undefined}
-                  testId={`nav-link-${item.id}-tablet`}
-                  onSelect={() => handleNavigate(item.id)}
-                />
-              </li>
-            ))}
-            {tabletOverflowLinks.length > 0 ? (
-              <li>
-                <div className="relative" ref={tabletMoreRef}>
-                  <button
-                    type="button"
-                    aria-label={fr.topnav.more}
-                    aria-haspopup="menu"
-                    aria-expanded={tabletMoreOpen}
-                    onClick={() => setTabletMoreOpen((previous) => !previous)}
-                    className={clsx(
-                      'inline-flex items-center gap-1 border-b-2 border-transparent py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300',
-                      textTokens.muted,
-                      'hover:opacity-90',
-                    )}
-                  >
-                    {fr.topnav.more}
-                    <ChevronDown size={14} />
-                  </button>
-                  {tabletMoreOpen ? (
-                    <div role="menu" className={clsx('absolute right-0 top-11 z-50 min-w-48 rounded-lg border bg-white p-2 shadow-xl', borderTokens.default)}>
-                      {tabletOverflowLinks.map((item) => (
-                        <NavigationItem
-                          key={item.id}
-                          variant="menu"
-                          label={item.label}
-                          isActive={currentPage === item.id}
-                          testId={`nav-link-${item.id}-tablet-more`}
-                          onSelect={() => handleNavigate(item.id)}
-                        />
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              </li>
-            ) : null}
-          </ul>
-        </nav>
-
-        <div className="hidden items-center gap-2 md:flex">
-          <Button
-            variant="secondary"
-            size="sm"
-            className={clsx(borderTokens.strong, textTokens.title)}
-            onClick={() => handleNavigate('rentiq')}
-          >
-            {fr.topnav.rentiq}
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            className={clsx(borderTokens.strong, textTokens.title)}
-            onClick={() => handleNavigate('pricing')}
-          >
-            {fr.topnav.upgrade}
-          </Button>
-
-          <div className="relative" ref={userMenuRef}>
-            <button
-              type="button"
-              aria-label={fr.topnav.userMenu.aria}
-              aria-haspopup="menu"
-              aria-expanded={userMenuOpen}
-              onClick={() => setUserMenuOpen((previous) => !previous)}
-              className={clsx(
-                'inline-flex items-center gap-2 rounded-lg border bg-white px-2.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300',
-                borderTokens.default,
-                textTokens.body,
-                'hover:bg-white/70',
-              )}
-            >
-              <span className={clsx('inline-flex h-7 w-7 items-center justify-center rounded-full bg-current text-xs font-semibold text-white', textTokens.title)}>
-                {initialsFromName(hostName)}
-              </span>
-              <ChevronDown size={14} />
-            </button>
-
-            {userMenuOpen ? (
-              <div role="menu" className={clsx('absolute right-0 top-11 z-50 min-w-52 rounded-lg border bg-white p-2 shadow-xl', borderTokens.default)}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => handleNavigate('profile')}
-                  className={clsx('w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.body)}
-                >
-                  {fr.topnav.userMenu.profile}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => handleNavigate('pricing')}
-                  className={clsx('w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.body)}
-                >
-                  {fr.topnav.userMenu.billing}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => handleNavigate('help')}
-                  className={clsx('w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', textTokens.body)}
-                >
-                  {fr.topnav.userMenu.help}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    onLogout();
-                  }}
-                  className={clsx('w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300', textTokens.danger)}
-                >
-                  {fr.topnav.userMenu.logout}
-                </button>
-              </div>
-            ) : null}
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-600">
+            <span className="text-xs font-bold text-white">H</span>
           </div>
-        </div>
-
-        <button
-          type="button"
-          data-testid="topnav-mobile-open"
-          aria-label={fr.topnav.openMobileMenu}
-          aria-expanded={mobileOpen}
-          aria-controls="topnav-mobile-panel"
-          onClick={() => setMobileOpen(true)}
-          className={clsx('rounded-lg border p-2 transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 md:hidden', borderTokens.default, textTokens.body)}
-        >
-          <Menu size={20} />
+          <span className={clsx('text-sm font-semibold', textTokens.title)}>
+            {fr.app.brand}
+          </span>
         </button>
+
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+          {initialsFromName(hostName)}
+        </div>
       </div>
 
+      {/* ── Mobile overlay drawer ── */}
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className={clsx('absolute inset-0', surfaceTokens.overlay)} onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop */}
           <div
-            id="topnav-mobile-panel"
-            ref={mobilePanelRef}
+            className={clsx('absolute inset-0', surfaceTokens.overlay)}
+            aria-hidden="true"
+            onClick={() => setMobileOpen(false)}
+          />
+          {/* Drawer panel */}
+          <aside
             role="dialog"
             aria-modal="true"
             aria-label={fr.topnav.mobileMenuTitle}
-            data-testid="topnav-mobile-panel"
-            className="absolute inset-0 flex flex-col bg-white px-5 pb-6 pt-5"
+            className={clsx(
+              'absolute inset-y-0 left-0 w-72 border-r shadow-xl',
+              surfaceTokens.panel,
+              borderTokens.default,
+            )}
           >
-            <div className="mb-4 flex items-center justify-between">
-              <p className={clsx('text-base font-semibold', textTokens.title)}>{fr.topnav.mobileMenuTitle}</p>
-              <button
-                type="button"
-                data-testid="topnav-mobile-close"
-                aria-label={fr.topnav.closeMobileMenu}
-                onClick={() => setMobileOpen(false)}
-                className={clsx('rounded-lg border p-2 transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300', borderTokens.default, textTokens.body)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <nav aria-label="Navigation principale mobile" className="flex-1 overflow-auto">
-              <ul className="space-y-1">
-                {primaryLinks.map((item) => (
-                  <li key={item.id}>
-                    <NavigationItem
-                      variant="mobile"
-                      label={item.label}
-                      isActive={currentPage === item.id}
-                      badgeCount={item.showBadge ? reservationsActionCount : undefined}
-                      testId={`nav-link-${item.id}-mobile`}
-                      onSelect={() => handleNavigate(item.id)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            <div className={clsx('mt-4 space-y-2 border-t pt-4', borderTokens.default)}>
-              <Button
-                variant="secondary"
-                fullWidth
-                className={clsx('justify-center', borderTokens.strong, textTokens.title)}
-                onClick={() => handleNavigate('rentiq')}
-              >
-                {fr.topnav.rentiq}
-              </Button>
-              <Button
-                variant="secondary"
-                fullWidth
-                className={clsx('justify-center', borderTokens.strong, textTokens.title)}
-                onClick={() => handleNavigate('pricing')}
-              >
-                {fr.topnav.upgrade}
-              </Button>
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={() => handleNavigate('profile')}
-                className="justify-center"
-              >
-                {fr.topnav.userMenu.profile}
-              </Button>
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={() => handleNavigate('help')}
-                className="justify-center"
-              >
-                {fr.topnav.userMenu.help}
-              </Button>
-              <Button
-                variant="dangerSoft"
-                fullWidth
-                onClick={() => {
-                  setMobileOpen(false);
-                  onLogout();
-                }}
-                className="justify-center"
-              >
-                {fr.topnav.userMenu.logout}
-              </Button>
-            </div>
-          </div>
+            <SidebarContent
+              groups={groups}
+              currentPage={currentPage}
+              hostName={hostName}
+              onNavigate={handleNavigate}
+              onLogout={onLogout}
+              onClose={() => setMobileOpen(false)}
+            />
+          </aside>
         </div>
       ) : null}
-    </header>
+    </>
   );
 }

@@ -17,6 +17,9 @@ const DashboardPage = lazy(() =>
   import('./components/DashboardPage').then((module) => ({ default: module.DashboardPage })),
 );
 const PropertiesOverviewPage = lazy(() => import('./components/PropertiesOverviewPage'));
+const AnalyticsPage = lazy(() =>
+  import('./components/AnalyticsPage').then((module) => ({ default: module.AnalyticsPage })),
+);
 const ReservationsPage = lazy(() =>
   import('./components/ReservationsPage').then((module) => ({ default: module.ReservationsPage })),
 );
@@ -318,7 +321,8 @@ function App() {
     appContent = <AuthForm onSignIn={handleSignIn} onSignUp={handleSignUp} />;
   } else {
     appContent = (
-      <div className={clsx('min-h-screen', surfaceTokens.app)}>
+      <div className={clsx('flex min-h-screen', surfaceTokens.app)}>
+        {/* Skip link — accessible keyboard shortcut */}
         <a
           href="#main-content"
           className={clsx(
@@ -330,6 +334,8 @@ function App() {
         >
           Aller au contenu principal
         </a>
+
+        {/* Left sidebar — renders fixed desktop aside + mobile top bar + drawer */}
         <TopNavigation
           currentPage={currentPage}
           onNavigate={navigateToPage}
@@ -338,7 +344,9 @@ function App() {
           reservationsActionCount={reservationsActionCount}
         />
 
-        <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+        {/* Main content — offset by sidebar width on desktop */}
+        <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
+        <main id="main-content" className="mx-auto w-full max-w-6xl px-4 py-6 md:py-8">
           {autoLinkPropertyId ? (
             <AutoLinkGenerator
               property={selectedAutoLinkProperty}
@@ -364,6 +372,7 @@ function App() {
               onNavigateToInventory={() => navigateToPage('inventory')}
               onNavigateToPricing={() => navigateToPage('pricing-engine')}
               onNavigateToMessaging={() => navigateToPage('messaging')}
+              onNavigateToAnalytics={() => navigateToPage('analytics')}
             />
           ) : null}
 
@@ -488,6 +497,10 @@ function App() {
             <FinancePage hostId={user.id} />
           ) : null}
 
+          {!autoLinkPropertyId && currentPage === 'analytics' ? (
+            <AnalyticsPage hostId={user.id} />
+          ) : null}
+
           {!autoLinkPropertyId && currentPage === 'inventory' ? (
             <InventoryPage
               hostId={user.id}
@@ -510,6 +523,7 @@ function App() {
             <MessagingPage hostId={user.id} />
           ) : null}
         </main>
+        </div>{/* end content wrapper */}
       </div>
     );
   }
