@@ -4,7 +4,7 @@ import { toast } from '../../lib/toast';
 import { clsx } from '../../lib/clsx';
 import { supabase } from '../../lib/supabase';
 import { borderTokens, ctaTokens, inputTokens, statusTokens, surfaceTokens, textTokens } from '../../lib/design-tokens';
-import { fr } from '../../lib/i18n/fr';
+import { useGuestT } from '../../lib/i18n/guest/context';
 import type { GuestSession } from '../../types/guest-portal';
 
 interface GuestStep3IdentityProps {
@@ -13,6 +13,7 @@ interface GuestStep3IdentityProps {
 }
 
 export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProps) {
+  const t = useGuestT();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
@@ -33,7 +34,7 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
   const completeVerification = async () => {
     const ok = await onVerify();
     if (!ok) {
-      toast.error(fr.guestPortal.errors.uploadError);
+      toast.error(t.guestPortal.errors.uploadError);
       return false;
     }
     return true;
@@ -41,7 +42,7 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
 
   const handleUpload = async () => {
     if (!selectedFile || isUploading) {
-      toast.error(fr.guestPortal.errors.uploadError);
+      toast.error(t.guestPortal.errors.uploadError);
       return;
     }
 
@@ -56,12 +57,12 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
 
     if (uploadError) {
       setStorageUnavailable(true);
-      toast.warning(fr.guestPortal.identity.manualRequired);
+      toast.warning(t.guestPortal.identity.manualRequired);
       setIsUploading(false);
       return;
     }
 
-    toast.success(fr.guestPortal.identity.uploaded);
+    toast.success(t.guestPortal.identity.uploaded);
     await completeVerification();
     setIsUploading(false);
   };
@@ -72,19 +73,19 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
     setIsUploading(true);
     const ok = await completeVerification();
     if (ok) {
-      toast.warning(fr.guestPortal.identity.manualRequired);
+      toast.warning(t.guestPortal.identity.manualRequired);
     }
     setIsUploading(false);
   };
 
   return (
     <section className={clsx('rounded-2xl border p-5 shadow-sm sm:p-6', surfaceTokens.panel, borderTokens.default)}>
-      <h2 className={clsx('text-xl font-bold', textTokens.title)}>{fr.guestPortal.identity.title}</h2>
-      <p className={clsx('mt-1 text-sm', textTokens.body)}>{fr.guestPortal.identity.instruction}</p>
+      <h2 className={clsx('text-xl font-bold', textTokens.title)}>{t.guestPortal.identity.title}</h2>
+      <p className={clsx('mt-1 text-sm', textTokens.body)}>{t.guestPortal.identity.instruction}</p>
 
       <div className={clsx('mt-4 rounded-xl border p-4', borderTokens.default, surfaceTokens.subtle)}>
         <label htmlFor="guest-identity-file" className={clsx('mb-2 block text-sm font-medium', textTokens.body)}>
-          {fr.guestPortal.identity.uploadLabel}
+          {t.guestPortal.identity.uploadLabel}
         </label>
         <input
           id="guest-identity-file"
@@ -97,22 +98,22 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
 
         {previewUrl ? (
           <div className="mt-4">
-            <p className={clsx('mb-2 text-xs font-medium', textTokens.subtle)}>{fr.guestPortal.identity.preview}</p>
+            <p className={clsx('mb-2 text-xs font-medium', textTokens.subtle)}>{t.guestPortal.identity.preview}</p>
             <div className={clsx('overflow-hidden rounded-xl border', borderTokens.default)}>
-              <img src={previewUrl} alt={fr.guestPortal.identity.preview} className="h-56 w-full object-cover" />
+              <img src={previewUrl} alt={t.guestPortal.identity.preview} className="h-56 w-full object-cover" />
             </div>
           </div>
         ) : (
           <div className={clsx('mt-4 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs', borderTokens.default, textTokens.subtle)}>
             <ImageUp size={14} aria-hidden="true" />
-            {fr.guestPortal.identity.preview}
+            {t.guestPortal.identity.preview}
           </div>
         )}
       </div>
 
       {storageUnavailable ? (
         <div className={clsx('mt-4 rounded-xl border p-3 text-sm', statusTokens.warning)}>
-          {fr.guestPortal.identity.manualRequired}
+          {t.guestPortal.identity.manualRequired}
         </div>
       ) : null}
 
@@ -126,7 +127,7 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
             ctaTokens.primary,
           )}
         >
-          {isUploading ? fr.guestPortal.identity.uploading : fr.guestPortal.identity.cta}
+          {isUploading ? t.guestPortal.identity.uploading : t.guestPortal.identity.cta}
         </button>
 
         {storageUnavailable ? (
@@ -139,7 +140,7 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
               ctaTokens.secondary,
             )}
           >
-            {fr.guestPortal.identity.skipLabel}
+            {t.guestPortal.identity.skipLabel}
           </button>
         ) : null}
       </div>

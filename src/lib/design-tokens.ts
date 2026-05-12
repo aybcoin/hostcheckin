@@ -275,6 +275,29 @@ export const transitionTokens = {
 } as const;
 
 /**
+ * Dashboard KPI / Operations card tone tiles — colored icon backgrounds + icon tints.
+ * Tones: violet, sky, emerald, rose, amber.
+ */
+export const dashboardToneTokens = {
+  violet: { tile: "bg-violet-100 text-violet-700", icon: "text-violet-600" },
+  sky:    { tile: "bg-sky-100 text-sky-700",       icon: "text-sky-600"    },
+  emerald:{ tile: "bg-emerald-100 text-emerald-700", icon: "text-emerald-600" },
+  rose:   { tile: "bg-rose-100 text-rose-700",     icon: "text-rose-600"   },
+  amber:  { tile: "bg-amber-100 text-amber-700",   icon: "text-amber-600"  },
+} as const;
+
+/**
+ * Dashboard timeline / priorities left-rail color bands.
+ */
+export const dashboardRailTokens = {
+  success: "bg-emerald-500",
+  warning: "bg-amber-500",
+  danger:  "bg-red-500",
+  info:    "bg-sky-500",
+  neutral: "bg-stone-400",
+} as const;
+
+/**
  * Classes typographiques spéciales — Fraunces pour le rendu éditorial.
  */
 export const displayTokens = {
