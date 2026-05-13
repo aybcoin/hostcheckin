@@ -1,7 +1,7 @@
 import { clsx } from '../lib/clsx';
 import { borderTokens, statusTokens, surfaceTokens, textTokens } from '../lib/design-tokens';
 import { useGuestPortal } from '../hooks/useGuestPortal';
-import { fr } from '../lib/i18n/fr';
+import { GuestLocaleProvider, useGuestT } from '../lib/i18n/guest/context';
 import { GuestPortalLayout } from './guest/GuestPortalLayout';
 import { GuestStep1Welcome } from './guest/GuestStep1Welcome';
 import { GuestStep2Contract } from './guest/GuestStep2Contract';
@@ -22,7 +22,8 @@ function resolveToken(routeToken?: string): string {
   return pathToken?.trim() ?? '';
 }
 
-export default function GuestPortalPage({ routeToken }: GuestPortalPageProps) {
+function GuestPortalPageContent({ routeToken }: GuestPortalPageProps) {
+  const t = useGuestT();
   const token = resolveToken(routeToken);
   const {
     session,
@@ -38,7 +39,7 @@ export default function GuestPortalPage({ routeToken }: GuestPortalPageProps) {
     return (
       <div className={clsx('flex min-h-screen items-center justify-center px-4', surfaceTokens.app)}>
         <div className={clsx('rounded-xl border px-4 py-3 text-sm', borderTokens.default, surfaceTokens.panel, textTokens.body)}>
-          {fr.common.loading}
+          {t.common.loading}
         </div>
       </div>
     );
@@ -48,7 +49,7 @@ export default function GuestPortalPage({ routeToken }: GuestPortalPageProps) {
     return (
       <div className={clsx('flex min-h-screen items-center justify-center px-4', surfaceTokens.app)}>
         <div className={clsx('max-w-md rounded-xl border p-4 text-sm', statusTokens.danger)}>
-          {error || fr.guestPortal.errors.invalidToken}
+          {error || t.guestPortal.errors.invalidToken}
         </div>
       </div>
     );
@@ -81,5 +82,13 @@ export default function GuestPortalPage({ routeToken }: GuestPortalPageProps) {
         <GuestStep4Confirmation propertyName={session.propertyName} />
       ) : null}
     </GuestPortalLayout>
+  );
+}
+
+export default function GuestPortalPage({ routeToken }: GuestPortalPageProps) {
+  return (
+    <GuestLocaleProvider>
+      <GuestPortalPageContent routeToken={routeToken} />
+    </GuestLocaleProvider>
   );
 }

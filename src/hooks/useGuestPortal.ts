@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fr } from '../lib/i18n/fr';
+import { useGuestT } from '../lib/i18n/guest/context';
 import { supabase } from '../lib/supabase';
 import type { GuestPortalStep, GuestSession } from '../types/guest-portal';
 
@@ -84,6 +84,7 @@ function deriveStep(session: GuestSession): GuestPortalStep {
 }
 
 export function useGuestPortal(token: string) {
+  const t = useGuestT();
   const [session, setSession] = useState<GuestSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +94,7 @@ export function useGuestPortal(token: string) {
     const normalizedToken = token.trim();
 
     if (!normalizedToken) {
-      setError(fr.guestPortal.errors.invalidToken);
+      setError(t.guestPortal.errors.invalidToken);
       setSession(null);
       setIsLoading(false);
       return;
@@ -115,7 +116,7 @@ export function useGuestPortal(token: string) {
 
       if (tokenError || !tokenData) {
         setSession(null);
-        setError(fr.guestPortal.errors.invalidToken);
+        setError(t.guestPortal.errors.invalidToken);
         setIsLoading(false);
         return;
       }
@@ -123,7 +124,7 @@ export function useGuestPortal(token: string) {
       const typedToken = tokenData as GuestTokenRow;
       if (new Date(typedToken.expires_at).getTime() <= Date.now()) {
         setSession(null);
-        setError(fr.guestPortal.errors.invalidToken);
+        setError(t.guestPortal.errors.invalidToken);
         setIsLoading(false);
         return;
       }
@@ -155,7 +156,7 @@ export function useGuestPortal(token: string) {
 
       if (reservationError || !reservationData) {
         setSession(null);
-        setError(fr.guestPortal.errors.invalidToken);
+        setError(t.guestPortal.errors.invalidToken);
         setIsLoading(false);
         return;
       }
@@ -171,11 +172,11 @@ export function useGuestPortal(token: string) {
       const nextSession: GuestSession = {
         token: typedToken.token,
         reservationId: typedToken.reservation_id,
-        guestName: guest?.full_name || fr.app.guestFallbackName,
-        propertyName: property?.name || fr.reservations.unknownProperty,
+        guestName: guest?.full_name || t.app.guestFallbackName,
+        propertyName: property?.name || t.reservations.unknownProperty,
         checkinDate: reservation.check_in_date,
         checkoutDate: reservation.check_out_date,
-        hostName: host?.full_name || fr.app.hostFallbackName,
+        hostName: host?.full_name || t.app.hostFallbackName,
         contractUrl: resolveContractUrl(contracts),
         identityVerified:
           identities.some((item) => isIdentityApproved(item.status)) || reservationStatus === 'verified',
@@ -195,7 +196,7 @@ export function useGuestPortal(token: string) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [t, token]);
 
   const goToStep = useCallback((step: GuestPortalStep) => {
     setCurrentStep(step);
@@ -212,14 +213,14 @@ export function useGuestPortal(token: string) {
       .eq('id', session.reservationId);
 
     if (updateError) {
-      setError(fr.guestPortal.errors.signError);
+      setError(t.guestPortal.errors.signError);
       return false;
     }
 
     setSession((previous) => (previous ? { ...previous, contractSigned: true } : previous));
     setCurrentStep('identity');
     return true;
-  }, [session]);
+  }, [session, t]);
 
   const markIdentityVerified = useCallback(async () => {
     if (!session) return false;
@@ -232,7 +233,7 @@ export function useGuestPortal(token: string) {
       .eq('id', session.reservationId);
 
     if (updateError) {
-      setError(fr.guestPortal.errors.uploadError);
+      setError(t.guestPortal.errors.uploadError);
       return false;
     }
 
@@ -247,7 +248,7 @@ export function useGuestPortal(token: string) {
     );
     setCurrentStep('confirmation');
     return true;
-  }, [session]);
+  }, [session, t]);
 
   return useMemo(
     () => ({

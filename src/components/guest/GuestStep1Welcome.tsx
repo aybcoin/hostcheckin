@@ -1,7 +1,8 @@
 import { ArrowRight, Home } from 'lucide-react';
 import { clsx } from '../../lib/clsx';
 import { borderTokens, ctaTokens, stateFillTokens, statusTokens, surfaceTokens, textTokens } from '../../lib/design-tokens';
-import { fr } from '../../lib/i18n/fr';
+import type { GuestLocale } from '../../lib/i18n/guest';
+import { useGuestLocaleCtx, useGuestT } from '../../lib/i18n/guest/context';
 import type { GuestSession } from '../../types/guest-portal';
 
 interface GuestStep1WelcomeProps {
@@ -9,8 +10,10 @@ interface GuestStep1WelcomeProps {
   onStart: () => void;
 }
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('fr-FR', {
+function formatDate(value: string, locale: GuestLocale): string {
+  const dateLocale = { fr: 'fr-FR', en: 'en-GB', es: 'es-ES' }[locale] ?? 'fr-FR';
+
+  return new Date(value).toLocaleDateString(dateLocale, {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -18,11 +21,13 @@ function formatDate(value: string): string {
 }
 
 export function GuestStep1Welcome({ session, onStart }: GuestStep1WelcomeProps) {
-  const title = fr.guestPortal.welcome.title.replace('{guestName}', session.guestName);
-  const subtitle = fr.guestPortal.welcome.subtitle.replace('{propertyName}', session.propertyName);
+  const t = useGuestT();
+  const { locale } = useGuestLocaleCtx();
+  const title = t.guestPortal.welcome.title.replace('{guestName}', session.guestName);
+  const subtitle = t.guestPortal.welcome.subtitle.replace('{propertyName}', session.propertyName);
   const statusLabel = session.identityVerified
-    ? fr.guestPortal.welcome.statusReady
-    : fr.guestPortal.welcome.statusPending;
+    ? t.guestPortal.welcome.statusReady
+    : t.guestPortal.welcome.statusPending;
   const statusClass = session.identityVerified ? statusTokens.success : statusTokens.pending;
 
   return (
@@ -44,15 +49,15 @@ export function GuestStep1Welcome({ session, onStart }: GuestStep1WelcomeProps) 
       <div className={clsx('mt-5 rounded-xl border p-4', surfaceTokens.subtle, borderTokens.default)}>
         <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
-            <p className={textTokens.subtle}>{fr.guestPortal.welcome.checkin}</p>
-            <p className={clsx('font-semibold', textTokens.title)}>{formatDate(session.checkinDate)}</p>
+            <p className={textTokens.subtle}>{t.guestPortal.welcome.checkin}</p>
+            <p className={clsx('font-semibold', textTokens.title)}>{formatDate(session.checkinDate, locale)}</p>
           </div>
           <div>
-            <p className={textTokens.subtle}>{fr.guestPortal.welcome.checkout}</p>
-            <p className={clsx('font-semibold', textTokens.title)}>{formatDate(session.checkoutDate)}</p>
+            <p className={textTokens.subtle}>{t.guestPortal.welcome.checkout}</p>
+            <p className={clsx('font-semibold', textTokens.title)}>{formatDate(session.checkoutDate, locale)}</p>
           </div>
           <div className="sm:col-span-2">
-            <p className={textTokens.subtle}>{fr.guestPortal.welcome.hostedBy}</p>
+            <p className={textTokens.subtle}>{t.guestPortal.welcome.hostedBy}</p>
             <p className={clsx('font-semibold', textTokens.title)}>{session.hostName}</p>
           </div>
         </div>
@@ -63,7 +68,7 @@ export function GuestStep1Welcome({ session, onStart }: GuestStep1WelcomeProps) 
         onClick={onStart}
         className={clsx('mt-5 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium', ctaTokens.primary)}
       >
-        {fr.guestPortal.welcome.cta}
+        {t.guestPortal.welcome.cta}
         <ArrowRight size={16} aria-hidden="true" />
       </button>
     </section>
