@@ -162,6 +162,8 @@ const en = {
       signAndFinish: 'Sign and finish',
       reference: 'Reference:',
       date: 'Date:',
+      clausesSummaryTitle: 'Summary of key clauses',
+      contractLegalNotice: 'The contract text below is written in French (the legally binding language). A summary of the key clauses in your language is provided above.',
     },
     errors: {
       emptyImage: 'Empty or unreadable image.',

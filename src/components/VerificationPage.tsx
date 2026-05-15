@@ -15,6 +15,7 @@ import {
   textTokens,
 } from '../lib/design-tokens';
 import { GUEST_LOCALES } from '../lib/i18n/guest';
+import { clauses } from '../lib/i18n/guest/clauses';
 import { useGuestLocaleCtx, useGuestT } from '../lib/i18n/guest/context';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -1235,6 +1236,27 @@ ${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
                   <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>{verificationT.contract.title}</h3>
                   <p className={clsx("text-sm", textTokens.muted)}>{verificationT.contract.subtitle}</p>
                 </div>
+
+                {contractTemplate && locale !== 'fr' && (
+                  <div className="space-y-3">
+                    <details open className={clsx("rounded-lg border p-4", borderTokens.default, surfaceTokens.subtle)}>
+                      <summary className={clsx("cursor-pointer text-sm font-semibold", textTokens.title)}>
+                        {verificationT.contract.clausesSummaryTitle}
+                      </summary>
+                      <ol className="mt-3 space-y-3">
+                        {clauses[locale].map((clause) => (
+                          <li key={clause.title} className={clsx("rounded-lg border p-3", borderTokens.default, surfaceTokens.panel)}>
+                            <p className={clsx("text-sm font-semibold", textTokens.title)}>{clause.title}</p>
+                            <p className={clsx("mt-1 text-sm leading-6", textTokens.body)}>{clause.body}</p>
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
+                    <div className={clsx("rounded-lg border p-3 text-sm", statusTokens.info)}>
+                      {verificationT.contract.contractLegalNotice}
+                    </div>
+                  </div>
+                )}
 
                 <div className={clsx("rounded-lg p-4 max-h-64 overflow-y-auto text-sm", surfaceTokens.subtle, textTokens.body)}>
                   {contractContent ? (
