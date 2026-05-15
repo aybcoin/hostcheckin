@@ -12,6 +12,7 @@ import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { TopNavigation } from './components/TopNavigation';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ToastContainer } from './components/ui/ToastContainer';
+import { GuestLocaleProvider } from './lib/i18n/guest/context';
 import { APP_PAGE_PATHS, AppPage } from './lib/navigation';
 
 const DashboardPage = lazy(() =>
@@ -344,7 +345,11 @@ function App() {
   if (guestPortalToken !== null) {
     appContent = <GuestPortalPage routeToken={guestPortalToken} />;
   } else if (verificationLink) {
-    appContent = <VerificationPage uniqueLink={verificationLink} />;
+    appContent = (
+      <GuestLocaleProvider>
+        <VerificationPage uniqueLink={verificationLink} />
+      </GuestLocaleProvider>
+    );
   } else if (publicBookingToken) {
     appContent = <PublicBookingForm propertyToken={publicBookingToken} />;
   } else if (!user) {

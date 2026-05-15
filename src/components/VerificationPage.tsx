@@ -14,8 +14,11 @@ import {
   surfaceTokens,
   textTokens,
 } from '../lib/design-tokens';
+import { GUEST_LOCALES } from '../lib/i18n/guest';
+import { useGuestLocaleCtx, useGuestT } from '../lib/i18n/guest/context';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import { toast } from '../lib/toast';
 
 interface VerificationPageProps {
   uniqueLink: string;
@@ -120,6 +123,10 @@ async function logAuditEvent(params: {
 }
 
 export function VerificationPage({ uniqueLink }: VerificationPageProps) {
+  const t = useGuestT();
+  const { locale, setLocale } = useGuestLocaleCtx();
+  const dateLocale = { fr: 'fr-FR', en: 'en-GB', es: 'es-ES' }[locale];
+  const verificationT = t.verification;
   const isDemoMode = uniqueLink === 'demo-preview';
   const [step, setStep] = useState(1);
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -163,6 +170,10 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
     }
     setSelfiePreview(null);
   }, [selfieFile]);
+
+  const formatDate = (value: string | undefined) => (
+    value ? new Date(value).toLocaleDateString(dateLocale) : '—'
+  );
 
   const fetchReservation = async () => {
     if (isDemoMode) {
@@ -312,34 +323,34 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
         .replace(/\{\{guest_name\}\}/g, reservation.guests?.full_name || '')
         .replace(/\{\{guest_email\}\}/g, reservation.guests?.email || '')
         .replace(/\{\{guest_phone\}\}/g, reservation.guests?.phone || '')
-        .replace(/\{\{check_in_date\}\}/g, new Date(reservation.check_in_date).toLocaleDateString('fr-FR'))
-        .replace(/\{\{check_out_date\}\}/g, new Date(reservation.check_out_date).toLocaleDateString('fr-FR'))
+        .replace(/\{\{check_in_date\}\}/g, formatDate(reservation.check_in_date))
+        .replace(/\{\{check_out_date\}\}/g, formatDate(reservation.check_out_date))
         .replace(/\{\{number_of_guests\}\}/g, String(reservation.number_of_guests))
         .replace(/\{\{booking_reference\}\}/g, reservation.booking_reference)
         .replace(/\{\{max_guests\}\}/g, String(property.max_guests))
         .replace(/\{\{rooms_count\}\}/g, String(property.rooms_count))
         .replace(/\{\{check_in_time\}\}/g, property.check_in_time || '15:00')
         .replace(/\{\{check_out_time\}\}/g, property.check_out_time || '11:00')
-        .replace(/\{\{today_date\}\}/g, new Date().toLocaleDateString('fr-FR'));
+        .replace(/\{\{today_date\}\}/g, new Date().toLocaleDateString(dateLocale));
     }
 
     // No custom template — generate a default contract text
-    return `CONTRAT DE LOCATION COURTE DURÉE
+    return `${verificationT.contract.heading}
 
-Logement : ${property.name}
-Adresse : ${property.address}, ${property.city}
-Arrivée : ${new Date(reservation.check_in_date).toLocaleDateString('fr-FR')}
-Départ : ${new Date(reservation.check_out_date).toLocaleDateString('fr-FR')}
-Voyageurs : ${reservation.number_of_guests}
-Référence : ${reservation.booking_reference}
+${verificationT.contract.property} ${property.name}
+${verificationT.contract.address} ${property.address}, ${property.city}
+${verificationT.contract.arrival} ${formatDate(reservation.check_in_date)}
+${verificationT.contract.departure} ${formatDate(reservation.check_out_date)}
+${verificationT.contract.travelers} ${reservation.number_of_guests}
+${verificationT.contract.reference} ${reservation.booking_reference}
 
-Règles :
-- Respect du voisinage
-- Interdiction de fumer à l'intérieur
-- Pas de fêtes ni événements
-- Maintenir les lieux propres
+${verificationT.contract.rules}
+- ${verificationT.contract.ruleNeighbors}
+- ${verificationT.contract.ruleNoSmoking}
+- ${verificationT.contract.ruleNoParties}
+- ${verificationT.contract.ruleClean}
 
-Date : ${new Date().toLocaleDateString('fr-FR')}`;
+${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
   };
 
   const MAX_FILE_SIZE_MB = 10;
@@ -383,7 +394,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         const MAX_DIM = 1600;
         let { width, height } = img;
         if (!width || !height) {
-          safeReject(new Error('Image vide ou illisible.'));
+          safeReject(new Error(verificationT.errors.emptyImage));
           return;
         }
         if (width > MAX_DIM || height > MAX_DIM) {
@@ -397,7 +408,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          safeReject(new Error('Canvas indisponible sur cet appareil.'));
+          safeReject(new Error(verificationT.errors.canvasUnavailable));
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
@@ -405,7 +416,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         const tryQuality = (q: number) => {
           canvas.toBlob(
             (blob) => {
-              if (!blob) { safeReject(new Error('Echec de la compression JPEG.')); return; }
+              if (!blob) { safeReject(new Error(verificationT.errors.jpegFailed)); return; }
               if (blob.size <= maxKB * 1024 || q <= 0.3) {
                 safeResolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
               } else {
@@ -420,13 +431,9 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       };
       img.onerror = () => {
         if (isHeicLike(file)) {
-          safeReject(new Error(
-            "Format HEIC/HEIF non pris en charge par ce navigateur. Sur iPhone, activez Réglages -> Appareil photo -> Formats -> Le plus compatible, ou envoyez la photo en JPEG/PNG.",
-          ));
+          safeReject(new Error(verificationT.errors.heicUnsupported));
         } else {
-          safeReject(new Error(
-            "Impossible de lire l'image. Le fichier est peut-être corrompu ou dans un format non supporté.",
-          ));
+          safeReject(new Error(verificationT.errors.unreadableImage));
         }
       };
       img.src = url;
@@ -438,7 +445,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       return null;
     }
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      alert(`Le fichier "${label}" dépasse la taille maximale autorisée (${MAX_FILE_SIZE_MB} Mo).`);
+      alert(
+        verificationT.errors.fileTooLarge
+          .replace('{label}', label)
+          .replace('{size}', String(MAX_FILE_SIZE_MB)),
+      );
       return null;
     }
     // Accept common mobile-camera variants. Some Android browsers advertise
@@ -451,7 +462,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
     const ext = (file.name.split('.').pop() || '').toLowerCase();
     const extOk = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf'].includes(ext);
     if (!allowedTypes.includes(file.type) && !extOk) {
-      alert(`Type de fichier non accepté pour "${label}". Formats acceptés : JPEG, PNG, WebP, HEIC, PDF.`);
+      alert(verificationT.errors.unsupportedFileType.replace('{label}', label));
       return null;
     }
 
@@ -463,7 +474,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       compressed = await compressImage(file, OCR_MAX_KB);
     } catch (e) {
       console.error(`compressImage failed for ${label}:`, e);
-      alert(`${label} : ${(e as Error).message}`);
+      const errorMessage = e instanceof Error ? e.message : verificationT.errors.submitError;
+      alert(`${label}: ${errorMessage}`);
       return null;
     }
 
@@ -496,7 +508,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
     const currentReservation = reservation;
     const trimmedName = (declaredName || '').trim();
     if (!trimmedName) {
-      alert("Renseignez votre nom complet.");
+      alert(verificationT.errors.fullNameRequired);
       return;
     }
     setKycLoading(true);
@@ -524,11 +536,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         console.warn('Guest profile update failed (non-fatal):', updateErr);
       }
 
-      const frontUrl = await uploadFile(idFrontFile, 'id_front', 'ID front');
-      const backUrl = idBackFile ? await uploadFile(idBackFile, 'id_back', 'ID back') : null;
+      const frontUrl = await uploadFile(idFrontFile, 'id_front', verificationT.identity.photoFront);
+      const backUrl = idBackFile ? await uploadFile(idBackFile, 'id_back', verificationT.identity.photoBack) : null;
 
       if (!frontUrl) {
-        alert("Erreur lors de l'envoi du document. Réessayez.");
+        alert(verificationT.errors.documentUploadError);
         setKycLoading(false);
         return;
       }
@@ -571,17 +583,17 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         let message: string;
         if (kycResponse.status === 400) {
           message = serverReason
-            ? `Données incomplètes : ${serverReason}. Vérifiez votre nom et la photo du document.`
-            : "Données incomplètes. Vérifiez votre nom et la photo du document.";
+            ? verificationT.errors.incompleteDataWithReason.replace('{reason}', serverReason)
+            : verificationT.errors.incompleteData;
         } else if (kycResponse.status === 413 || kycResponse.status === 414) {
-          message = "La photo du document est trop volumineuse. Essayez avec une photo plus petite ou mieux cadrée.";
+          message = verificationT.errors.photoTooLarge;
         } else if (kycResponse.status >= 500) {
           message = serverReason
-            ? `Erreur du service : ${serverReason}. Réessayez dans quelques instants.`
-            : "Le service de vérification est momentanément indisponible. Réessayez dans quelques instants.";
+            ? verificationT.errors.serviceError.replace('{reason}', serverReason)
+            : verificationT.errors.serviceUnavailable;
         } else {
           message = serverReason
-            || "Le service de vérification a refusé la demande. Réessayez.";
+            || verificationT.errors.requestRefused;
         }
 
         console.error('KYC verification HTTP error:', {
@@ -643,8 +655,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
         status: 'rejected',
         confidence: 0,
         is_valid_document: false,
-        rejection_reason:
-          "Erreur réseau pendant la vérification. Réessayez.",
+        rejection_reason: verificationT.errors.verificationNetworkError,
       });
     } finally {
       setKycLoading(false);
@@ -665,7 +676,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       const canvas = canvasRef.current;
       const signatureDataUrl = canvas?.toDataURL() || '';
 
-      const selfieUrl = selfieFile ? await uploadFile(selfieFile, 'selfie', 'Selfie') : null;
+      const selfieUrl = selfieFile ? await uploadFile(selfieFile, 'selfie', verificationT.selfie.title) : null;
 
       // Fix #2: Don't update identity_verification directly (anon UPDATE
       // policy was dropped for security). The selfie file is safely stored in
@@ -678,13 +689,12 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       // Fix #9: Guard against signing an empty contract — this would
       // produce a legally worthless document.
       if (!renderedContract.trim()) {
-        alert("Le contrat n'a pas pu être chargé. Rafraîchissez la page puis réessayez.");
+        alert(verificationT.errors.contractLoadError);
         setSubmitting(false);
         return;
       }
 
-      const consentText =
-        "Je certifie que les informations fournies sont exactes. J'accepte que ma signature électronique, mon adresse IP, et l'horodatage soient enregistrés conformément à la loi marocaine n° 53-05 du 30 novembre 2007 relative à l'échange électronique de données juridiques.";
+      const consentText = verificationT.contract.consentText;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -720,7 +730,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
       if (!contractResponse.ok) {
         const errorBody = await contractResponse.text().catch(() => '');
-        let errorMessage = 'Erreur lors de l\'enregistrement du contrat.';
+        let errorMessage = verificationT.errors.contractSaveError;
         if (errorBody) {
           try {
             const parsed = JSON.parse(errorBody);
@@ -739,7 +749,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       const contractId = contractData.contract_id as string | undefined;
 
       if (!contractId) {
-        alert("Le contrat n'a pas pu être enregistré. Réessayez.");
+        alert(verificationT.errors.contractMissingError);
         setSubmitting(false);
         return;
       }
@@ -786,7 +796,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       setStep(4);
     } catch (error) {
       console.error('Error submitting verification:', error);
-      alert('Erreur lors de la soumission. Réessayez.');
+      toast.error(verificationT.errors.submitError);
     } finally {
       setSubmitting(false);
     }
@@ -797,7 +807,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
-          <p className="text-lg">Chargement de votre réservation...</p>
+          <p className="text-lg">{verificationT.loading}</p>
         </div>
       </div>
     );
@@ -810,11 +820,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
           <div className={clsx("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", stateFillTokens.danger)}>
             <AlertCircle className={clsx("w-8 h-8", textTokens.danger)} />
           </div>
-          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>Lien invalide</h1>
-          <p className={textTokens.muted}>
-            Ce lien de check-in n'est pas valide ou la réservation n'existe plus.
-            Contactez votre hôte pour obtenir un nouveau lien.
-          </p>
+          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>{verificationT.notFound.title}</h1>
+          <p className={textTokens.muted}>{verificationT.notFound.message}</p>
         </Card>
       </div>
     );
@@ -827,12 +834,10 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
           <div className={clsx("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", stateFillTokens.warning)}>
             <AlertCircle className={clsx("w-8 h-8", textTokens.warning)} />
           </div>
-          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>Erreur de chargement</h1>
-          <p className={clsx("mb-6", textTokens.muted)}>
-            Impossible de charger votre réservation. Vérifiez votre connexion internet.
-          </p>
+          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>{verificationT.error.title}</h1>
+          <p className={clsx("mb-6", textTokens.muted)}>{verificationT.error.message}</p>
           <Button onClick={fetchReservation} variant="primary">
-            Réessayer
+            {verificationT.error.retry}
           </Button>
         </Card>
       </div>
@@ -846,10 +851,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
           <div className={clsx("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", stateFillTokens.neutral)}>
             <Check className={clsx("w-8 h-8", textTokens.body)} />
           </div>
-          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>Check-in terminé !</h1>
-          <p className={clsx("mb-4", textTokens.muted)}>
-            Merci d'avoir complété votre check-in. Votre hôte a été notifié.
-          </p>
+          <h1 className={clsx("text-2xl font-bold mb-2", textTokens.title)}>{verificationT.complete.title}</h1>
+          <p className={clsx("mb-4", textTokens.muted)}>{verificationT.complete.thanks}</p>
           {kycResult && (
             <div className="mb-4 flex items-center justify-center gap-2">
               {kycResult.confidence >= 0.7 ? (
@@ -858,37 +861,36 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                 <ShieldCheck className={clsx("w-5 h-5", textTokens.warning)} />
               )}
               <span className={clsx("text-sm", textTokens.muted)}>
-                Vérification d'identité : {Math.round(kycResult.confidence * 100)} % de confiance
+                {verificationT.complete.identityConfidence.replace('{confidence}', String(Math.round(kycResult.confidence * 100)))}
               </span>
             </div>
           )}
           <div className={clsx("border rounded-lg p-4", surfaceTokens.subtle, borderTokens.default)}>
-            <p className={clsx("text-sm", textTokens.body)}>
-              Conservez ce lien au cas où vous auriez besoin de le consulter.
-            </p>
+            <p className={clsx("text-sm", textTokens.body)}>{verificationT.complete.keepLink}</p>
           </div>
           {reservation?.smart_lock_code ? (
             <div className={clsx("mt-4 rounded-lg border p-4 text-left", borderTokens.default, surfaceTokens.subtle)}>
               <p className={clsx("text-xs font-medium uppercase tracking-wide", textTokens.subtle)}>
-                Félicitations, voici votre code d’accès
+                {verificationT.complete.accessCodeTitle}
               </p>
               <p className={clsx("mt-2 text-2xl font-bold", textTokens.title)}>
                 {reservation.smart_lock_code}
               </p>
-              <p className={clsx("mt-1 text-xs", textTokens.subtle)}>
-                Ce code est activé pour la période de votre séjour.
-              </p>
+              <p className={clsx("mt-1 text-xs", textTokens.subtle)}>{verificationT.complete.accessCodeNote}</p>
             </div>
           ) : null}
-          <p className={clsx("text-[11px] mt-4", textTokens.subtle)}>
-            Votre adresse IP, navigateur et horodatage ont été enregistrés conformément à la loi marocaine n° 53-05 du 30 novembre 2007 relative à l'échange électronique de données juridiques.
-          </p>
+          <p className={clsx("text-[11px] mt-4", textTokens.subtle)}>{verificationT.complete.legalNotice}</p>
         </Card>
       </div>
     );
   }
 
   const contractContent = renderContractContent();
+  const steps = [
+    { num: 1, label: verificationT.steps.identity },
+    { num: 2, label: verificationT.steps.selfie },
+    { num: 3, label: verificationT.steps.contract },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-4">
@@ -897,25 +899,47 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
           <div className="bg-gradient-to-r from-slate-900 to-slate-700 p-5 text-white">
             <div className="flex items-center gap-3 mb-3">
               <Building2 className="w-7 h-7" />
-              <h1 className="text-xl font-bold">HostCheckIn</h1>
+              <h1 className="text-xl font-bold">{t.app.brand}</h1>
             </div>
-            <h2 className="text-lg font-semibold">{property?.name}</h2>
-            <p className="text-white/80 text-sm mt-1">
-              Réf. : {reservation?.booking_reference}
-            </p>
-            <div className="flex gap-4 mt-3 text-sm text-white/80">
-              <span>Du {reservation ? new Date(reservation.check_in_date).toLocaleDateString('fr-FR') : '—'}</span>
-              <span>au {reservation ? new Date(reservation.check_out_date).toLocaleDateString('fr-FR') : '—'}</span>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold">{property?.name}</h2>
+                <p className="text-white/80 text-sm mt-1">
+                  {verificationT.header.ref.replace('{reference}', reservation?.booking_reference || '—')}
+                </p>
+                <div className="flex gap-4 mt-3 text-sm text-white/80">
+                  <span>{verificationT.header.from.replace('{checkinDate}', formatDate(reservation?.check_in_date))}</span>
+                  <span>{verificationT.header.to.replace('{checkoutDate}', formatDate(reservation?.check_out_date))}</span>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {GUEST_LOCALES.map((guestLocale) => {
+                  const isActive = guestLocale === locale;
+
+                  return (
+                    <button
+                      key={guestLocale}
+                      type="button"
+                      onClick={() => setLocale(guestLocale)}
+                      aria-pressed={isActive}
+                      className={clsx(
+                        'rounded-full px-3 py-1 text-xs font-semibold tracking-wide transition-colors',
+                        isActive
+                          ? 'bg-white/20 border border-white/30 text-white'
+                          : 'bg-transparent border border-white/10 text-white/60',
+                      )}
+                    >
+                      {guestLocale.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           <div className={clsx("px-4 py-3 border-b", surfaceTokens.subtle, borderTokens.default)}>
             <div className="flex items-center justify-between">
-              {[
-                { num: 1, label: 'Identité' },
-                { num: 2, label: 'Selfie' },
-                { num: 3, label: 'Contrat' },
-              ].map((s, i) => (
+              {steps.map((s, i) => (
                 <div key={s.num} className="flex items-center">
                   {i > 0 && (
                     <div className={clsx("w-8 sm:w-12 h-0.5 mx-1", step >= s.num ? stateFillTokens.neutral : surfaceTokens.muted)} />
@@ -944,19 +968,19 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             {step === 1 && (
               <div className="space-y-5">
                 <div>
-                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>Vos informations</h3>
-                  <p className={clsx("text-sm", textTokens.muted)}>Confirmez votre identité avant la vérification du document</p>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>{verificationT.identity.title}</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>{verificationT.identity.subtitle}</p>
                 </div>
 
                 <div>
                   <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
-                    Nom complet <span className={textTokens.danger}>*</span>
+                    {verificationT.identity.fullName} <span className={textTokens.danger}>*</span>
                   </label>
                   <input
                     type="text"
                     value={declaredName}
                     onChange={(e) => setDeclaredName(e.target.value)}
-                    placeholder="Tel qu'indiqué sur votre pièce d'identité"
+                    placeholder={verificationT.identity.fullNameHint}
                     className={clsx(inputTokens.base, "text-base")}
                     autoComplete="name"
                   />
@@ -964,43 +988,43 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
                 <div>
                   <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
-                    Email <span className={clsx("font-normal", textTokens.subtle)}>(optionnel)</span>
+                    {verificationT.identity.email} <span className={clsx("font-normal", textTokens.subtle)}>{verificationT.identity.emailOptional}</span>
                   </label>
                   <input
                     type="email"
                     value={declaredEmail}
                     onChange={(e) => setDeclaredEmail(e.target.value)}
-                    placeholder="email@exemple.com"
+                    placeholder={verificationT.identity.emailPlaceholder}
                     className={clsx(inputTokens.base, "text-base")}
                     autoComplete="email"
                   />
                 </div>
 
                 <div className={clsx("pt-2 border-t", borderTokens.default)}>
-                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>Pièce d'identité</h3>
-                  <p className={clsx("text-sm", textTokens.muted)}>Votre document sera vérifié automatiquement</p>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>{verificationT.identity.idDocument}</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>{verificationT.identity.idDocumentHint}</p>
                 </div>
 
                 <div>
                   <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
-                    Type de document
+                    {verificationT.identity.docType}
                   </label>
                   <select
                     value={idType}
                     onChange={(e) => { setIdType(e.target.value); setKycResult(null); }}
                     className={clsx(inputTokens.base, "text-base")}
                   >
-                    <option value="">Sélectionner</option>
-                    <option value="cin">Carte d'identité nationale</option>
-                    <option value="passport">Passeport</option>
-                    <option value="driver_license">Permis de conduire</option>
-                    <option value="sejour">Titre de séjour</option>
+                    <option value="">{verificationT.identity.docTypeSelect}</option>
+                    <option value="cin">{verificationT.identity.docNationalId}</option>
+                    <option value="passport">{verificationT.identity.docPassport}</option>
+                    <option value="driver_license">{verificationT.identity.docDrivingLicense}</option>
+                    <option value="sejour">{verificationT.identity.docResidencePermit}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
-                    Photo recto
+                    {verificationT.identity.photoFront}
                   </label>
                   <label
                     htmlFor="id-front"
@@ -1013,7 +1037,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   >
                     {idFrontPreview ? (
                       <div className="space-y-2">
-                        <img src={idFrontPreview} alt="Aperçu" className="max-h-32 mx-auto rounded-lg object-contain" />
+                        <img src={idFrontPreview} alt={verificationT.identity.preview} className="max-h-32 mx-auto rounded-lg object-contain" />
                         <div className={clsx("flex items-center justify-center gap-2", textTokens.body)}>
                           <Check className="w-4 h-4" />
                           <span className="text-sm font-medium">{idFrontFile?.name}</span>
@@ -1023,14 +1047,14 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdFrontFile(null); setKycResult(null); }}
                           className={clsx("text-xs hover:opacity-90", textTokens.danger)}
                         >
-                          Supprimer
+                          {verificationT.identity.delete}
                         </button>
                       </div>
                     ) : (
                       <>
                         <Upload className={clsx("w-10 h-10 mx-auto mb-2", textTokens.subtle)} />
                         <span className={clsx("font-medium text-sm", textTokens.body)}>
-                          Prendre une photo ou choisir un fichier
+                          {verificationT.identity.takeOrChoose}
                         </span>
                       </>
                     )}
@@ -1046,7 +1070,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
 
                 <div>
                   <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
-                    Photo verso <span className={clsx("font-normal", textTokens.subtle)}>(optionnel)</span>
+                    {verificationT.identity.photoBack}
                   </label>
                   <label
                     htmlFor="id-back"
@@ -1063,7 +1087,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                         <span className="font-medium text-sm">{idBackFile.name}</span>
                       </div>
                     ) : (
-                      <span className={clsx("text-sm", textTokens.subtle)}>Ajouter le verso si applicable</span>
+                      <span className={clsx("text-sm", textTokens.subtle)}>{verificationT.identity.photoBackHint}</span>
                     )}
                     <input
                       type="file"
@@ -1080,12 +1104,12 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     <div className="flex items-start gap-3">
                       <ShieldX className={clsx("w-5 h-5 shrink-0 mt-0.5", textTokens.danger)} />
                       <div>
-                        <p className={clsx("font-semibold text-sm", textTokens.danger)}>Document rejeté</p>
+                        <p className={clsx("font-semibold text-sm", textTokens.danger)}>{verificationT.identity.rejected}</p>
                         <p className={clsx("text-sm mt-1", textTokens.danger)}>
-                          {kycResult.rejection_reason || "Le document soumis n'a pas pu être vérifié. Réessayez avec une photo plus nette."}
+                          {kycResult.rejection_reason || verificationT.identity.rejectedHint}
                         </p>
                         <p className={clsx("text-xs mt-2", textTokens.danger)}>
-                          Score de confiance : {Math.round(kycResult.confidence * 100)}%
+                          {verificationT.identity.confidenceScore.replace('{confidence}', String(Math.round(kycResult.confidence * 100)))}
                         </p>
                       </div>
                     </div>
@@ -1103,16 +1127,16 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                   {kycLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Vérification en cours...
+                      {verificationT.identity.verifying}
                     </>
                   ) : kycResult?.status === 'rejected' ? (
                     <>
-                      Réessayer la vérification
+                      {verificationT.identity.retryVerification}
                       <ChevronRight className="w-5 h-5" />
                     </>
                   ) : (
                     <>
-                      Continuer
+                      {verificationT.identity.continue}
                       <ChevronRight className="w-5 h-5" />
                     </>
                   )}
@@ -1123,8 +1147,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             {step === 2 && (
               <div className="space-y-5">
                 <div>
-                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>Photo selfie</h3>
-                  <p className={clsx("text-sm", textTokens.muted)}>Optionnel - pour confirmer votre identité par comparaison faciale</p>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>{verificationT.selfie.title}</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>{verificationT.selfie.subtitle}</p>
                 </div>
 
                 <label
@@ -1135,27 +1159,27 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                       ? `${borderTokens.strong} ${surfaceTokens.muted}`
                       : `${borderTokens.strong} hover:opacity-90`,
                   )}
-                >
-                  {selfiePreview ? (
-                    <div className="space-y-2">
-                      <img src={selfiePreview} alt="Selfie" className="max-h-40 mx-auto rounded-lg object-contain" />
-                      <div className={clsx("flex items-center justify-center gap-2", textTokens.body)}>
-                        <Check className="w-5 h-5" />
-                        <span className="font-medium text-sm">{selfieFile?.name}</span>
+                  >
+                    {selfiePreview ? (
+                      <div className="space-y-2">
+                        <img src={selfiePreview} alt={verificationT.selfie.title} className="max-h-40 mx-auto rounded-lg object-contain" />
+                        <div className={clsx("flex items-center justify-center gap-2", textTokens.body)}>
+                          <Check className="w-5 h-5" />
+                          <span className="font-medium text-sm">{selfieFile?.name}</span>
                       </div>
                       <button
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelfieFile(null); }}
                         className={clsx("text-xs hover:opacity-90", textTokens.danger)}
                       >
-                        Supprimer
+                        {verificationT.selfie.delete}
                       </button>
                     </div>
                   ) : (
                     <>
                       <Camera className={clsx("w-14 h-14 mx-auto mb-3", textTokens.subtle)} />
-                      <span className={clsx("font-medium", textTokens.body)}>Prendre un selfie</span>
-                      <p className={clsx("text-xs mt-1", textTokens.subtle)}>ou choisir une photo existante</p>
+                      <span className={clsx("font-medium", textTokens.body)}>{verificationT.selfie.take}</span>
+                      <p className={clsx("text-xs mt-1", textTokens.subtle)}>{verificationT.selfie.orChoose}</p>
                     </>
                   )}
                   <input
@@ -1177,7 +1201,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     )}
                   >
                     <ChevronLeft className="w-5 h-5" />
-                    Retour
+                    {verificationT.selfie.back}
                   </button>
                   <button
                     onClick={() => {
@@ -1198,7 +1222,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                       ctaTokens.primary,
                     )}
                   >
-                    {selfieFile ? 'Continuer' : 'Passer'}
+                    {selfieFile ? verificationT.selfie.continue : verificationT.selfie.skip}
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -1208,8 +1232,8 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
             {step === 3 && (
               <div className="space-y-5">
                 <div>
-                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>Contrat de location</h3>
-                  <p className={clsx("text-sm", textTokens.muted)}>Lisez et signez le contrat ci-dessous</p>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>{verificationT.contract.title}</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>{verificationT.contract.subtitle}</p>
                 </div>
 
                 <div className={clsx("rounded-lg p-4 max-h-64 overflow-y-auto text-sm", surfaceTokens.subtle, textTokens.body)}>
@@ -1217,19 +1241,19 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     <pre className="whitespace-pre-wrap font-sans leading-relaxed">{contractContent}</pre>
                   ) : (
                     <div className="space-y-3">
-                      <h4 className="font-bold text-base">CONTRAT DE LOCATION COURTE DURÉE</h4>
-                      <p><strong>Logement :</strong> {property?.name}</p>
-                      <p><strong>Adresse :</strong> {property?.address}, {property?.city}</p>
-                      <p><strong>Arrivée :</strong> {reservation ? new Date(reservation.check_in_date).toLocaleDateString('fr-FR') : '—'}</p>
-                      <p><strong>Départ :</strong> {reservation ? new Date(reservation.check_out_date).toLocaleDateString('fr-FR') : '—'}</p>
-                      <p><strong>Voyageurs :</strong> {reservation?.number_of_guests}</p>
+                      <h4 className="font-bold text-base">{verificationT.contract.heading}</h4>
+                      <p><strong>{verificationT.contract.property}</strong> {property?.name}</p>
+                      <p><strong>{verificationT.contract.address}</strong> {property?.address}, {property?.city}</p>
+                      <p><strong>{verificationT.contract.arrival}</strong> {formatDate(reservation?.check_in_date)}</p>
+                      <p><strong>{verificationT.contract.departure}</strong> {formatDate(reservation?.check_out_date)}</p>
+                      <p><strong>{verificationT.contract.travelers}</strong> {reservation?.number_of_guests}</p>
                       <div className="mt-3 space-y-1">
-                        <p className="font-semibold">Règles :</p>
+                        <p className="font-semibold">{verificationT.contract.rules}</p>
                         <ul className={clsx("list-disc list-inside space-y-0.5 ml-2", textTokens.muted)}>
-                          <li>Respect du voisinage</li>
-                          <li>Interdiction de fumer à l'intérieur</li>
-                          <li>Pas de fêtes ni événements</li>
-                          <li>Maintenir les lieux propres</li>
+                          <li>{verificationT.contract.ruleNeighbors}</li>
+                          <li>{verificationT.contract.ruleNoSmoking}</li>
+                          <li>{verificationT.contract.ruleNoParties}</li>
+                          <li>{verificationT.contract.ruleClean}</li>
                         </ul>
                       </div>
                     </div>
@@ -1249,16 +1273,14 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                       )}
                     />
                     <span className={clsx("text-xs leading-relaxed", textTokens.body)}>
-                      Je certifie que les informations fournies sont exactes. J'accepte que ma signature électronique,
-                      mon adresse IP et l'horodatage soient enregistrés conformément à la loi marocaine n° 53-05
-                      du 30 novembre 2007 relative à l'échange électronique de données juridiques.
+                      {verificationT.contract.consentText}
                     </span>
                   </label>
                 </div>
 
                 <div>
                   <label className={clsx("block text-sm font-medium mb-2", textTokens.body)}>
-                    Votre signature
+                    {verificationT.contract.signatureLabel}
                   </label>
                   <canvas
                     ref={canvasRef}
@@ -1278,16 +1300,13 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     onClick={clearSignature}
                     className={clsx("mt-1.5 px-3 py-1.5 text-xs rounded", ctaTokens.secondary)}
                   >
-                    Effacer la signature
+                    {verificationT.contract.clearSignature}
                   </button>
                 </div>
 
                 <div className={clsx("flex items-start gap-2 text-[11px]", textTokens.subtle)}>
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>
-                    En signant, votre adresse IP, navigateur, et l'horodatage exact seront enregistrés
-                    dans une piste d'audit sécurisée pour garantir la conformité légale de ce document.
-                  </span>
+                  <span>{verificationT.contract.auditInfo}</span>
                 </div>
 
                 <div className="flex gap-3">
@@ -1299,7 +1318,7 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     )}
                   >
                     <ChevronLeft className="w-5 h-5" />
-                    Retour
+                    {verificationT.contract.back}
                   </button>
                   <button
                     onClick={handleSubmit}
@@ -1312,11 +1331,11 @@ Date : ${new Date().toLocaleDateString('fr-FR')}`;
                     {submitting ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Envoi...
+                        {verificationT.contract.submitting}
                       </>
                     ) : (
                       <>
-                        Signer et terminer
+                        {verificationT.contract.signAndFinish}
                         <Check className="w-5 h-5" />
                       </>
                     )}
