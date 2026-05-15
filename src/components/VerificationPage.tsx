@@ -1237,7 +1237,7 @@ ${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
                   <p className={clsx("text-sm", textTokens.muted)}>{verificationT.contract.subtitle}</p>
                 </div>
 
-                {contractTemplate && locale !== 'fr' && (
+                {locale !== 'fr' && (
                   <div className="space-y-3">
                     <details open className={clsx("rounded-lg border p-4", borderTokens.default, surfaceTokens.subtle)}>
                       <summary className={clsx("cursor-pointer text-sm font-semibold", textTokens.title)}>
