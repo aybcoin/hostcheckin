@@ -162,6 +162,8 @@ const es = {
       signAndFinish: 'Firmar y finalizar',
       reference: 'Referencia:',
       date: 'Fecha:',
+      clausesSummaryTitle: 'Resumen de las cláusulas principales',
+      contractLegalNotice: 'El texto del contrato a continuación está redactado en francés (idioma jurídicamente vinculante). Un resumen de las cláusulas principales en su idioma se muestra arriba.',
     },
     errors: {
       emptyImage: 'Imagen vacía o ilegible.',

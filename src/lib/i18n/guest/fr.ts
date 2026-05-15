@@ -160,6 +160,8 @@ const fr = {
       signAndFinish: 'Signer et terminer',
       reference: 'Référence :',
       date: 'Date :',
+      clausesSummaryTitle: 'Résumé des clauses principales',
+      contractLegalNotice: 'Le texte du contrat ci-dessous est rédigé en français (langue juridique de référence). Un résumé des clauses principales dans votre langue est affiché ci-dessus.',
     },
     errors: {
       emptyImage: 'Image vide ou illisible.',
