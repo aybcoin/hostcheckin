@@ -86,7 +86,7 @@ export default function PropertiesOverviewPage({
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className={clsx('text-2xl font-bold sm:text-3xl', textTokens.title)}>{fr.portfolio.pageTitle}</h1>
+          <h1 className={clsx('text-xl font-semibold sm:text-2xl tracking-tight', textTokens.title)}>{fr.portfolio.pageTitle}</h1>
           <p className={clsx('mt-1 text-sm sm:text-base', textTokens.muted)}>{fr.portfolio.pageSubtitle}</p>
         </div>
 

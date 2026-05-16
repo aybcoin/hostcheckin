@@ -52,7 +52,7 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                 <Building2 className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">
               HostCheckIn
             </h1>
             <p className={textTokens.muted}>

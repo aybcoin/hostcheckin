@@ -67,7 +67,7 @@ export function SubscriptionPricingPage() {
   return (
     <div className="space-y-7">
       <header className="space-y-3">
-        <h1 className={clsx('text-2xl font-bold sm:text-3xl', textTokens.title)}>
+        <h1 className={clsx('text-xl font-semibold sm:text-2xl tracking-tight', textTokens.title)}>
           {fr.subscriptionPricing.pageTitle}
         </h1>
         <p className={clsx('text-sm sm:text-base', textTokens.muted)}>

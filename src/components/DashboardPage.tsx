@@ -166,7 +166,7 @@ export function DashboardPage({
           onChange={handlePropertyChange}
         />
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className={clsx('text-3xl font-semibold', textTokens.title)}>
+          <h1 className={clsx('text-2xl font-semibold tracking-tight', textTokens.title)}>
             {fr.dashboard.title}
           </h1>
           {properties.length > 1 && (

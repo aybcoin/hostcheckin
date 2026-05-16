@@ -109,7 +109,7 @@ export function CheckinsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={clsx("text-2xl sm:text-3xl font-bold", textTokens.title)}>
+        <h1 className={clsx("text-xl sm:text-2xl font-semibold tracking-tight", textTokens.title)}>
           {fr.checkins.title}
         </h1>
         <p className={clsx("mt-1 sm:mt-2", textTokens.muted)}>

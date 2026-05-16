@@ -24,7 +24,7 @@ export function SecurityPage() {
       {/* Header */}
       <div>
         <div className="flex flex-wrap items-center gap-3 mb-1">
-          <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>
+          <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight', textTokens.title)}>
             {t.title}
           </h1>
           <Badge variant="neutral">{t.versionBadge}</Badge>

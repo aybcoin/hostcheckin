@@ -222,7 +222,7 @@ export const sidebarTokens = {
   panelBorder: "border-stone-200/80",
   panelShadow: "",
   divider: "border-stone-200/80",
-  brandTile: "bg-stone-900 text-white",
+  brandTile: "bg-emerald-600 text-white",
   brandText: "text-stone-900",
   closeButton:
     "text-stone-500 hover:bg-stone-100 hover:text-stone-900",
@@ -289,11 +289,11 @@ export const dashboardToneTokens = {
  * Dashboard timeline / priorities left-rail color bands.
  */
 export const dashboardRailTokens = {
-  success: "bg-emerald-500",
-  warning: "bg-amber-500",
-  danger:  "bg-red-500",
-  info:    "bg-sky-500",
-  neutral: "bg-stone-400",
+  success: "bg-emerald-400",
+  warning: "bg-amber-400",
+  danger:  "bg-red-400",
+  info:    "bg-sky-400",
+  neutral: "bg-stone-300",
 } as const;
 
 /**

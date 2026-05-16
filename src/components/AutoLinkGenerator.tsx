@@ -266,7 +266,7 @@ export function AutoLinkGenerator({ property, hostId, onBack }: AutoLinkGenerato
       </Button>
 
       <header>
-        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>Réservations automatiques</h1>
+        <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight', textTokens.title)}>Réservations automatiques</h1>
         <p className={clsx('mt-1 text-sm', textTokens.muted)}>
           Lien permanent et QR code pour {property?.name || 'le logement sélectionné'}.
         </p>
