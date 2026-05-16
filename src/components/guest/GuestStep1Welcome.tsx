@@ -23,7 +23,7 @@ function formatDate(value: string, locale: GuestLocale): string {
 export function GuestStep1Welcome({ session, onStart }: GuestStep1WelcomeProps) {
   const t = useGuestT();
   const { locale } = useGuestLocaleCtx();
-  const title = t.guestPortal.welcome.title.replace('{guestName}', session.guestName);
+  const title = t.guestPortal.welcome.title;
   const subtitle = t.guestPortal.welcome.subtitle.replace('{propertyName}', session.propertyName);
   const statusLabel = session.identityVerified
     ? t.guestPortal.welcome.statusReady

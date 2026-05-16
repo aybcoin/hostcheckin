@@ -25,7 +25,7 @@ const en = {
       confirmation: 'Confirmation',
     },
     welcome: {
-      title: 'Welcome, {guestName}!',
+      title: 'Welcome!',
       subtitle: 'Your stay at {propertyName}',
       checkin: 'Check-in',
       checkout: 'Check-out',

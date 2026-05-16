@@ -409,9 +409,18 @@ export function ReservationsPage({
         return;
       }
 
+      const checkoutDate = new Date(`${reservation.check_out_date}T23:59:59Z`);
+      const expiresAt = Number.isFinite(checkoutDate.getTime())
+        ? new Date(checkoutDate.getTime() + 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
       const { data: insertedToken, error: insertError } = await supabase
         .from('guest_tokens')
-        .insert({ reservation_id: reservation.id })
+        .insert(
+          expiresAt
+            ? { reservation_id: reservation.id, expires_at: expiresAt }
+            : { reservation_id: reservation.id },
+        )
         .select('token')
         .single();
 

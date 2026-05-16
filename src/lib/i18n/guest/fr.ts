@@ -23,7 +23,7 @@ const fr = {
       confirmation: 'Confirmation',
     },
     welcome: {
-      title: 'Bienvenue, {guestName} !',
+      title: 'Bienvenue !',
       subtitle: 'Votre séjour à {propertyName}',
       checkin: 'Arrivée',
       checkout: 'Départ',

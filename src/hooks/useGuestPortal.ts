@@ -122,19 +122,13 @@ export function useGuestPortal(token: string) {
       }
 
       const typedToken = tokenData as GuestTokenRow;
-      if (new Date(typedToken.expires_at).getTime() <= Date.now()) {
+      const isExpired = new Date(typedToken.expires_at).getTime() <= Date.now();
+      const isConsumed = Boolean(typedToken.used_at);
+      if (isExpired || isConsumed) {
         setSession(null);
         setError(t.guestPortal.errors.invalidToken);
         setIsLoading(false);
         return;
-      }
-
-      if (!typedToken.used_at) {
-        await supabase
-          .from('guest_tokens')
-          .update({ used_at: new Date().toISOString() })
-          .eq('id', typedToken.id)
-          .is('used_at', null);
       }
 
       const { data: reservationData, error: reservationError } = await supabase
@@ -236,6 +230,12 @@ export function useGuestPortal(token: string) {
       setError(t.guestPortal.errors.uploadError);
       return false;
     }
+
+    await supabase
+      .from('guest_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('token', session.token)
+      .is('used_at', null);
 
     setSession((previous) =>
       previous
