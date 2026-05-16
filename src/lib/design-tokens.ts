@@ -187,7 +187,7 @@ export const sidebarPropertyTokens = {
   card:
     "border border-stone-200/80 bg-white hover:bg-stone-50 transition-colors duration-150",
   imageFallback:
-    "bg-stone-100 text-stone-500 ring-1 ring-inset ring-stone-200",
+    "bg-white text-stone-600 ring-1 ring-inset ring-stone-200/80",
   title: "text-stone-900",
   reference: "text-stone-400",
   dates: "text-stone-600 tabular-nums",

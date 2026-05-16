@@ -380,7 +380,7 @@ export function ReservationCard({
                 e.stopPropagation();
                 setDeleteConfirmOpen(true);
               }}
-              className={`rounded-lg border p-1.5 transition-colors ${statusTokens.danger}`}
+              className="rounded-lg border border-stone-200/80 bg-white p-1.5 text-stone-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
             >
               <Trash2 size={13} aria-hidden="true" />
             </button>
