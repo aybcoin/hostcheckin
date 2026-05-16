@@ -89,20 +89,20 @@ export const chartTokens = {
 
 export const ctaTokens = {
   primary:
-    "bg-emerald-700 text-white hover:bg-emerald-800 active:bg-emerald-900 shadow-sm shadow-emerald-900/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2",
+    "bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2",
   secondary:
-    "border border-stone-300 bg-white text-slate-800 hover:bg-stone-50 hover:border-stone-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2",
+    "border border-stone-200/80 bg-white text-stone-800 hover:bg-stone-50 hover:border-stone-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2",
   tertiary:
-    "bg-transparent text-slate-600 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2",
+    "bg-transparent text-stone-600 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2",
   destructive:
-    "bg-red-700 text-white hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
+    "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
   warning: warningTokens.cta,
   subtle:
-    "bg-stone-100 text-slate-700 hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2",
+    "bg-stone-100 text-stone-700 hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2",
   success:
-    "bg-emerald-700 text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2",
+    "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2",
   danger:
-    "bg-red-700 text-white hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
+    "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2",
   dangerSoft:
     "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2",
 } as const;
@@ -130,8 +130,8 @@ export const cardTokens = {
 
 export const chipTokens = {
   primary:
-    "bg-stone-100 text-slate-700 border border-stone-200 hover:bg-stone-200 transition-colors duration-200",
-  active: "bg-emerald-700 text-white border border-emerald-700 shadow-sm shadow-emerald-900/10",
+    "bg-white text-stone-700 border border-stone-200/80 hover:bg-stone-50 transition-colors duration-150",
+  active: "bg-stone-900 text-white border border-stone-900",
 } as const;
 
 export const statusTokens = {
@@ -165,17 +165,17 @@ export const modalTokens = {
  * Utiliser pour les actions primaires, éléments actifs, indicateurs sélectionnés.
  */
 export const accentTokens = {
-  bg: "bg-emerald-700",
-  bgLight: "bg-emerald-50",
-  bgHover: "hover:bg-emerald-800",
-  text: "text-emerald-700",
-  textDark: "text-emerald-900",
-  border: "border-emerald-300",
-  borderLight: "border-emerald-200",
-  ring: "ring-emerald-400",
-  badge: "border border-emerald-200 bg-emerald-50 text-emerald-800",
-  activeNavBorder: "border-emerald-700",
-  activeNavText: "text-emerald-800",
+  bg: "bg-stone-900",
+  bgLight: "bg-stone-100",
+  bgHover: "hover:bg-stone-800",
+  text: "text-stone-900",
+  textDark: "text-stone-900",
+  border: "border-stone-300",
+  borderLight: "border-stone-200",
+  ring: "ring-stone-400",
+  badge: "border border-emerald-200 bg-emerald-50 text-emerald-700",
+  activeNavBorder: "border-emerald-600",
+  activeNavText: "text-stone-900",
 } as const;
 
 /**

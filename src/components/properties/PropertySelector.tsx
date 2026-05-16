@@ -1,5 +1,5 @@
 import { clsx } from '../../lib/clsx';
-import { borderTokens, cardTokens, ctaTokens, surfaceTokens, textTokens } from '../../lib/design-tokens';
+import { chipTokens } from '../../lib/design-tokens';
 import { fr } from '../../lib/i18n/fr';
 import type { Property } from '../../lib/supabase';
 
@@ -10,7 +10,8 @@ interface PropertySelectorProps {
   loading?: boolean;
 }
 
-const pillBaseClassName = 'shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors';
+const pillBaseClassName =
+  'shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2';
 
 export function PropertySelector({
   properties,
@@ -31,11 +32,8 @@ export function PropertySelector({
           aria-pressed={selectedPropertyId === null}
           onClick={() => onChange(null)}
           className={clsx(
-            selectedPropertyId === null ? ctaTokens.primary : cardTokens.base,
             pillBaseClassName,
-            selectedPropertyId === null
-              ? undefined
-              : [borderTokens.default, surfaceTokens.panel, textTokens.body],
+            selectedPropertyId === null ? chipTokens.active : chipTokens.primary,
           )}
         >
           {fr.portfolio.allProperties}
@@ -49,11 +47,8 @@ export function PropertySelector({
             aria-pressed={selectedPropertyId === property.id}
             onClick={() => onChange(property.id)}
             className={clsx(
-              selectedPropertyId === property.id ? ctaTokens.primary : cardTokens.base,
               pillBaseClassName,
-              selectedPropertyId === property.id
-                ? undefined
-                : [borderTokens.default, surfaceTokens.panel, textTokens.body],
+              selectedPropertyId === property.id ? chipTokens.active : chipTokens.primary,
             )}
           >
             {property.name}

@@ -11,7 +11,6 @@ import {
 } from 'react';
 import { clsx } from '../../lib/clsx';
 import {
-  accentTokens,
   borderTokens,
   displayTokens,
   surfaceTokens,
@@ -117,7 +116,7 @@ export function KpiCard({
   const rootClassName = clsx(
     'h-full rounded-2xl',
     variant === 'accent'
-      ? clsx(accentTokens.bgLight, borderTokens.success)
+      ? 'bg-emerald-50 border-emerald-200'
       : clsx(surfaceTokens.panel, borderTokens.default),
     (href || onClick) && 'cursor-pointer hover:shadow-md',
     className,
