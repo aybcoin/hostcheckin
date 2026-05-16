@@ -153,8 +153,8 @@ export function DashboardPage({
   };
 
   // Derive KPI status texts from trust metrics
-  const depositsVariant = trustMetrics.deposits === 0 ? 'warning' : 'success';
-  const depositsStatus = trustMetrics.deposits === 0 ? 'En attente' : 'Sécurisées';
+  const depositsVariant = trustMetrics.deposits === 0 ? 'muted' : 'success';
+  const depositsStatus = trustMetrics.deposits === 0 ? 'Aucune caution active' : 'Sécurisées';
 
   return (
     <div className="space-y-6">
