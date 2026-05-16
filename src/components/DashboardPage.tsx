@@ -182,7 +182,7 @@ export function DashboardPage({
           <LiveBadge isRealtimeActive={isRealtimeActive} isRealtimeReconnecting={isRealtimeReconnecting} />
         </div>
         <p className={clsx('text-sm', textTokens.muted)}>
-          {fr.dashboard.subtitle(host?.full_name || fr.app.hostFallbackName)}
+          {fr.dashboard.subtitle((host?.full_name?.trim().split(/\s+/)[0]) || fr.app.hostFallbackName)}
         </p>
 
         {/* KPI Strip */}
