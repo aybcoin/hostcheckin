@@ -129,6 +129,28 @@ export function useOnboardingSteps({ hostId, properties }: UseOnboardingStepsPar
     setAutoCheckinCount(autoCheckinResponse.count || 0);
   }, []);
 
+  const buildFallbackSteps = useCallback((targetHostId: string): OnboardingStep[] => {
+    const nowIso = new Date().toISOString();
+    return DEFAULT_STEPS.map((step) => ({
+      id: `default-${step.step_key}`,
+      host_id: targetHostId,
+      step_key: step.step_key,
+      icon_name: step.icon_name,
+      title: step.title,
+      description: step.description,
+      estimate_label: step.estimate_label,
+      position: step.position,
+      cta_label: step.cta_label ?? null,
+      cta_page: step.cta_page ?? null,
+      cta_external_url: null,
+      depends_on_step_key: step.depends_on_step_key ?? null,
+      is_enabled: true,
+      completed_at: step.completed_at ?? null,
+      created_at: nowIso,
+      updated_at: nowIso,
+    }));
+  }, []);
+
   const fetchSteps = useCallback(async () => {
     if (!hostId) {
       setLoading(false);
@@ -137,19 +159,23 @@ export function useOnboardingSteps({ hostId, properties }: UseOnboardingStepsPar
     }
 
     setLoading(true);
-    try {
-      const initialQuery = await supabase
-        .from('onboarding_steps')
-        .select('*')
-        .eq('host_id', hostId)
-        .order('position', { ascending: true });
-      let data = initialQuery.data;
 
-      if (initialQuery.error) {
-        throw initialQuery.error;
-      }
+    let data: OnboardingStep[] | null = null;
 
-      if (!data || data.length === 0) {
+    const initialQuery = await supabase
+      .from('onboarding_steps')
+      .select('*')
+      .eq('host_id', hostId)
+      .order('position', { ascending: true });
+
+    if (initialQuery.error) {
+      console.warn('Failed to load onboarding_steps:', initialQuery.error);
+    } else {
+      data = (initialQuery.data || []) as OnboardingStep[];
+    }
+
+    if (data && data.length === 0) {
+      try {
         await seedDefaultSteps(hostId);
         const seeded = await supabase
           .from('onboarding_steps')
@@ -158,20 +184,31 @@ export function useOnboardingSteps({ hostId, properties }: UseOnboardingStepsPar
           .order('position', { ascending: true });
 
         if (seeded.error) {
-          throw seeded.error;
+          console.warn('Failed to load seeded onboarding_steps:', seeded.error);
+          data = null;
+        } else {
+          data = (seeded.data || []) as OnboardingStep[];
         }
-        data = seeded.data || [];
+      } catch (seedError) {
+        console.warn('Failed to seed onboarding_steps:', seedError);
+        data = null;
       }
-
-      await fetchCompletionSignals(hostId);
-      setSteps((data || []) as OnboardingStep[]);
-      setError(null);
-    } catch {
-      setError(fr.onboarding.loadError);
-    } finally {
-      setLoading(false);
     }
-  }, [fetchCompletionSignals, hostId, seedDefaultSteps]);
+
+    try {
+      await fetchCompletionSignals(hostId);
+    } catch (signalError) {
+      console.warn('Failed to load onboarding completion signals:', signalError);
+    }
+
+    if (!data || data.length === 0) {
+      data = buildFallbackSteps(hostId);
+    }
+
+    setSteps(data);
+    setError(null);
+    setLoading(false);
+  }, [buildFallbackSteps, fetchCompletionSignals, hostId, seedDefaultSteps]);
 
   useEffect(() => {
     void fetchSteps();
@@ -197,7 +234,10 @@ export function useOnboardingSteps({ hostId, properties }: UseOnboardingStepsPar
     if (!hostId || steps.length === 0) return;
 
     const stepsToMarkDone = steps.filter(
-      (step) => !step.completed_at && Boolean(completionSignalByKey[step.step_key]),
+      (step) =>
+        !step.id.startsWith('default-') &&
+        !step.completed_at &&
+        Boolean(completionSignalByKey[step.step_key]),
     );
 
     if (stepsToMarkDone.length === 0) return;
