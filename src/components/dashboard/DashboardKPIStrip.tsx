@@ -1,78 +1,74 @@
 /**
- * DashboardKPIStrip — 4 pastel icon-tile KPI cards matching the Payoneer-style mockup.
- * Colors: violet (signatures) · sky (identities) · emerald (deposits) · rose (reservations)
+ * DashboardKPIStrip — Mercury/Stripe-style monochrome KPI tiles.
+ * Single hairline border, generous numbers, subtle status footer.
  */
-import { ArrowRight, BadgeCheck, Calendar, FileSignature, ShieldCheck } from 'lucide-react';
+import { ArrowUpRight, BadgeCheck, Calendar, FileSignature, ShieldCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { clsx } from '../../lib/clsx';
 import {
   borderTokens,
-  dashboardToneTokens,
   displayTokens,
   surfaceTokens,
   textTokens,
 } from '../../lib/design-tokens';
 
-type Tone = keyof typeof dashboardToneTokens;
-
 interface KPICardProps {
   label: string;
   value: number | string;
   icon: LucideIcon;
-  tone: Tone;
   statusText?: string;
   statusVariant?: 'success' | 'warning' | 'muted';
   ctaLabel?: string;
   onClick?: () => void;
 }
 
-function KPICard({ label, value, icon: Icon, tone, statusText, statusVariant = 'muted', ctaLabel, onClick }: KPICardProps) {
-  const statusColor =
-    statusVariant === 'success' ? textTokens.success
-    : statusVariant === 'warning' ? textTokens.warning
-    : textTokens.subtle;
-
+function KPICard({ label, value, icon: Icon, statusText, statusVariant = 'muted', ctaLabel, onClick }: KPICardProps) {
   const dotColor =
-    statusVariant === 'success' ? 'bg-emerald-400'
-    : statusVariant === 'warning' ? 'bg-amber-400'
+    statusVariant === 'success' ? 'bg-emerald-500'
+    : statusVariant === 'warning' ? 'bg-amber-500'
     : 'bg-stone-300';
 
+  const statusColor =
+    statusVariant === 'success' ? 'text-emerald-700'
+    : statusVariant === 'warning' ? 'text-amber-700'
+    : textTokens.muted;
+
   const inner = (
-    <div className="flex h-full flex-col justify-between gap-4">
+    <div className="flex h-full flex-col justify-between gap-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className={clsx('text-[11px] font-semibold uppercase tracking-wider', textTokens.subtle)}>
-            {label}
-          </p>
-          <p className={clsx('mt-1.5 text-4xl', displayTokens.number, textTokens.title)}>
-            {value}
-          </p>
-        </div>
-        <span
-          className={clsx(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-            dashboardToneTokens[tone].tile,
-          )}
-        >
-          <Icon size={22} aria-hidden="true" className={dashboardToneTokens[tone].icon} />
+        <p className={clsx('text-xs font-medium uppercase tracking-wider', textTokens.muted)}>
+          {label}
+        </p>
+        <Icon size={16} strokeWidth={1.75} aria-hidden="true" className={textTokens.subtle} />
+      </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className={clsx('text-4xl leading-none', displayTokens.number, textTokens.title)}>
+          {value}
         </span>
       </div>
-      {(statusText || ctaLabel) && (
-        <div className="flex items-center gap-1.5">
-          {statusText ? (
-            <>
-              <span aria-hidden="true" className={clsx('h-2 w-2 rounded-full', dotColor)} />
-              <span className={clsx('text-xs font-medium', statusColor)}>{statusText}</span>
-            </>
-          ) : ctaLabel ? (
-            <span className={clsx('inline-flex items-center gap-1 text-xs font-medium', textTokens.muted)}>
-              {ctaLabel}
-              <ArrowRight size={12} aria-hidden="true" />
-            </span>
-          ) : null}
-        </div>
-      )}
+
+      <div className="flex items-center justify-between gap-2">
+        {statusText ? (
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden="true" className={clsx('h-1.5 w-1.5 rounded-full', dotColor)} />
+            <span className={clsx('text-xs font-medium', statusColor)}>{statusText}</span>
+          </span>
+        ) : <span aria-hidden="true" />}
+        {ctaLabel ? (
+          <span className={clsx('inline-flex items-center gap-1 text-xs font-medium', textTokens.muted)}>
+            {ctaLabel}
+            <ArrowUpRight size={12} strokeWidth={2} aria-hidden="true" />
+          </span>
+        ) : null}
+      </div>
     </div>
+  );
+
+  const baseClasses = clsx(
+    'flex flex-col rounded-xl border p-5 transition-colors duration-150',
+    surfaceTokens.panel,
+    borderTokens.default,
   );
 
   if (onClick) {
@@ -80,22 +76,14 @@ function KPICard({ label, value, icon: Icon, tone, statusText, statusVariant = '
       <button
         type="button"
         onClick={onClick}
-        className={clsx(
-          'flex w-full flex-col rounded-2xl border p-6 text-left transition-shadow duration-200 hover:shadow-md',
-          surfaceTokens.panel,
-          borderTokens.default,
-        )}
+        className={clsx(baseClasses, 'text-left hover:border-stone-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2')}
       >
         {inner}
       </button>
     );
   }
 
-  return (
-    <div className={clsx('flex flex-col rounded-2xl border p-6', surfaceTokens.panel, borderTokens.default)}>
-      {inner}
-    </div>
-  );
+  return <div className={baseClasses}>{inner}</div>;
 }
 
 interface DashboardKPIStripProps {
@@ -131,7 +119,6 @@ export function DashboardKPIStrip({
         label="Signatures vérifiées"
         value={signatures}
         icon={FileSignature}
-        tone="violet"
         statusText={signaturesStatus}
         statusVariant="success"
         onClick={onNavigateToContracts}
@@ -140,7 +127,6 @@ export function DashboardKPIStrip({
         label="Pièces d'identité"
         value={identities}
         icon={BadgeCheck}
-        tone="sky"
         statusText={identitiesStatus}
         statusVariant="success"
         onClick={onNavigateToCheckins}
@@ -149,7 +135,6 @@ export function DashboardKPIStrip({
         label="Cautions sécurisées"
         value={deposits}
         icon={ShieldCheck}
-        tone="emerald"
         statusText={depositsStatus}
         statusVariant={depositsVariant}
       />
@@ -157,7 +142,6 @@ export function DashboardKPIStrip({
         label="Réservations actives"
         value={activeReservations}
         icon={Calendar}
-        tone="rose"
         ctaLabel="Ce mois"
         onClick={onNavigateToReservations}
       />

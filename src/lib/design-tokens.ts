@@ -28,10 +28,10 @@ export const infoTokens = {
 } as const;
 
 export const textTokens = {
-  title: "text-slate-900",
-  body: "text-slate-700",
-  muted: "text-slate-600",
-  subtle: "text-slate-500",
+  title: "text-stone-900",
+  body: "text-stone-700",
+  muted: "text-stone-500",
+  subtle: "text-stone-400",
   inverse: "text-white",
   danger: "text-red-700",
   warning: "text-amber-700",
@@ -40,16 +40,16 @@ export const textTokens = {
 } as const;
 
 export const surfaceTokens = {
-  app: "bg-stone-50",
+  app: "bg-[#FAFAF7]",
   panel: "bg-white",
   subtle: "bg-stone-50",
   muted: "bg-stone-100",
-  elevated: "bg-stone-200",
-  overlay: "bg-stone-950/60 backdrop-blur-sm",
+  elevated: "bg-white",
+  overlay: "bg-stone-950/40 backdrop-blur-sm",
 } as const;
 
 export const borderTokens = {
-  default: "border-stone-200",
+  default: "border-stone-200/80",
   subtle: "border-stone-100",
   strong: "border-stone-300",
   danger: "border-red-200",
@@ -108,13 +108,12 @@ export const ctaTokens = {
 } as const;
 
 export const cardTokens = {
-  base: "rounded-2xl border border-stone-200",
-  elevated: "bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-4px_rgba(15,23,42,0.06)]",
-  radius: "rounded-2xl",
+  base: "rounded-xl border border-stone-200/80",
+  elevated: "bg-white",
+  radius: "rounded-xl",
   variants: {
     default: "bg-white",
-    highlight:
-      "bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-8px_rgba(15,23,42,0.08)]",
+    highlight: "bg-white ring-1 ring-stone-200/80",
     danger: "border-red-200 bg-red-50",
     warning: warningTokens.card,
     info: infoTokens.card,
@@ -122,11 +121,11 @@ export const cardTokens = {
   },
   padding: {
     sm: "p-4",
-    md: "p-6",
-    lg: "p-8",
+    md: "p-5",
+    lg: "p-6",
   },
   interactive:
-    "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[0_2px_4px_rgba(15,23,42,0.04),0_16px_40px_-8px_rgba(15,23,42,0.10)] hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-200",
+    "transition-colors duration-150 hover:border-stone-300 focus-within:ring-2 focus-within:ring-stone-200",
 } as const;
 
 export const chipTokens = {
@@ -186,31 +185,31 @@ export const accentTokens = {
  */
 export const sidebarPropertyTokens = {
   card:
-    "border border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.06] transition-colors duration-200",
+    "border border-stone-200/80 bg-white hover:bg-stone-50 transition-colors duration-150",
   imageFallback:
-    "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-slate-200 ring-1 ring-inset ring-white/[0.04]",
-  title: "text-white",
-  reference: "text-slate-400",
-  dates: "text-slate-300 tabular-nums",
+    "bg-stone-100 text-stone-500 ring-1 ring-inset ring-stone-200",
+  title: "text-stone-900",
+  reference: "text-stone-400",
+  dates: "text-stone-600 tabular-nums",
   platformAirbnb:
-    "border border-rose-400/30 bg-rose-500/15 text-rose-200",
+    "border border-rose-200 bg-rose-50 text-rose-700",
   platformBooking:
-    "border border-sky-400/30 bg-sky-500/15 text-sky-200",
+    "border border-sky-200 bg-sky-50 text-sky-700",
   platformDirect:
-    "border border-emerald-400/30 bg-emerald-500/15 text-emerald-200",
+    "border border-emerald-200 bg-emerald-50 text-emerald-700",
   platformOther:
-    "border border-white/10 bg-white/[0.06] text-slate-200",
+    "border border-stone-200 bg-stone-50 text-stone-700",
   statusArriving:
-    "border border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
-  statusArrivingDot: "bg-emerald-400",
+    "border border-emerald-200 bg-emerald-50 text-emerald-700",
+  statusArrivingDot: "bg-emerald-500",
   statusLeaving:
-    "border border-amber-400/30 bg-amber-500/10 text-amber-200",
-  statusLeavingDot: "bg-amber-400",
+    "border border-amber-200 bg-amber-50 text-amber-700",
+  statusLeavingDot: "bg-amber-500",
   statusIdle:
-    "border border-white/[0.08] bg-white/[0.04] text-slate-300",
-  statusIdleDot: "bg-slate-400",
+    "border border-stone-200 bg-stone-50 text-stone-600",
+  statusIdleDot: "bg-stone-400",
   focusRing:
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAFAF7]",
 } as const;
 
 /**
@@ -218,36 +217,36 @@ export const sidebarPropertyTokens = {
  * bord-à-bord, navigation directe, accent émeraude.
  */
 export const sidebarTokens = {
-  shell: "bg-slate-950",
-  panel: "bg-slate-950",
-  panelBorder: "border-transparent",
+  shell: "bg-[#FAFAF7] border-r border-stone-200/80",
+  panel: "bg-[#FAFAF7]",
+  panelBorder: "border-stone-200/80",
   panelShadow: "",
-  divider: "border-white/[0.06]",
-  brandTile: "bg-emerald-500 text-white",
-  brandText: "text-white",
+  divider: "border-stone-200/80",
+  brandTile: "bg-stone-900 text-white",
+  brandText: "text-stone-900",
   closeButton:
-    "text-slate-400 hover:bg-white/[0.06] hover:text-white",
+    "text-stone-500 hover:bg-stone-100 hover:text-stone-900",
   focusRing:
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
-  navGroupLabel: "text-slate-500",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAFAF7]",
+  navGroupLabel: "text-stone-400",
   navItem:
-    "text-slate-300 hover:bg-white/[0.04] hover:text-white",
-  navItemActive: "bg-white/[0.06] text-white font-semibold",
-  navIcon: "text-slate-500 group-hover:text-slate-200",
-  navIconActive: "text-emerald-400",
-  navBadge: "bg-rose-500/15 text-rose-300 border border-rose-400/30",
+    "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
+  navItemActive: "bg-white text-stone-900 font-medium shadow-[0_1px_2px_rgba(15,23,42,0.04)] ring-1 ring-stone-200/80",
+  navIcon: "text-stone-400 group-hover:text-stone-700",
+  navIconActive: "text-stone-900",
+  navBadge: "bg-stone-100 text-stone-700 border border-stone-200",
   navBadgeUrgent: "bg-red-500 text-white border border-red-500",
   promoCard:
-    "border border-emerald-500/20 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800",
-  promoIcon: "bg-white/20 text-white",
-  promoTitle: "text-white",
-  promoBody: "text-emerald-100/80",
-  userPanel: "border-t border-white/[0.06]",
-  avatar: "bg-white text-slate-900",
-  userName: "text-white",
-  userMeta: "text-slate-400",
+    "border border-stone-200/80 bg-white",
+  promoIcon: "bg-stone-100 text-stone-700",
+  promoTitle: "text-stone-900",
+  promoBody: "text-stone-500",
+  userPanel: "border-t border-stone-200/80",
+  avatar: "bg-stone-900 text-white",
+  userName: "text-stone-900",
+  userMeta: "text-stone-500",
   logout:
-    "text-slate-400 hover:bg-red-500/10 hover:text-red-300",
+    "text-stone-500 hover:bg-red-50 hover:text-red-700",
   mobileTopBar: "bg-white/95 backdrop-blur-md",
 } as const;
 
@@ -301,7 +300,7 @@ export const dashboardRailTokens = {
  * Classes typographiques spéciales — Fraunces pour le rendu éditorial.
  */
 export const displayTokens = {
-  hero: "font-display font-light tracking-tightest-display",
-  title: "font-display font-medium tracking-tight",
-  number: "font-display font-medium tabular-nums",
+  hero: "font-sans font-semibold tracking-tightest-display",
+  title: "font-sans font-semibold tracking-tight",
+  number: "font-sans font-semibold tabular-nums tracking-tight",
 } as const;
