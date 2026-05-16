@@ -1,7 +1,6 @@
-import { AlertTriangle, CheckCircle, Info, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, X, XCircle } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
 import { clsx } from '../../lib/clsx';
-import { stateFillTokens, textTokens } from '../../lib/design-tokens';
 import type { Toast, ToastVariant } from '../../lib/toast';
 
 const iconByVariant: Record<ToastVariant, typeof CheckCircle> = {
@@ -11,11 +10,11 @@ const iconByVariant: Record<ToastVariant, typeof CheckCircle> = {
   info: Info,
 };
 
-const surfaceByVariant: Record<ToastVariant, string> = {
-  success: stateFillTokens.success,
-  error: stateFillTokens.danger,
-  warning: stateFillTokens.warning,
-  info: stateFillTokens.neutral,
+const iconColorByVariant: Record<ToastVariant, string> = {
+  success: 'text-emerald-400',
+  error: 'text-red-400',
+  warning: 'text-amber-400',
+  info: 'text-sky-400',
 };
 
 function ariaLiveByVariant(variant: ToastVariant): 'assertive' | 'polite' {
@@ -31,26 +30,21 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
     <div
       role="alert"
       aria-live={ariaLiveByVariant(toast.variant)}
-      className={clsx(
-        'animate-slide-in-right w-full rounded-lg px-3 py-2.5 shadow-sm',
-        'flex items-start gap-2',
-        surfaceByVariant[toast.variant],
-        textTokens.inverse,
-      )}
+      className="animate-slide-in-right w-full rounded-xl bg-stone-900 px-3.5 py-3 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.4)] flex items-start gap-3 ring-1 ring-stone-800"
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      <p className={clsx('flex-1 text-sm', textTokens.inverse)}>{toast.message}</p>
+      <Icon
+        className={clsx('mt-0.5 h-4 w-4 shrink-0', iconColorByVariant[toast.variant])}
+        aria-hidden="true"
+        strokeWidth={2}
+      />
+      <p className="flex-1 text-sm text-stone-100 leading-snug">{toast.message}</p>
       <button
         type="button"
         onClick={() => onClose(toast.id)}
         aria-label="Fermer la notification"
-        className={clsx(
-          'inline-flex h-5 w-5 items-center justify-center rounded text-sm leading-none',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-          textTokens.inverse,
-        )}
+        className="inline-flex h-5 w-5 items-center justify-center rounded text-stone-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-900"
       >
-        ×
+        <X size={14} aria-hidden="true" />
       </button>
     </div>
   );

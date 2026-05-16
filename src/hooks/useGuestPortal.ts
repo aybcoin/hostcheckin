@@ -226,7 +226,10 @@ export function useGuestPortal(token: string) {
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (supabaseUrl) {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (supabaseAnonKey) headers.apikey = supabaseAnonKey;
+        if (supabaseAnonKey) {
+          headers.apikey = supabaseAnonKey;
+          headers.Authorization = `Bearer ${supabaseAnonKey}`;
+        }
         await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
           method: 'POST',
           headers,
@@ -275,7 +278,10 @@ export function useGuestPortal(token: string) {
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (supabaseUrl) {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (supabaseAnonKey) headers.apikey = supabaseAnonKey;
+        if (supabaseAnonKey) {
+          headers.apikey = supabaseAnonKey;
+          headers.Authorization = `Bearer ${supabaseAnonKey}`;
+        }
         await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
           method: 'POST',
           headers,

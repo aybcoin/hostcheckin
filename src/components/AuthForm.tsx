@@ -43,16 +43,16 @@ export function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#FAFAF7] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <Card variant="highlight" padding="lg" className={clsx('p-5 sm:p-8', borderTokens.subtle)}>
+        <Card variant="default" padding="lg" className={clsx('p-5 sm:p-8', borderTokens.default)}>
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-gradient-to-r from-slate-900 to-slate-700 rounded-xl">
-                <Building2 className="w-8 h-8 text-white" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-600">
+                <Building2 className="h-6 w-6 text-white" strokeWidth={2} />
               </div>
             </div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">
+            <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight mb-2', textTokens.title)}>
               HostCheckIn
             </h1>
             <p className={textTokens.muted}>
