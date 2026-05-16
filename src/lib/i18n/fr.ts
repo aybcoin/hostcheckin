@@ -205,6 +205,10 @@ export const fr = {
       logsTitle: 'Aucune notification',
       logsDescription: 'Les notifications envoyées apparaîtront ici.',
     },
+    errors: {
+      logsTitle: 'Historique indisponible',
+      logs: 'Impossible de charger l’historique des notifications.',
+    },
     warnings: {
       providerNotConfigured:
         'Notifications non configurées. Créez un compte gratuit sur brevo.com et ajoutez votre BREVO_API_KEY dans les variables Supabase.',

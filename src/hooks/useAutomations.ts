@@ -5,6 +5,7 @@ import {
   validateNotificationPayload,
   type NotificationPayload,
 } from '../lib/automations-logic';
+import { fr } from '../lib/i18n/fr';
 import { supabase } from '../lib/supabase';
 import type {
   AutomationRule,
@@ -17,7 +18,7 @@ export interface UseAutomationsReturn {
   rules: AutomationRule[];
   logs: NotificationLog[];
   isLoading: boolean;
-  error: string | null;
+  logsError: string | null;
   refresh: () => void;
   toggleRule: (ruleId: string) => Promise<void>;
   sendTestNotification: (trigger: AutomationTrigger, channel: NotificationChannel) => Promise<void>;
@@ -117,7 +118,7 @@ export function useAutomations(): UseAutomationsReturn {
   const [rules, setRules] = useState<AutomationRule[]>(() => loadPersistedRules());
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [logsError, setLogsError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   const fetchLogs = useCallback(async () => {
@@ -148,11 +149,11 @@ export function useAutomations(): UseAutomationsReturn {
         }));
 
       setLogs(mapped);
-      setError(null);
+      setLogsError(null);
     } catch (error) {
-      console.error('Failed to load automation logs:', error);
+      console.warn('Failed to load automation logs:', error);
       setLogs([]);
-      setError('Impossible de charger les notifications automatiques.');
+      setLogsError(fr.automations.errors.logs);
     } finally {
       setIsLoading(false);
     }
@@ -284,7 +285,7 @@ export function useAutomations(): UseAutomationsReturn {
     rules,
     logs,
     isLoading,
-    error,
+    logsError,
     refresh,
     toggleRule,
     sendTestNotification,
