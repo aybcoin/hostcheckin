@@ -37,7 +37,7 @@ export const APP_PAGE_PATHS: Record<AppPage, string> = {
   housekeeping: '/menage',
   maintenance: '/maintenance',
   linen: '/linge',
-  finance: '/finance',
+  finance: '/finances',
   inventory: '/inventaire',
   ical: '/calendriers',
   'pricing-engine': '/tarification',

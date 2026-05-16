@@ -93,6 +93,7 @@ const GuestPortalPage = lazy(() => import('./components/GuestPortalPage'));
 
 const legacyPagePathAliases: Partial<Record<string, AppPage>> = {
   '/profile': 'profile',
+  '/finance': 'finance',
 };
 
 function pageFromPath(pathname: string): AppPage {
@@ -196,6 +197,14 @@ function App() {
     setAutoLinkPropertyId(null);
     const page = pageFromPath(pathname);
     setCurrentPage(page);
+
+    if (legacyPagePathAliases[pathname]) {
+      const canonical = APP_PAGE_PATHS[page];
+      if (canonical && canonical !== pathname) {
+        window.history.replaceState({}, '', `${canonical}${search ? `?${params.toString()}` : ''}`);
+      }
+    }
+
     if (page === 'reservations') {
       setFocusedReservationId(params.get('focus'));
     } else {
