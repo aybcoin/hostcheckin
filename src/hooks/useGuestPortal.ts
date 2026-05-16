@@ -216,6 +216,32 @@ export function useGuestPortal(token: string) {
       return false;
     }
 
+    // Notify the host by email that the contract has been signed.
+    // The edge function resolves host email + property name server-side
+    // from the reservationId, so the anonymous guest doesn't need any of
+    // that PII. Failure here must not block the check-in flow — we just
+    // warn and continue.
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (supabaseUrl) {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (supabaseAnonKey) headers.apikey = supabaseAnonKey;
+        await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            reservationId: session.reservationId,
+            trigger: 'contract_signed',
+            channel: 'email',
+            recipientType: 'host',
+          }),
+        }).catch((err) => console.warn('contract_signed notification failed:', err));
+      }
+    } catch (err) {
+      console.warn('contract_signed notification dispatch failed:', err);
+    }
+
     setSession((previous) => (previous ? { ...previous, contractSigned: true } : previous));
     setCurrentStep('identity');
     return true;
@@ -241,6 +267,29 @@ export function useGuestPortal(token: string) {
       .update({ used_at: new Date().toISOString() })
       .eq('token', session.token)
       .is('used_at', null);
+
+    // Fire the host-side "identity verified" notification. Same fire-and-
+    // forget pattern as contract_signed — never block the guest UX.
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (supabaseUrl) {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (supabaseAnonKey) headers.apikey = supabaseAnonKey;
+        await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            reservationId: session.reservationId,
+            trigger: 'verification_complete',
+            channel: 'email',
+            recipientType: 'host',
+          }),
+        }).catch((err) => console.warn('verification_complete notification failed:', err));
+      }
+    } catch (err) {
+      console.warn('verification_complete notification dispatch failed:', err);
+    }
 
     setSession((previous) =>
       previous

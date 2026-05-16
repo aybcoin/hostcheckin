@@ -336,6 +336,103 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+/**
+ * Auto-resolve missing payload fields from the database when the caller only
+ * provides the minimal set (reservationId + trigger). Used by the guest
+ * portal, which is anonymous and cannot read host/guest tables directly.
+ *
+ * Existing host-side callers that send a full payload remain unaffected:
+ * any field already present in the partial payload is preserved.
+ */
+async function resolveMissingPayloadFields(
+  supabase: ReturnType<typeof createClient>,
+  partial: Partial<NotificationPayload>,
+): Promise<Partial<NotificationPayload>> {
+  if (!isNonEmptyString(partial.reservationId)) {
+    return partial;
+  }
+
+  const needsLookup =
+    !isNonEmptyString(partial.guestName) ||
+    !isNonEmptyString(partial.propertyName) ||
+    !isNonEmptyString(partial.checkinDate) ||
+    !isNonEmptyString(partial.checkoutDate) ||
+    !isNonEmptyString(partial.hostEmail) ||
+    !isNonEmptyString(partial.senderName);
+
+  if (!needsLookup) return partial;
+
+  try {
+    const { data: reservation } = await supabase
+      .from('reservations')
+      .select('check_in_date, check_out_date, property_id, guest_id, smart_lock_code')
+      .eq('id', partial.reservationId)
+      .maybeSingle();
+
+    if (!reservation) return partial;
+
+    const [propertyResult, hostResult, guestResult] = await Promise.all([
+      reservation.property_id
+        ? supabase
+            .from('properties')
+            .select('name, host_id, check_in_time, check_out_time')
+            .eq('id', reservation.property_id as string)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      Promise.resolve(null),
+      reservation.guest_id
+        ? supabase
+            .from('guests')
+            .select('full_name, email, phone')
+            .eq('id', reservation.guest_id as string)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    const property = propertyResult?.data as
+      | { name?: string; host_id?: string; check_in_time?: string; check_out_time?: string }
+      | null;
+    const guest = guestResult?.data as
+      | { full_name?: string; email?: string | null; phone?: string | null }
+      | null;
+
+    let host:
+      | { full_name?: string; email?: string | null; phone?: string | null }
+      | null = null;
+    if (property?.host_id) {
+      const { data: hostRow } = await supabase
+        .from('hosts')
+        .select('full_name, email, phone')
+        .eq('id', property.host_id)
+        .maybeSingle();
+      host = (hostRow as { full_name?: string; email?: string | null; phone?: string | null } | null) ?? null;
+    }
+    void hostResult;
+
+    return {
+      ...partial,
+      channel: isChannel(partial.channel) ? partial.channel : 'email',
+      recipientType: isRecipientType(partial.recipientType) ? partial.recipientType : 'host',
+      guestName: partial.guestName || guest?.full_name || 'Voyageur',
+      guestEmail: partial.guestEmail || guest?.email || undefined,
+      guestPhone: partial.guestPhone || guest?.phone || undefined,
+      propertyName: partial.propertyName || property?.name || 'Logement',
+      checkinDate: partial.checkinDate || (reservation.check_in_date as string) || '',
+      checkoutDate: partial.checkoutDate || (reservation.check_out_date as string) || '',
+      hostEmail: partial.hostEmail || host?.email || '',
+      hostPhone: partial.hostPhone || host?.phone || undefined,
+      senderName: partial.senderName || host?.full_name || 'HostCheckIn',
+      checkInTime: partial.checkInTime || property?.check_in_time || undefined,
+      checkOutTime: partial.checkOutTime || property?.check_out_time || undefined,
+      smartLockCode:
+        partial.smartLockCode || (reservation.smart_lock_code as string | undefined) || undefined,
+    };
+  } catch (error) {
+    console.warn('resolveMissingPayloadFields failed', error);
+    return partial;
+  }
+}
+
 async function fetchReservationTemplateContext(
   supabase: ReturnType<typeof createClient>,
   reservationId: string,
@@ -610,19 +707,11 @@ serve(async (req: Request) => {
     return response(405, { error: 'method_not_allowed' });
   }
 
-  let payload: NotificationPayload;
+  let rawPayload: Partial<NotificationPayload>;
   try {
-    payload = await req.json() as NotificationPayload;
+    rawPayload = await req.json() as Partial<NotificationPayload>;
   } catch {
     return response(400, { error: 'invalid_json_payload' });
-  }
-
-  const validationErrors = validateNotificationPayload(payload);
-  if (validationErrors.length > 0 || !isTrigger(payload.trigger)) {
-    return response(400, {
-      error: 'invalid_payload',
-      details: validationErrors,
-    });
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -633,6 +722,17 @@ serve(async (req: Request) => {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+  const resolvedPartial = await resolveMissingPayloadFields(supabase, rawPayload);
+  const payload = resolvedPartial as NotificationPayload;
+
+  const validationErrors = validateNotificationPayload(payload);
+  if (validationErrors.length > 0 || !isTrigger(payload.trigger)) {
+    return response(400, {
+      error: 'invalid_payload',
+      details: validationErrors,
+    });
+  }
   const requestBrevoApiKey = req.headers.get('x-brevo-api-key')?.trim();
   const brevoApiKey = requestBrevoApiKey || Deno.env.get('BREVO_API_KEY');
   const templateContext = isUuid(payload.reservationId)
