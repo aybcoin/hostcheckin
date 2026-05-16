@@ -47,16 +47,28 @@ CREATE POLICY "Hosts can append own audit logs" ON audit_logs
   FOR INSERT TO authenticated
   WITH CHECK (host_id = auth.uid());
 
-DROP POLICY IF EXISTS "Anon can append guest audit logs" ON audit_logs;
-CREATE POLICY "Anon can append guest audit logs" ON audit_logs
-  FOR INSERT TO anon
-  WITH CHECK (
-    actor_role = 'guest'
-    AND host_id IN (
-      SELECT p.host_id
-      FROM properties p
-      JOIN reservations r ON r.property_id = p.id
-      JOIN guest_tokens gt ON gt.reservation_id = r.id
-      WHERE gt.expires_at > NOW()
-    )
-  );
+-- Anon insert path is only meaningful when guest_tokens exists (guest portal
+-- enabled). Guarded so the migration is idempotent across environments.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'guest_tokens'
+  ) THEN
+    DROP POLICY IF EXISTS "Anon can append guest audit logs" ON audit_logs;
+    EXECUTE $POL$
+      CREATE POLICY "Anon can append guest audit logs" ON audit_logs
+        FOR INSERT TO anon
+        WITH CHECK (
+          actor_role = 'guest'
+          AND host_id IN (
+            SELECT p.host_id
+            FROM properties p
+            JOIN reservations r ON r.property_id = p.id
+            JOIN guest_tokens gt ON gt.reservation_id = r.id
+            WHERE gt.expires_at > NOW()
+          )
+        )
+    $POL$;
+  END IF;
+END $$;

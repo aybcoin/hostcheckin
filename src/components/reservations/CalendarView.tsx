@@ -167,7 +167,7 @@ export function CalendarView({
   }, [blocks]);
 
   return (
-    <Card variant="default" padding="md" className="space-y-4 overflow-hidden">
+    <Card variant="default" padding="md" className="space-y-4 overflow-visible">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className={clsx('text-lg font-semibold capitalize', textTokens.title)}>
@@ -295,53 +295,40 @@ export function CalendarView({
                       : fr.app.guestFallbackName;
                     const status = statusMeta(reservation.status);
 
+                    const tooltipText = `${guestName}\n${formatReservationRange(reservation)}\nStatut : ${status.label}\nCliquez pour ouvrir le détail`;
+
                     return (
-                      <div
+                      <button
                         key={block.reservationId}
-                        className="group absolute top-2"
+                        type="button"
+                        onClick={() => onSelectReservation(reservation)}
+                        title={tooltipText}
+                        aria-label={`Ouvrir la réservation de ${guestName}, ${formatReservationRange(reservation)}, statut ${status.label}`}
+                        className={clsx(
+                          'absolute top-2 flex h-12 items-center gap-1.5 overflow-hidden rounded-lg border-l-2 px-2 text-left shadow-sm transition-shadow hover:shadow-md',
+                          stateFillTokens.success,
+                          accentTokens.activeNavBorder,
+                          textTokens.body,
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
+                        )}
                         style={{
                           left: `calc(${((block.startDay - 1) / dayCount) * 100}% + 2px)`,
                           width: `calc(${(block.span / dayCount) * 100}% - 4px)`,
                         }}
                       >
-                        <button
-                          type="button"
-                          onClick={() => onSelectReservation(reservation)}
-                          aria-label={`Ouvrir la réservation de ${guestName}, ${formatReservationRange(reservation)}, statut ${status.label}`}
+                        <span className="truncate text-xs font-medium">{guestName}</span>
+                        <span
+                          aria-hidden="true"
                           className={clsx(
-                            'flex h-12 w-full items-center overflow-hidden rounded-lg border-l-2 px-2 text-left shadow-sm transition-shadow hover:shadow-md',
-                            stateFillTokens.success,
-                            accentTokens.activeNavBorder,
-                            textTokens.body,
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
+                            'ml-auto hidden h-1.5 w-1.5 shrink-0 rounded-full sm:inline-block',
+                            status.tone.includes('emerald') ? 'bg-emerald-500'
+                              : status.tone.includes('amber') ? 'bg-amber-500'
+                                : status.tone.includes('sky') ? 'bg-sky-500'
+                                  : status.tone.includes('red') ? 'bg-red-500'
+                                    : 'bg-stone-400',
                           )}
-                        >
-                          <span className="truncate text-xs font-medium">{guestName}</span>
-                        </button>
-
-                        <div
-                          role="tooltip"
-                          className={clsx(
-                            'pointer-events-none absolute left-0 top-full z-20 mt-2 min-w-[240px] origin-top-left rounded-xl border p-3 shadow-xl opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100',
-                            surfaceTokens.panel,
-                            borderTokens.strong,
-                          )}
-                        >
-                          <p className={clsx('text-sm font-semibold', textTokens.title)}>{guestName}</p>
-                          <p className={clsx('mt-0.5 text-xs', textTokens.muted)}>{formatReservationRange(reservation)}</p>
-                          <span
-                            className={clsx(
-                              'mt-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                              status.tone,
-                            )}
-                          >
-                            {status.label}
-                          </span>
-                          <p className={clsx('mt-2 text-[11px]', textTokens.subtle)}>
-                            Cliquez pour ouvrir le détail
-                          </p>
-                        </div>
-                      </div>
+                        />
+                      </button>
                     );
                   })}
                 </div>
