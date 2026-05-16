@@ -508,7 +508,7 @@ export function TopNavigation({
       <aside
         aria-label={fr.topnav.primaryNav}
         className={clsx(
-          'fixed inset-y-0 left-0 z-40 hidden w-64 lg:flex lg:flex-col',
+          'fixed inset-y-0 left-0 z-40 hidden w-60 xl:flex xl:flex-col',
           sidebarTokens.shell,
         )}
       >
@@ -528,7 +528,7 @@ export function TopNavigation({
       {/* ── Mobile top bar ── */}
       <div
         className={clsx(
-          'sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 lg:hidden',
+          'sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 xl:hidden',
           surfaceTokens.panel,
           sidebarTokens.mobileTopBar,
           borderTokens.default,
@@ -568,7 +568,7 @@ export function TopNavigation({
 
       {/* ── Mobile overlay drawer ── */}
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 xl:hidden">
           {/* Backdrop */}
           <div
             className={clsx('absolute inset-0', surfaceTokens.overlay)}
