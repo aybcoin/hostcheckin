@@ -33,6 +33,56 @@ export function daysInMonth(year: number, month: number): number {
  * `month` suit l'API JS Date: janvier = 0, décembre = 11.
  * Les blocs couvrent `[check_in_date, check_out_date)` afin d'exclure le jour de départ.
  */
+export function computeReservationBlocksForRange(
+  reservations: Reservation[],
+  rangeStartUtc: Date,
+  dayCount: number,
+): ReservationBlock[] {
+  const rangeStart = startOfUtcDay(rangeStartUtc);
+  const rangeEndExclusive = new Date(rangeStart.getTime() + dayCount * DAY_MS);
+
+  return reservations
+    .filter((reservation) => reservation.status !== 'cancelled')
+    .flatMap((reservation) => {
+      const checkIn = parseReservationDate(reservation.check_in_date);
+      const checkOut = parseReservationDate(reservation.check_out_date);
+
+      if (!checkIn || !checkOut || checkOut <= checkIn) {
+        return [];
+      }
+
+      const visibleStart = checkIn > rangeStart ? checkIn : rangeStart;
+      const visibleEndExclusive = checkOut < rangeEndExclusive ? checkOut : rangeEndExclusive;
+
+      if (visibleStart >= visibleEndExclusive) {
+        return [];
+      }
+
+      const startDay = Math.floor((visibleStart.getTime() - rangeStart.getTime()) / DAY_MS) + 1;
+      const span = Math.floor((visibleEndExclusive.getTime() - visibleStart.getTime()) / DAY_MS);
+      const endDay = startDay + span - 1;
+
+      return [{
+        reservationId: reservation.id,
+        propertyId: reservation.property_id,
+        startDay,
+        endDay,
+        span,
+        startsBeforeMonth: checkIn < rangeStart,
+        endsAfterMonth: checkOut > rangeEndExclusive,
+      }];
+    })
+    .sort((left, right) => {
+      if (left.propertyId !== right.propertyId) {
+        return left.propertyId.localeCompare(right.propertyId);
+      }
+      if (left.startDay !== right.startDay) {
+        return left.startDay - right.startDay;
+      }
+      return left.reservationId.localeCompare(right.reservationId);
+    });
+}
+
 export function computeReservationBlocks(
   reservations: Reservation[],
   year: number,

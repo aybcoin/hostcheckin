@@ -1,11 +1,12 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { clsx } from '../../lib/clsx';
-import { computeReservationBlocks, daysInMonth } from '../../lib/calendar-logic';
+import { computeReservationBlocksForRange, daysInMonth } from '../../lib/calendar-logic';
 import {
   accentTokens,
   borderTokens,
   stateFillTokens,
+  statusTokens,
   surfaceTokens,
   textTokens,
 } from '../../lib/design-tokens';
@@ -13,6 +14,8 @@ import { fr } from '../../lib/i18n/fr';
 import type { Guest, Property, Reservation } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+
+type Zoom = 'week' | 'month' | 'quarter';
 
 interface CalendarViewProps {
   reservations: Reservation[];
@@ -22,23 +25,111 @@ interface CalendarViewProps {
   onSelectReservation: (reservation: Reservation) => void;
 }
 
-function monthStart(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
-function formatMonthLabel(date: Date): string {
-  return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+function startOfIsoWeek(date: Date): Date {
+  const utc = startOfUtcDay(date);
+  const day = utc.getUTCDay() || 7;
+  if (day !== 1) {
+    utc.setUTCDate(utc.getUTCDate() - (day - 1));
+  }
+  return utc;
+}
+
+function startOfQuarter(date: Date): Date {
+  const month = Math.floor(date.getUTCMonth() / 3) * 3;
+  return new Date(Date.UTC(date.getUTCFullYear(), month, 1));
+}
+
+function startOfMonthUtc(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function quarterDayCount(date: Date): number {
+  const month = Math.floor(date.getUTCMonth() / 3) * 3;
+  return [0, 1, 2].reduce(
+    (sum, offset) => sum + daysInMonth(date.getUTCFullYear(), month + offset),
+    0,
+  );
+}
+
+function formatRangeLabel(zoom: Zoom, anchor: Date): string {
+  if (zoom === 'week') {
+    const start = startOfIsoWeek(anchor);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 6);
+    const startLabel = start.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    const endLabel = end.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    return `${startLabel} → ${endLabel}`;
+  }
+  if (zoom === 'quarter') {
+    const start = startOfQuarter(anchor);
+    const quarterIndex = Math.floor(start.getUTCMonth() / 3) + 1;
+    return `T${quarterIndex} ${start.getUTCFullYear()}`;
+  }
+  return anchor.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+}
+
+function rangeStart(zoom: Zoom, anchor: Date): Date {
+  if (zoom === 'week') return startOfIsoWeek(anchor);
+  if (zoom === 'quarter') return startOfQuarter(anchor);
+  return startOfMonthUtc(anchor);
+}
+
+function rangeDayCount(zoom: Zoom, anchor: Date): number {
+  if (zoom === 'week') return 7;
+  if (zoom === 'quarter') return quarterDayCount(anchor);
+  return daysInMonth(anchor.getUTCFullYear(), anchor.getUTCMonth());
+}
+
+function stepAnchor(zoom: Zoom, anchor: Date, direction: 1 | -1): Date {
+  const next = new Date(anchor);
+  if (zoom === 'week') {
+    next.setUTCDate(next.getUTCDate() + 7 * direction);
+  } else if (zoom === 'quarter') {
+    next.setUTCMonth(next.getUTCMonth() + 3 * direction);
+  } else {
+    next.setUTCMonth(next.getUTCMonth() + direction);
+  }
+  return next;
 }
 
 function formatReservationRange(reservation: Reservation): string {
-  return new Date(reservation.check_in_date).toLocaleDateString('fr-FR', {
+  const start = new Date(reservation.check_in_date).toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: '2-digit',
-  }) + ` → ${new Date(reservation.check_out_date).toLocaleDateString('fr-FR', {
+    year: 'numeric',
+  });
+  const end = new Date(reservation.check_out_date).toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: '2-digit',
-  })}`;
+    year: 'numeric',
+  });
+  return `${start} → ${end}`;
 }
+
+const STATUS_LABELS: Record<string, { label: string; tone: string }> = {
+  upcoming: { label: 'À venir', tone: statusTokens.info },
+  in_progress: { label: 'En cours', tone: statusTokens.success },
+  completed: { label: 'Terminée', tone: statusTokens.neutral },
+  cancelled: { label: 'Annulée', tone: statusTokens.danger },
+  verified: { label: 'Vérifiée', tone: statusTokens.success },
+  contract_signed: { label: 'Contrat signé', tone: statusTokens.info },
+  pending: { label: 'En attente', tone: statusTokens.pending },
+};
+
+function statusMeta(status: string | null | undefined) {
+  if (!status) return STATUS_LABELS.pending;
+  return STATUS_LABELS[status] ?? { label: status, tone: statusTokens.neutral };
+}
+
+const ZOOM_LABEL: Record<Zoom, string> = {
+  week: 'Semaine',
+  month: 'Mois',
+  quarter: 'Trimestre',
+};
 
 export function CalendarView({
   reservations,
@@ -47,11 +138,13 @@ export function CalendarView({
   initialMonth = new Date(),
   onSelectReservation,
 }: CalendarViewProps) {
-  const [currentMonth, setCurrentMonth] = useState(() => monthStart(initialMonth));
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const dayCount = daysInMonth(year, month);
-  const dayGridStyle = { gridTemplateColumns: `repeat(${dayCount}, minmax(28px, 1fr))` };
+  const [zoom, setZoom] = useState<Zoom>('month');
+  const [anchor, setAnchor] = useState(() => startOfUtcDay(initialMonth));
+
+  const start = useMemo(() => rangeStart(zoom, anchor), [zoom, anchor]);
+  const dayCount = useMemo(() => rangeDayCount(zoom, anchor), [zoom, anchor]);
+  const dayGridStyle = { gridTemplateColumns: `repeat(${dayCount}, minmax(36px, 1fr))` };
+  const minWidth = zoom === 'week' ? 720 : zoom === 'quarter' ? 1600 : 960;
 
   const reservationsById = useMemo(
     () => new Map(reservations.map((reservation) => [reservation.id, reservation])),
@@ -59,8 +152,8 @@ export function CalendarView({
   );
 
   const blocks = useMemo(
-    () => computeReservationBlocks(reservations, year, month),
-    [month, reservations, year],
+    () => computeReservationBlocksForRange(reservations, start, dayCount),
+    [reservations, start, dayCount],
   );
 
   const blocksByPropertyId = useMemo(() => {
@@ -78,17 +171,36 @@ export function CalendarView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className={clsx('text-lg font-semibold capitalize', textTokens.title)}>
-            {formatMonthLabel(currentMonth)}
+            {formatRangeLabel(zoom, anchor)}
           </h2>
           <p className={clsx('text-sm', textTokens.muted)}>{fr.reservations.calendar.subtitle}</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div role="group" aria-label="Niveau de zoom" className={clsx('inline-flex overflow-hidden rounded-lg border', borderTokens.default)}>
+            {(['week', 'month', 'quarter'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setZoom(option)}
+                aria-pressed={zoom === option}
+                className={clsx(
+                  'px-3 py-1.5 text-xs font-medium transition-colors',
+                  zoom === option
+                    ? clsx(accentTokens.bg, textTokens.inverse)
+                    : clsx(surfaceTokens.panel, textTokens.body, 'hover:bg-stone-50'),
+                )}
+              >
+                {ZOOM_LABEL[option]}
+              </button>
+            ))}
+          </div>
+
           <Button
             variant="secondary"
             size="sm"
             aria-label={fr.reservations.calendar.previousMonth}
-            onClick={() => setCurrentMonth((value) => new Date(value.getFullYear(), value.getMonth() - 1, 1))}
+            onClick={() => setAnchor((value) => stepAnchor(zoom, value, -1))}
           >
             <ChevronLeft size={14} aria-hidden="true" />
           </Button>
@@ -96,14 +208,14 @@ export function CalendarView({
             variant="secondary"
             size="sm"
             aria-label={fr.reservations.calendar.nextMonth}
-            onClick={() => setCurrentMonth((value) => new Date(value.getFullYear(), value.getMonth() + 1, 1))}
+            onClick={() => setAnchor((value) => stepAnchor(zoom, value, 1))}
           >
             <ChevronRight size={14} aria-hidden="true" />
           </Button>
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => setCurrentMonth(monthStart(new Date()))}
+            onClick={() => setAnchor(startOfUtcDay(new Date()))}
           >
             {fr.reservations.calendar.today}
           </Button>
@@ -111,7 +223,7 @@ export function CalendarView({
       </div>
 
       <div className="overflow-x-auto">
-        <div className="min-w-[960px] space-y-2">
+        <div className="space-y-2" style={{ minWidth }}>
           <div className="grid grid-cols-[200px_minmax(0,1fr)] items-stretch gap-0">
             <div className={clsx('sticky left-0 z-10 border-r px-4 py-3', surfaceTokens.panel, borderTokens.default)}>
               <span className={clsx('text-xs font-semibold uppercase tracking-wide', textTokens.subtle)}>
@@ -120,13 +232,12 @@ export function CalendarView({
             </div>
             <div className="grid" style={dayGridStyle}>
               {Array.from({ length: dayCount }, (_, index) => {
-                const dayNumber = index + 1;
-                const cellDate = new Date(year, month, dayNumber);
+                const cellDate = new Date(start.getTime() + index * 24 * 60 * 60 * 1000);
                 const isToday = cellDate.toDateString() === new Date().toDateString();
 
                 return (
                   <div
-                    key={dayNumber}
+                    key={index}
                     className={clsx(
                       'flex h-12 flex-col items-center justify-center border-b border-r text-center',
                       borderTokens.subtle,
@@ -137,7 +248,7 @@ export function CalendarView({
                       {cellDate.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '')}
                     </span>
                     <span className={clsx('text-sm font-semibold', isToday ? accentTokens.text : textTokens.title)}>
-                      {dayNumber}
+                      {cellDate.getUTCDate()}
                     </span>
                   </div>
                 );
@@ -182,27 +293,55 @@ export function CalendarView({
                     const guestName = reservation.guest_id
                       ? guests[reservation.guest_id]?.full_name ?? fr.app.guestFallbackName
                       : fr.app.guestFallbackName;
+                    const status = statusMeta(reservation.status);
 
                     return (
-                      <button
+                      <div
                         key={block.reservationId}
-                        type="button"
-                        onClick={() => onSelectReservation(reservation)}
-                        title={`${guestName} · ${formatReservationRange(reservation)}`}
-                        className={clsx(
-                          'absolute top-2 flex h-12 items-center overflow-hidden rounded-lg border-l-2 px-2 text-left shadow-sm',
-                          stateFillTokens.success,
-                          accentTokens.activeNavBorder,
-                          textTokens.body,
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
-                        )}
+                        className="group absolute top-2"
                         style={{
                           left: `calc(${((block.startDay - 1) / dayCount) * 100}% + 2px)`,
                           width: `calc(${(block.span / dayCount) * 100}% - 4px)`,
                         }}
                       >
-                        <span className="truncate text-xs font-medium">{guestName}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => onSelectReservation(reservation)}
+                          aria-label={`Ouvrir la réservation de ${guestName}, ${formatReservationRange(reservation)}, statut ${status.label}`}
+                          className={clsx(
+                            'flex h-12 w-full items-center overflow-hidden rounded-lg border-l-2 px-2 text-left shadow-sm transition-shadow hover:shadow-md',
+                            stateFillTokens.success,
+                            accentTokens.activeNavBorder,
+                            textTokens.body,
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2',
+                          )}
+                        >
+                          <span className="truncate text-xs font-medium">{guestName}</span>
+                        </button>
+
+                        <div
+                          role="tooltip"
+                          className={clsx(
+                            'pointer-events-none absolute left-0 top-full z-20 mt-2 min-w-[240px] origin-top-left rounded-xl border p-3 shadow-xl opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100',
+                            surfaceTokens.panel,
+                            borderTokens.strong,
+                          )}
+                        >
+                          <p className={clsx('text-sm font-semibold', textTokens.title)}>{guestName}</p>
+                          <p className={clsx('mt-0.5 text-xs', textTokens.muted)}>{formatReservationRange(reservation)}</p>
+                          <span
+                            className={clsx(
+                              'mt-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                              status.tone,
+                            )}
+                          >
+                            {status.label}
+                          </span>
+                          <p className={clsx('mt-2 text-[11px]', textTokens.subtle)}>
+                            Cliquez pour ouvrir le détail
+                          </p>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
