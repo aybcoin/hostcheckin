@@ -145,19 +145,19 @@ export const statusTokens = {
 
 export const inputTokens = {
   base:
-    "w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-colors duration-200 focus-visible:outline-none focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-200",
+    "w-full rounded-lg border border-stone-200/80 bg-white px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 transition-colors duration-150 focus-visible:outline-none focus-visible:border-stone-400 focus-visible:ring-2 focus-visible:ring-stone-200",
   readOnly:
-    "w-full rounded-lg border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200",
+    "w-full rounded-lg border border-stone-200/80 bg-stone-50 px-3.5 py-2.5 text-sm text-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-200",
 } as const;
 
 export const iconButtonToken =
-  "rounded-lg p-2 text-slate-600 transition-colors duration-200 hover:bg-stone-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2";
+  "rounded-lg p-2 text-stone-500 transition-colors duration-150 hover:bg-stone-100 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2";
 
 export const modalTokens = {
   overlay:
-    "fixed inset-0 z-50 flex items-center justify-center bg-stone-950/50 backdrop-blur-sm p-4 animate-in fade-in duration-200",
+    "fixed inset-0 z-50 flex items-center justify-center bg-stone-900/30 backdrop-blur-[2px] p-4 animate-in fade-in duration-150",
   panel:
-    "w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-stone-200 bg-white shadow-[0_24px_64px_-12px_rgba(15,23,42,0.25)]",
+    "w-full max-h-[90vh] overflow-y-auto rounded-xl border border-stone-200/80 bg-white shadow-[0_16px_48px_-12px_rgba(15,23,42,0.18)]",
 } as const;
 
 /**
