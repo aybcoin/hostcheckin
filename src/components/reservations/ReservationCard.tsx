@@ -24,6 +24,7 @@ import { ReservationStatusPills } from './ReservationStatusPills';
 import { TrustBadge } from '../trust/TrustBadge';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { fr } from '../../lib/i18n/fr';
 import { statusTokens, ctaTokens } from '../../lib/design-tokens';
 import { clsx } from '../../lib/clsx';
@@ -140,6 +141,7 @@ export function ReservationCard({
 }: ReservationCardProps) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [copied, setCopied] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const checkinLink = `${APP_BASE_URL}/checkin/${reservation.unique_link}`;
   const propertyName = property?.name ?? fr.reservations.unknownProperty;
@@ -376,14 +378,26 @@ export function ReservationCard({
               aria-label={`${fr.reservations.deleteAction} ${reservation.booking_reference}`}
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm(fr.reservations.deleteReservationConfirm)) {
-                  void onDelete(reservation.id);
-                }
+                setDeleteConfirmOpen(true);
               }}
               className={`rounded-lg border p-1.5 transition-colors ${statusTokens.danger}`}
             >
               <Trash2 size={13} aria-hidden="true" />
             </button>
+
+            <ConfirmDialog
+              open={deleteConfirmOpen}
+              variant="danger"
+              title={fr.reservations.deleteAction}
+              description={fr.reservations.deleteReservationConfirm}
+              typeToConfirm={reservation.booking_reference}
+              confirmLabel="Supprimer définitivement"
+              onCancel={() => setDeleteConfirmOpen(false)}
+              onConfirm={async () => {
+                await onDelete(reservation.id);
+                setDeleteConfirmOpen(false);
+              }}
+            />
           </div>
         </div>
       </div>
