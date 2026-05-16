@@ -11,6 +11,7 @@ import {
   Building2,
   Calendar,
   CalendarDays,
+  ClipboardList,
   FileText,
   Home,
   Hotel,
@@ -490,6 +491,7 @@ export function TopNavigation({
       items: [
         { id: 'contracts', label: fr.topnav.links.documents, icon: FileText },
         { id: 'checkins', label: fr.topnav.links.automations, icon: Zap },
+        { id: 'audit-logs', label: fr.topnav.links.auditLogs, icon: ClipboardList },
         { id: 'profile', label: fr.topnav.links.account, icon: User },
       ],
     },

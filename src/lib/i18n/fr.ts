@@ -69,6 +69,7 @@ export const fr = {
       ical: "Calendriers",
       pricingEngine: "Tarification",
       messaging: "Messages",
+      auditLogs: "Journal d'audit",
     },
     userMenu: {
       aria: "Ouvrir le menu utilisateur",

@@ -19,6 +19,7 @@ export interface Host {
   phone?: string;
   profile_image_url?: string;
   company_name?: string;
+  identity_retention_months?: number;
   created_at: string;
   updated_at: string;
 }

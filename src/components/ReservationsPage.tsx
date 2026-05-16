@@ -44,6 +44,7 @@ import { Button } from './ui/Button';
 import { fr } from '../lib/i18n/fr';
 import { borderTokens, chipTokens, inputTokens, stateFillTokens, textTokens } from '../lib/design-tokens';
 import { toast } from '../lib/toast';
+import { logAuditEvent } from '../lib/audit-log';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -432,6 +433,19 @@ export function ReservationsPage({
       const createdToken = (insertedToken as GuestTokenRecord).token;
       await navigator.clipboard.writeText(`${window.location.origin}/check-in/${createdToken}`);
       toast.success(fr.reservations.guestPortalLinkCopied);
+
+      const { data: userData } = await supabase.auth.getUser();
+      const hostId = userData.user?.id;
+      if (hostId) {
+        await logAuditEvent({
+          hostId,
+          action: 'guest_link.shared',
+          actorRole: 'host',
+          targetType: 'reservation',
+          targetId: reservation.id,
+          metadata: { expires_at: expiresAt },
+        });
+      }
     } catch {
       toast.error(fr.reservations.guestPortalLinkError);
     }

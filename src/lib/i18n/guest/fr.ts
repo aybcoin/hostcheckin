@@ -54,6 +54,8 @@ const fr = {
       skipLabel: 'Passer (vérification manuelle)',
       manualRequired: 'Vérification manuelle requise',
       uploaded: 'Pièce envoyée avec succès',
+      consentLabel: "J'accepte que ma pièce d'identité soit conservée par mon hôte pour une durée maximale de {months} mois, conformément au RGPD. Je peux à tout moment demander sa suppression.",
+      consentRequired: 'Vous devez accepter la conservation RGPD pour continuer.',
     },
     confirmation: {
       title: 'Dossier complet !',

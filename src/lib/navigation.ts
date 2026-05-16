@@ -22,7 +22,8 @@ export type AppPage =
   | 'rentiq'
   | 'blacklist'
   | 'help'
-  | 'security';
+  | 'security'
+  | 'audit-logs';
 
 export const APP_PAGE_PATHS: Record<AppPage, string> = {
   dashboard: '/',
@@ -49,4 +50,5 @@ export const APP_PAGE_PATHS: Record<AppPage, string> = {
   blacklist: '/blacklist',
   help: '/help',
   security: '/securite',
+  'audit-logs': '/journal',
 };

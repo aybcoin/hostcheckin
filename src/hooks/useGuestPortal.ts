@@ -17,6 +17,7 @@ type GuestRelation = {
 
 type HostRelation = {
   full_name?: string | null;
+  identity_retention_months?: number | null;
 };
 
 type PropertyRelation = {
@@ -139,7 +140,7 @@ export function useGuestPortal(token: string) {
           check_in_date,
           check_out_date,
           guests ( full_name ),
-          properties ( name, hosts ( full_name ) ),
+          properties ( name, hosts ( full_name, identity_retention_months ) ),
           contracts ( signed_by_guest, pdf_url, pdf_storage_path ),
           identity_verification ( status )
         `)
@@ -171,6 +172,10 @@ export function useGuestPortal(token: string) {
         checkinDate: reservation.check_in_date,
         checkoutDate: reservation.check_out_date,
         hostName: host?.full_name || t.app.hostFallbackName,
+        identityRetentionMonths:
+          typeof host?.identity_retention_months === 'number' && host.identity_retention_months > 0
+            ? host.identity_retention_months
+            : 12,
         contractUrl: resolveContractUrl(contracts),
         identityVerified:
           identities.some((item) => isIdentityApproved(item.status)) || reservationStatus === 'verified',

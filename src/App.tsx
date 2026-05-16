@@ -83,6 +83,9 @@ const SubscriptionPricingPage = lazy(() =>
   import('./components/SubscriptionPricingPage').then((module) => ({ default: module.SubscriptionPricingPage })),
 );
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const AuditLogsPage = lazy(() =>
+  import('./components/AuditLogsPage').then((module) => ({ default: module.AuditLogsPage })),
+);
 const AutoLinkGenerator = lazy(() =>
   import('./components/AutoLinkGenerator').then((module) => ({ default: module.AutoLinkGenerator })),
 );
@@ -524,6 +527,10 @@ function App() {
 
           {!autoLinkPropertyId && currentPage === 'security' ? (
             <SecurityPage />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'audit-logs' ? (
+            <AuditLogsPage hostId={user.id} />
           ) : null}
 
           {!autoLinkPropertyId && currentPage === 'housekeeping' ? (
