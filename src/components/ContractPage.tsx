@@ -450,7 +450,7 @@ export function ContractPage({ reservations, properties }: ContractPageProps) {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>Gestion des Contrats</h1>
+          <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight', textTokens.title)}>Gestion des Contrats</h1>
           {activeCustomTemplate && (
             <Badge variant="active" className="gap-1.5">
               <Check size={12} />

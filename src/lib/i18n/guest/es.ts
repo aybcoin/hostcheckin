@@ -25,7 +25,7 @@ const es = {
       confirmation: 'Confirmación',
     },
     welcome: {
-      title: 'Bienvenido, {guestName}.',
+      title: '¡Bienvenido!',
       subtitle: 'Su estancia en {propertyName}',
       checkin: 'Llegada',
       checkout: 'Salida',
@@ -56,6 +56,8 @@ const es = {
       skipLabel: 'Omitir (revisión manual)',
       manualRequired: 'Se requiere revisión manual',
       uploaded: 'Documento enviado correctamente',
+      consentLabel: 'Acepto que mi documento de identidad sea conservado por mi anfitrión durante un máximo de {months} meses, conforme al RGPD. Puedo solicitar su eliminación en cualquier momento.',
+      consentRequired: 'Debe aceptar la conservación RGPD para continuar.',
     },
     confirmation: {
       title: 'Su expediente está completo.',

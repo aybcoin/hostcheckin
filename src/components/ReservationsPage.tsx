@@ -44,6 +44,7 @@ import { Button } from './ui/Button';
 import { fr } from '../lib/i18n/fr';
 import { borderTokens, chipTokens, inputTokens, stateFillTokens, textTokens } from '../lib/design-tokens';
 import { toast } from '../lib/toast';
+import { logAuditEvent } from '../lib/audit-log';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -409,9 +410,18 @@ export function ReservationsPage({
         return;
       }
 
+      const checkoutDate = new Date(`${reservation.check_out_date}T23:59:59Z`);
+      const expiresAt = Number.isFinite(checkoutDate.getTime())
+        ? new Date(checkoutDate.getTime() + 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
       const { data: insertedToken, error: insertError } = await supabase
         .from('guest_tokens')
-        .insert({ reservation_id: reservation.id })
+        .insert(
+          expiresAt
+            ? { reservation_id: reservation.id, expires_at: expiresAt }
+            : { reservation_id: reservation.id },
+        )
         .select('token')
         .single();
 
@@ -423,6 +433,19 @@ export function ReservationsPage({
       const createdToken = (insertedToken as GuestTokenRecord).token;
       await navigator.clipboard.writeText(`${window.location.origin}/check-in/${createdToken}`);
       toast.success(fr.reservations.guestPortalLinkCopied);
+
+      const { data: userData } = await supabase.auth.getUser();
+      const hostId = userData.user?.id;
+      if (hostId) {
+        await logAuditEvent({
+          hostId,
+          action: 'guest_link.shared',
+          actorRole: 'host',
+          targetType: 'reservation',
+          targetId: reservation.id,
+          metadata: { expires_at: expiresAt },
+        });
+      }
     } catch {
       toast.error(fr.reservations.guestPortalLinkError);
     }
@@ -474,7 +497,7 @@ export function ReservationsPage({
         </div>
 
         <div>
-          <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>
+          <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight', textTokens.title)}>
             {fr.reservations.title}
           </h1>
           <div className="mt-3">

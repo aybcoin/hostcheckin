@@ -25,7 +25,7 @@ const en = {
       confirmation: 'Confirmation',
     },
     welcome: {
-      title: 'Welcome, {guestName}!',
+      title: 'Welcome!',
       subtitle: 'Your stay at {propertyName}',
       checkin: 'Check-in',
       checkout: 'Check-out',
@@ -56,6 +56,8 @@ const en = {
       skipLabel: 'Skip (manual review)',
       manualRequired: 'Manual review required',
       uploaded: 'Document uploaded successfully',
+      consentLabel: 'I agree that my identity document may be stored by my host for up to {months} months under GDPR. I can request deletion at any time.',
+      consentRequired: 'You must accept GDPR storage to continue.',
     },
     confirmation: {
       title: 'Your file is complete!',

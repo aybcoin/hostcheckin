@@ -58,17 +58,18 @@ export const fr = {
       analytics: "Analytics",
       reservations: "Réservations",
       properties: "Logements",
-      documents: "Documents",
+      documents: "Contrats",
       automations: "Automatisations",
-      account: "Compte",
+      account: "Profil",
       housekeeping: "Ménage",
       maintenance: "Maintenance",
       linen: "Linge",
       finance: "Finances",
-      inventory: "Stock",
+      inventory: "Inventaire",
       ical: "Calendriers",
       pricingEngine: "Tarification",
       messaging: "Messages",
+      auditLogs: "Journal d'audit",
     },
     userMenu: {
       aria: "Ouvrir le menu utilisateur",
@@ -204,6 +205,10 @@ export const fr = {
     empty: {
       logsTitle: 'Aucune notification',
       logsDescription: 'Les notifications envoyées apparaîtront ici.',
+    },
+    errors: {
+      logsTitle: 'Historique indisponible',
+      logs: 'Impossible de charger l’historique des notifications.',
     },
     warnings: {
       providerNotConfigured:

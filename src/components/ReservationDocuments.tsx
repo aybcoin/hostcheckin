@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
   X, FileText, User, Camera, PenTool, Download, ExternalLink, Loader2,
-  AlertCircle, ShieldCheck, ShieldX, Clock, Activity, Hash
+  AlertCircle, ShieldCheck, ShieldX, Clock, Activity, Hash, Eye, EyeOff, Lock
 } from 'lucide-react';
 import { clsx } from '../lib/clsx';
+import { logAuditEvent } from '../lib/audit-log';
 import { supabase } from '../lib/supabase';
 import { SecurityNotice } from './SecurityNotice';
 import { Badge } from './ui/Badge';
@@ -105,6 +106,9 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
   const [activeTab, setActiveTab] = useState<'identity' | 'contract' | 'audit'>('identity');
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [idsRevealed, setIdsRevealed] = useState(false);
+  const [revealing, setRevealing] = useState(false);
+  const [retentionMonths, setRetentionMonths] = useState<number>(12);
 
   useEffect(() => {
     fetchDocuments();
@@ -137,7 +141,43 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
     if (verRes.data) setVerification(verRes.data);
     if (contractRes.data) setContract(contractRes.data);
     if (auditRes.data) setAuditTrail(auditRes.data);
+
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (userId) {
+      const { data: hostRow } = await supabase
+        .from('hosts')
+        .select('identity_retention_months')
+        .eq('id', userId)
+        .maybeSingle();
+      if (hostRow && typeof hostRow.identity_retention_months === 'number') {
+        setRetentionMonths(hostRow.identity_retention_months);
+      }
+    }
+
     setLoading(false);
+  };
+
+  const handleRevealIds = async () => {
+    if (!verification) return;
+    setRevealing(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const hostId = userData.user?.id;
+      if (hostId) {
+        await logAuditEvent({
+          hostId,
+          action: 'identity.viewed',
+          actorRole: 'host',
+          targetType: 'identity_verification',
+          targetId: verification.id,
+          metadata: { reservation_id: reservationId },
+        });
+      }
+      setIdsRevealed(true);
+    } finally {
+      setRevealing(false);
+    }
   };
 
   const isValidUrl = (url?: string | null) => {
@@ -343,7 +383,11 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                             {verification.ocr_data.document_number && (
                               <div>
                                 <p className={clsx('text-xs', textTokens.subtle)}>N. document</p>
-                                <p className={clsx('text-sm font-medium', textTokens.title)}>{verification.ocr_data.document_number}</p>
+                                <p className={clsx('text-sm font-medium font-mono', textTokens.title)}>
+                                  {idsRevealed
+                                    ? verification.ocr_data.document_number
+                                    : `••••${verification.ocr_data.document_number.slice(-4)}`}
+                                </p>
                               </div>
                             )}
                           </Card>
@@ -351,7 +395,45 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
 
                         <SecurityNotice />
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {!idsRevealed ? (
+                          <Card variant="default" padding="md" className={clsx('flex flex-col items-center gap-3 text-center', borderTokens.strong)}>
+                            <div className={clsx('inline-flex h-12 w-12 items-center justify-center rounded-2xl', stateFillTokens.neutral)}>
+                              <Lock className={textTokens.body} size={22} aria-hidden="true" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className={clsx('text-sm font-semibold', textTokens.title)}>
+                                Pièces d&apos;identité masquées
+                              </p>
+                              <p className={clsx('text-xs max-w-md', textTokens.muted)}>
+                                Pour respecter le RGPD, les documents d&apos;identité sont cachés par défaut. Tout
+                                affichage est consigné dans le journal d&apos;audit. Conservation : {retentionMonths} mois.
+                              </p>
+                            </div>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={handleRevealIds}
+                              disabled={revealing}
+                            >
+                              <Eye size={14} className="mr-1.5" aria-hidden="true" />
+                              {revealing ? 'Affichage…' : 'Afficher les pièces'}
+                            </Button>
+                          </Card>
+                        ) : (
+                          <div className="flex items-center justify-end">
+                            <Button
+                              variant="subtle"
+                              size="sm"
+                              onClick={() => setIdsRevealed(false)}
+                              aria-label="Masquer les pièces d&apos;identité"
+                            >
+                              <EyeOff size={14} className="mr-1.5" aria-hidden="true" />
+                              Masquer
+                            </Button>
+                          </div>
+                        )}
+
+                        <div className={clsx('grid grid-cols-1 sm:grid-cols-2 gap-4', !idsRevealed && 'hidden')}>
                           {isValidUrl(verification.id_document_url) && (
                             <div>
                               <p className={clsx('text-sm font-medium mb-2', textTokens.body)}>Recto</p>
@@ -399,7 +481,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                           )}
                         </div>
 
-                        {isValidUrl(verification.selfie_url) && (
+                        {isValidUrl(verification.selfie_url) && idsRevealed && (
                           <div>
                             <p className={clsx('text-sm font-medium mb-2 flex items-center gap-1.5', textTokens.body)}>
                               <Camera size={16} />

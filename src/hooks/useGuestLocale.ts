@@ -28,7 +28,7 @@ function resolveInitialLocale(): GuestLocale {
   }
 
   try {
-    const storedLocale = window.localStorage.getItem(GUEST_LOCALE_STORAGE_KEY);
+    const storedLocale = window.sessionStorage.getItem(GUEST_LOCALE_STORAGE_KEY);
     if (isGuestLocale(storedLocale)) {
       return storedLocale;
     }
@@ -50,7 +50,7 @@ export function useGuestLocale(): { locale: GuestLocale; setLocale: (locale: Gue
     }
 
     try {
-      window.localStorage.setItem(GUEST_LOCALE_STORAGE_KEY, nextLocale);
+      window.sessionStorage.setItem(GUEST_LOCALE_STORAGE_KEY, nextLocale);
     } catch {
       return;
     }

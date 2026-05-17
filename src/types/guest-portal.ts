@@ -11,6 +11,7 @@ export interface GuestSession {
   contractUrl: string | null;
   identityVerified: boolean;
   contractSigned: boolean;
+  identityRetentionMonths: number;
 }
 
 export interface GuestPortalState {

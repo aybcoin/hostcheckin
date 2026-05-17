@@ -86,7 +86,7 @@ export function AutomationsPage() {
     rules,
     logs,
     isLoading,
-    error,
+    logsError,
     refresh,
     toggleRule,
     sendTestNotification,
@@ -103,21 +103,6 @@ export function AutomationsPage() {
 
   if (isLoading) {
     return <AutomationsPageSkeleton />;
-  }
-
-  if (error) {
-    return (
-      <EmptyState
-        icon={<AlertCircle className={textTokens.warning} aria-hidden="true" />}
-        title="Erreur"
-        description={error}
-        action={(
-          <Button variant="secondary" onClick={refresh}>
-            {fr.errors.retry}
-          </Button>
-        )}
-      />
-    );
   }
 
   const handleToggleRule = async (ruleId: string) => {
@@ -140,7 +125,7 @@ export function AutomationsPage() {
   return (
     <div role="main" className="space-y-6">
       <header>
-        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>{t.pageTitle}</h1>
+        <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight', textTokens.title)}>{t.pageTitle}</h1>
         <p className={clsx('mt-1', textTokens.muted)}>{t.pageDescription}</p>
       </header>
 
@@ -193,7 +178,18 @@ export function AutomationsPage() {
       <section role="region" aria-label={t.logsTitle} className="space-y-4">
         <h2 className={clsx('text-lg font-semibold', textTokens.title)}>{t.logsTitle}</h2>
         <Card variant="default" padding="md" aria-live="polite">
-          {logs.length === 0 ? (
+          {logsError ? (
+            <EmptyState
+              icon={<AlertCircle className={textTokens.warning} aria-hidden="true" />}
+              title={t.errors.logsTitle}
+              description={logsError}
+              action={(
+                <Button variant="secondary" onClick={refresh}>
+                  {fr.errors.retry}
+                </Button>
+              )}
+            />
+          ) : logs.length === 0 ? (
             <EmptyState
               icon={<BellRing className={textTokens.subtle} aria-hidden="true" />}
               title={t.empty.logsTitle}

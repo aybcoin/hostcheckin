@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { logAuditEvent } from '../lib/audit-log';
 import { fr } from '../lib/i18n/fr';
 import { computePriceRange } from '../lib/pricing-logic';
 import { Reservation, ReservationCreateInput, supabase } from '../lib/supabase';
@@ -278,12 +279,33 @@ export function useReservations(propertyId?: string | null) {
   };
 
   const deleteReservation = async (id: string) => {
+    const target = reservations.find((reservation) => reservation.id === id);
+
     const { error: deleteError } = await supabase
       .from('reservations')
       .delete()
       .eq('id', id);
 
     if (!deleteError) {
+      const { data: userData } = await supabase.auth.getUser();
+      const hostId = userData.user?.id;
+      if (hostId) {
+        await logAuditEvent({
+          hostId,
+          action: 'reservation.deleted',
+          actorRole: 'host',
+          targetType: 'reservation',
+          targetId: id,
+          metadata: target
+            ? {
+                property_id: target.property_id,
+                guest_id: target.guest_id,
+                check_in_date: target.check_in_date,
+                check_out_date: target.check_out_date,
+              }
+            : {},
+        });
+      }
       await fetchReservations(false);
     }
 

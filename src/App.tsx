@@ -83,6 +83,9 @@ const SubscriptionPricingPage = lazy(() =>
   import('./components/SubscriptionPricingPage').then((module) => ({ default: module.SubscriptionPricingPage })),
 );
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const AuditLogsPage = lazy(() =>
+  import('./components/AuditLogsPage').then((module) => ({ default: module.AuditLogsPage })),
+);
 const AutoLinkGenerator = lazy(() =>
   import('./components/AutoLinkGenerator').then((module) => ({ default: module.AutoLinkGenerator })),
 );
@@ -93,6 +96,7 @@ const GuestPortalPage = lazy(() => import('./components/GuestPortalPage'));
 
 const legacyPagePathAliases: Partial<Record<string, AppPage>> = {
   '/profile': 'profile',
+  '/finance': 'finance',
 };
 
 function pageFromPath(pathname: string): AppPage {
@@ -196,6 +200,14 @@ function App() {
     setAutoLinkPropertyId(null);
     const page = pageFromPath(pathname);
     setCurrentPage(page);
+
+    if (legacyPagePathAliases[pathname]) {
+      const canonical = APP_PAGE_PATHS[page];
+      if (canonical && canonical !== pathname) {
+        window.history.replaceState({}, '', `${canonical}${search ? `?${params.toString()}` : ''}`);
+      }
+    }
+
     if (page === 'reservations') {
       setFocusedReservationId(params.get('focus'));
     } else {
@@ -389,7 +401,7 @@ function App() {
         />
 
         {/* Main content — offset by sidebar width on desktop */}
-        <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
+        <div className="flex min-w-0 flex-1 flex-col xl:pl-60">
         <main id="main-content" className="mx-auto w-full max-w-6xl px-4 py-6 md:py-8">
           {autoLinkPropertyId ? (
             <AutoLinkGenerator
@@ -515,6 +527,10 @@ function App() {
 
           {!autoLinkPropertyId && currentPage === 'security' ? (
             <SecurityPage />
+          ) : null}
+
+          {!autoLinkPropertyId && currentPage === 'audit-logs' ? (
+            <AuditLogsPage hostId={user.id} />
           ) : null}
 
           {!autoLinkPropertyId && currentPage === 'housekeeping' ? (

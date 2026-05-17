@@ -211,7 +211,7 @@ export default function SettingsPage() {
   return (
     <div role="main" className="space-y-6">
       <header>
-        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>{t.pageTitle}</h1>
+        <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight', textTokens.title)}>{t.pageTitle}</h1>
         <p className={clsx('mt-1', textTokens.muted)}>{t.pageDescription}</p>
       </header>
 

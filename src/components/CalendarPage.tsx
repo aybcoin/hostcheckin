@@ -82,7 +82,7 @@ export function CalendarPage({ reservations, properties, onNavigateToReservation
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>
+        <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight', textTokens.title)}>
           {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h1>
         <div className="flex items-center gap-2">

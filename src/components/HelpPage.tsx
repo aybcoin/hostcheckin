@@ -14,7 +14,7 @@ export function HelpPage({ onNavigate }: HelpPageProps) {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className={clsx("text-2xl sm:text-3xl font-bold", textTokens.title)}>{fr.help.title}</h1>
+        <h1 className={clsx("text-xl sm:text-2xl font-semibold tracking-tight", textTokens.title)}>{fr.help.title}</h1>
         <p className={clsx("mt-1 text-sm", textTokens.muted)}>{fr.help.subtitle}</p>
       </header>
 

@@ -17,6 +17,12 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+
+  const consentLabel = t.guestPortal.identity.consentLabel.replace(
+    '{months}',
+    String(session.identityRetentionMonths),
+  );
 
   const previewUrl = useMemo(() => {
     if (!selectedFile) return null;
@@ -43,6 +49,11 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
   const handleUpload = async () => {
     if (!selectedFile || isUploading) {
       toast.error(t.guestPortal.errors.uploadError);
+      return;
+    }
+
+    if (!consentAccepted) {
+      toast.warning(t.guestPortal.identity.consentRequired);
       return;
     }
 
@@ -117,11 +128,22 @@ export function GuestStep3Identity({ session, onVerify }: GuestStep3IdentityProp
         </div>
       ) : null}
 
+      <label className={clsx('mt-4 flex items-start gap-3 rounded-xl border p-3 text-xs cursor-pointer', borderTokens.default, surfaceTokens.subtle)}>
+        <input
+          type="checkbox"
+          checked={consentAccepted}
+          onChange={(event) => setConsentAccepted(event.target.checked)}
+          className="mt-0.5 h-4 w-4"
+          aria-required="true"
+        />
+        <span className={textTokens.body}>{consentLabel}</span>
+      </label>
+
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={handleUpload}
-          disabled={!selectedFile || isUploading}
+          disabled={!selectedFile || isUploading || !consentAccepted}
           className={clsx(
             'inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50',
             ctaTokens.primary,

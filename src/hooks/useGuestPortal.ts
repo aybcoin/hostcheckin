@@ -17,6 +17,7 @@ type GuestRelation = {
 
 type HostRelation = {
   full_name?: string | null;
+  identity_retention_months?: number | null;
 };
 
 type PropertyRelation = {
@@ -122,19 +123,13 @@ export function useGuestPortal(token: string) {
       }
 
       const typedToken = tokenData as GuestTokenRow;
-      if (new Date(typedToken.expires_at).getTime() <= Date.now()) {
+      const isExpired = new Date(typedToken.expires_at).getTime() <= Date.now();
+      const isConsumed = Boolean(typedToken.used_at);
+      if (isExpired || isConsumed) {
         setSession(null);
         setError(t.guestPortal.errors.invalidToken);
         setIsLoading(false);
         return;
-      }
-
-      if (!typedToken.used_at) {
-        await supabase
-          .from('guest_tokens')
-          .update({ used_at: new Date().toISOString() })
-          .eq('id', typedToken.id)
-          .is('used_at', null);
       }
 
       const { data: reservationData, error: reservationError } = await supabase
@@ -145,7 +140,7 @@ export function useGuestPortal(token: string) {
           check_in_date,
           check_out_date,
           guests ( full_name ),
-          properties ( name, hosts ( full_name ) ),
+          properties ( name, hosts ( full_name, identity_retention_months ) ),
           contracts ( signed_by_guest, pdf_url, pdf_storage_path ),
           identity_verification ( status )
         `)
@@ -177,6 +172,10 @@ export function useGuestPortal(token: string) {
         checkinDate: reservation.check_in_date,
         checkoutDate: reservation.check_out_date,
         hostName: host?.full_name || t.app.hostFallbackName,
+        identityRetentionMonths:
+          typeof host?.identity_retention_months === 'number' && host.identity_retention_months > 0
+            ? host.identity_retention_months
+            : 12,
         contractUrl: resolveContractUrl(contracts),
         identityVerified:
           identities.some((item) => isIdentityApproved(item.status)) || reservationStatus === 'verified',
@@ -217,6 +216,35 @@ export function useGuestPortal(token: string) {
       return false;
     }
 
+    // Notify the host by email that the contract has been signed.
+    // The edge function resolves host email + property name server-side
+    // from the reservationId, so the anonymous guest doesn't need any of
+    // that PII. Failure here must not block the check-in flow — we just
+    // warn and continue.
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (supabaseUrl) {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (supabaseAnonKey) {
+          headers.apikey = supabaseAnonKey;
+          headers.Authorization = `Bearer ${supabaseAnonKey}`;
+        }
+        await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            reservationId: session.reservationId,
+            trigger: 'contract_signed',
+            channel: 'email',
+            recipientType: 'host',
+          }),
+        }).catch((err) => console.warn('contract_signed notification failed:', err));
+      }
+    } catch (err) {
+      console.warn('contract_signed notification dispatch failed:', err);
+    }
+
     setSession((previous) => (previous ? { ...previous, contractSigned: true } : previous));
     setCurrentStep('identity');
     return true;
@@ -235,6 +263,38 @@ export function useGuestPortal(token: string) {
     if (updateError) {
       setError(t.guestPortal.errors.uploadError);
       return false;
+    }
+
+    await supabase
+      .from('guest_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('token', session.token)
+      .is('used_at', null);
+
+    // Fire the host-side "identity verified" notification. Same fire-and-
+    // forget pattern as contract_signed — never block the guest UX.
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (supabaseUrl) {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (supabaseAnonKey) {
+          headers.apikey = supabaseAnonKey;
+          headers.Authorization = `Bearer ${supabaseAnonKey}`;
+        }
+        await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            reservationId: session.reservationId,
+            trigger: 'verification_complete',
+            channel: 'email',
+            recipientType: 'host',
+          }),
+        }).catch((err) => console.warn('verification_complete notification failed:', err));
+      }
+    } catch (err) {
+      console.warn('verification_complete notification dispatch failed:', err);
     }
 
     setSession((previous) =>

@@ -241,7 +241,7 @@ export function ProfilePage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={clsx('text-2xl sm:text-3xl font-bold', textTokens.title)}>{fr.profile.title}</h1>
+        <h1 className={clsx('text-xl sm:text-2xl font-semibold tracking-tight', textTokens.title)}>{fr.profile.title}</h1>
         <p className={clsx('mt-1 sm:mt-2', textTokens.muted)}>{fr.profile.subtitle}</p>
       </div>
 

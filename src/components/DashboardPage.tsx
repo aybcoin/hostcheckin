@@ -153,8 +153,8 @@ export function DashboardPage({
   };
 
   // Derive KPI status texts from trust metrics
-  const depositsVariant = trustMetrics.deposits === 0 ? 'warning' : 'success';
-  const depositsStatus = trustMetrics.deposits === 0 ? 'En attente' : 'Sécurisées';
+  const depositsVariant = trustMetrics.deposits === 0 ? 'muted' : 'success';
+  const depositsStatus = trustMetrics.deposits === 0 ? 'Aucune caution active' : 'Sécurisées';
 
   return (
     <div className="space-y-6">
@@ -166,7 +166,7 @@ export function DashboardPage({
           onChange={handlePropertyChange}
         />
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className={clsx('text-3xl font-semibold', textTokens.title)}>
+          <h1 className={clsx('text-2xl font-semibold tracking-tight', textTokens.title)}>
             {fr.dashboard.title}
           </h1>
           {properties.length > 1 && (
@@ -182,7 +182,7 @@ export function DashboardPage({
           <LiveBadge isRealtimeActive={isRealtimeActive} isRealtimeReconnecting={isRealtimeReconnecting} />
         </div>
         <p className={clsx('text-sm', textTokens.muted)}>
-          {fr.dashboard.subtitle(host?.full_name || fr.app.hostFallbackName)}
+          {fr.dashboard.subtitle((host?.full_name?.trim().split(/\s+/)[0]) || fr.app.hostFallbackName)}
         </p>
 
         {/* KPI Strip */}
