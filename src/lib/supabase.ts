@@ -20,6 +20,8 @@ export interface Host {
   profile_image_url?: string;
   company_name?: string;
   identity_retention_months?: number;
+  police_bulletin_enabled?: boolean;
+  police_bulletin_counter?: number;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +47,7 @@ export interface Property {
   base_nightly_rate?: number | null;
   pricing_currency?: string;
   image_url?: string;
+  appart_no?: string | null;
   created_at: string;
   updated_at: string;
 }

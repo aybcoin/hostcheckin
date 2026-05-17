@@ -6,6 +6,7 @@ import { GuestPortalLayout } from './guest/GuestPortalLayout';
 import { GuestStep1Welcome } from './guest/GuestStep1Welcome';
 import { GuestStep2Contract } from './guest/GuestStep2Contract';
 import { GuestStep3Identity } from './guest/GuestStep3Identity';
+import { GuestStepPoliceBulletin } from './guest/GuestStepPoliceBulletin';
 import { GuestStep4Confirmation } from './guest/GuestStep4Confirmation';
 
 interface GuestPortalPageProps {
@@ -33,6 +34,7 @@ function GuestPortalPageContent({ routeToken }: GuestPortalPageProps) {
     goToStep,
     markContractSigned,
     markIdentityVerified,
+    submitPoliceBulletin,
   } = useGuestPortal(token);
 
   if (isLoading) {
@@ -55,8 +57,12 @@ function GuestPortalPageContent({ routeToken }: GuestPortalPageProps) {
     );
   }
 
+  const steps: ('welcome' | 'contract' | 'identity' | 'police' | 'confirmation')[] = session.policeBulletinEnabled
+    ? ['welcome', 'contract', 'identity', 'police', 'confirmation']
+    : ['welcome', 'contract', 'identity', 'confirmation'];
+
   return (
-    <GuestPortalLayout currentStep={currentStep} propertyName={session.propertyName}>
+    <GuestPortalLayout currentStep={currentStep} steps={steps} propertyName={session.propertyName}>
       {currentStep === 'welcome' ? (
         <GuestStep1Welcome
           session={session}
@@ -75,6 +81,13 @@ function GuestPortalPageContent({ routeToken }: GuestPortalPageProps) {
         <GuestStep3Identity
           session={session}
           onVerify={markIdentityVerified}
+        />
+      ) : null}
+
+      {currentStep === 'police' ? (
+        <GuestStepPoliceBulletin
+          session={session}
+          onSubmit={submitPoliceBulletin}
         />
       ) : null}
 

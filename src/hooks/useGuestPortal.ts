@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGuestT } from '../lib/i18n/guest/context';
 import { supabase } from '../lib/supabase';
-import type { GuestPortalStep, GuestSession } from '../types/guest-portal';
+import type { GuestPortalStep, GuestSession, PoliceBulletinPrefill } from '../types/guest-portal';
+import type { PoliceBulletinDraft } from '../types/police-bulletin';
 
 type GuestTokenRow = {
   id: string;
@@ -13,15 +14,20 @@ type GuestTokenRow = {
 
 type GuestRelation = {
   full_name?: string | null;
+  country?: string | null;
 };
 
 type HostRelation = {
+  id?: string | null;
   full_name?: string | null;
   identity_retention_months?: number | null;
+  police_bulletin_enabled?: boolean | null;
 };
 
 type PropertyRelation = {
+  id?: string | null;
   name?: string | null;
+  appart_no?: string | null;
   hosts?: HostRelation | HostRelation[] | null;
 };
 
@@ -33,6 +39,19 @@ type ContractRelation = {
 
 type IdentityRelation = {
   status?: string | null;
+  ocr_data?: {
+    declared_name?: string | null;
+    extracted_name?: string | null;
+    document_number?: string | null;
+    birth_date?: string | null;
+    birth_place?: string | null;
+    nationality?: string | null;
+  } | null;
+};
+
+type PoliceBulletinRelation = {
+  id?: string | null;
+  submitted_at?: string | null;
 };
 
 type ReservationRow = {
@@ -44,6 +63,7 @@ type ReservationRow = {
   properties?: PropertyRelation | PropertyRelation[] | null;
   contracts?: ContractRelation[] | ContractRelation | null;
   identity_verification?: IdentityRelation[] | IdentityRelation | null;
+  police_bulletins?: PoliceBulletinRelation[] | PoliceBulletinRelation | null;
 };
 
 function asArray<T>(value: T[] | T | null | undefined): T[] {
@@ -78,8 +98,46 @@ function isIdentityApproved(status: string | null | undefined): boolean {
   return normalized === 'approved' || normalized === 'verified' || normalized === 'ok';
 }
 
+function splitName(fullName: string | null | undefined): { first: string; last: string } {
+  const safe = (fullName ?? '').trim();
+  if (!safe) return { first: '', last: '' };
+  const parts = safe.split(/\s+/);
+  if (parts.length === 1) return { first: parts[0], last: '' };
+  return { first: parts[0], last: parts.slice(1).join(' ') };
+}
+
+function buildPolicePrefill(args: {
+  guest: GuestRelation | null;
+  property: PropertyRelation | null;
+  host: HostRelation | null;
+  identity: IdentityRelation | null;
+  arrivalDate: string;
+}): PoliceBulletinPrefill {
+  const ocr = args.identity?.ocr_data ?? null;
+  const ocrName = ocr?.declared_name || ocr?.extracted_name || args.guest?.full_name || '';
+  const split = splitName(ocrName);
+  return {
+    fullName: split.last || split.first,
+    firstName: split.first,
+    dateOfBirth: ocr?.birth_date || null,
+    placeOfBirth: ocr?.birth_place || '',
+    nationality: ocr?.nationality || args.guest?.country || '',
+    passportNo: ocr?.document_number || '',
+    appartNo: args.property?.appart_no ?? null,
+    arrivalDate: args.arrivalDate,
+    propertyName: args.property?.name || '',
+    hostId: args.host?.id || '',
+    propertyId: args.property?.id || null,
+  };
+}
+
 function deriveStep(session: GuestSession): GuestPortalStep {
-  if (session.identityVerified) return 'confirmation';
+  if (session.identityVerified) {
+    if (session.policeBulletinEnabled && !session.policeBulletinSubmitted) {
+      return 'police';
+    }
+    return 'confirmation';
+  }
   if (session.contractSigned) return 'identity';
   return 'welcome';
 }
@@ -139,10 +197,11 @@ export function useGuestPortal(token: string) {
           status,
           check_in_date,
           check_out_date,
-          guests ( full_name ),
-          properties ( name, hosts ( full_name, identity_retention_months ) ),
+          guests ( full_name, country ),
+          properties ( id, name, appart_no, hosts ( id, full_name, identity_retention_months, police_bulletin_enabled ) ),
           contracts ( signed_by_guest, pdf_url, pdf_storage_path ),
-          identity_verification ( status )
+          identity_verification ( status, ocr_data ),
+          police_bulletins ( id, submitted_at )
         `)
         .eq('id', typedToken.reservation_id)
         .maybeSingle();
@@ -162,7 +221,16 @@ export function useGuestPortal(token: string) {
       const host = asSingle(property?.hosts ?? null);
       const contracts = asArray(reservation.contracts);
       const identities = asArray(reservation.identity_verification);
+      const policeBulletins = asArray(reservation.police_bulletins);
       const reservationStatus = (reservation.status ?? '').toLowerCase();
+
+      const policePrefill = buildPolicePrefill({
+        guest,
+        property,
+        host,
+        identity: asSingle(reservation.identity_verification),
+        arrivalDate: reservation.check_in_date,
+      });
 
       const nextSession: GuestSession = {
         token: typedToken.token,
@@ -183,6 +251,9 @@ export function useGuestPortal(token: string) {
           contracts.some((item) => Boolean(item.signed_by_guest)) ||
           reservationStatus === 'contract_signed' ||
           reservationStatus === 'verified',
+        policeBulletinEnabled: Boolean(host?.police_bulletin_enabled),
+        policeBulletinSubmitted: policeBulletins.some((item) => Boolean(item.submitted_at)),
+        policePrefill,
       };
 
       setSession(nextSession);
@@ -306,6 +377,46 @@ export function useGuestPortal(token: string) {
           }
         : previous,
     );
+    setCurrentStep(
+      session.policeBulletinEnabled && !session.policeBulletinSubmitted ? 'police' : 'confirmation',
+    );
+    return true;
+  }, [session, t]);
+
+  const submitPoliceBulletin = useCallback(async (draft: PoliceBulletinDraft) => {
+    if (!session) return false;
+    setError(null);
+
+    const payload = {
+      reservation_id: draft.reservation_id,
+      host_id: draft.host_id,
+      property_id: draft.property_id,
+      appart_no: draft.appart_no,
+      full_name: draft.full_name,
+      first_name: draft.first_name,
+      date_of_birth: draft.date_of_birth,
+      place_of_birth: draft.place_of_birth,
+      nationality: draft.nationality,
+      profession: draft.profession,
+      coming_from: draft.coming_from,
+      going_to: draft.going_to,
+      arrival_date: draft.arrival_date,
+      home_address: draft.home_address,
+      passport_no: draft.passport_no,
+      submitted_at: new Date().toISOString(),
+    };
+
+    const { error: upsertError } = await supabase
+      .from('police_bulletins')
+      .upsert(payload, { onConflict: 'reservation_id' });
+
+    if (upsertError) {
+      console.warn('police_bulletin upsert failed:', upsertError);
+      setError(t.guestPortal.errors.uploadError);
+      return false;
+    }
+
+    setSession((previous) => (previous ? { ...previous, policeBulletinSubmitted: true } : previous));
     setCurrentStep('confirmation');
     return true;
   }, [session, t]);
@@ -319,7 +430,17 @@ export function useGuestPortal(token: string) {
       goToStep,
       markContractSigned,
       markIdentityVerified,
+      submitPoliceBulletin,
     }),
-    [session, isLoading, error, currentStep, goToStep, markContractSigned, markIdentityVerified],
+    [
+      session,
+      isLoading,
+      error,
+      currentStep,
+      goToStep,
+      markContractSigned,
+      markIdentityVerified,
+      submitPoliceBulletin,
+    ],
   );
 }
