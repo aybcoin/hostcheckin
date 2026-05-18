@@ -93,6 +93,9 @@ const PublicBookingForm = lazy(() =>
   import('./components/PublicBookingForm').then((module) => ({ default: module.PublicBookingForm })),
 );
 const GuestPortalPage = lazy(() => import('./components/GuestPortalPage'));
+const CheckinLegacyRedirect = lazy(() =>
+  import('./components/CheckinLegacyRedirect').then((module) => ({ default: module.CheckinLegacyRedirect })),
+);
 
 const legacyPagePathAliases: Partial<Record<string, AppPage>> = {
   '/profile': 'profile',
@@ -140,6 +143,7 @@ function App() {
   const [guestPortalToken, setGuestPortalToken] = useState<string | null>(null);
   const [autoLinkPropertyId, setAutoLinkPropertyId] = useState<string | null>(null);
   const [focusedReservationId, setFocusedReservationId] = useState<string | null>(null);
+  const [legacyCheckinFallback, setLegacyCheckinFallback] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
 
   const applyRoute = useCallback((pathname: string, search: string = '') => {
@@ -166,6 +170,7 @@ function App() {
     const checkinMatch = pathname.match(/^\/checkin\/(.+)$/);
     if (checkinMatch) {
       setVerificationLink(checkinMatch[1]);
+      setLegacyCheckinFallback(false);
       setGuestPortalToken(null);
       setPublicBookingToken(null);
       setAutoLinkPropertyId(null);
@@ -359,7 +364,19 @@ function App() {
   } else if (verificationLink) {
     appContent = (
       <GuestLocaleProvider>
-        <VerificationPage uniqueLink={verificationLink} />
+        {legacyCheckinFallback ? (
+          <VerificationPage uniqueLink={verificationLink} />
+        ) : (
+          <CheckinLegacyRedirect
+            uniqueLink={verificationLink}
+            onResolved={(token) => {
+              setLegacyCheckinFallback(false);
+              setVerificationLink(null);
+              setGuestPortalToken(token);
+            }}
+            onFailed={() => setLegacyCheckinFallback(true)}
+          />
+        )}
       </GuestLocaleProvider>
     );
   } else if (publicBookingToken) {
