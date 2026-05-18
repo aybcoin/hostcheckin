@@ -125,6 +125,7 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
   const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([]);
   const [policeBulletin, setPoliceBulletin] = useState<PoliceBulletinData | null>(null);
   const [policeEnabled, setPoliceEnabled] = useState(false);
+  const [downloadingPolicePdf, setDownloadingPolicePdf] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'identity' | 'contract' | 'police' | 'audit'>('identity');
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
@@ -187,6 +188,46 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
     }
 
     setLoading(false);
+  };
+
+  const handleDownloadPoliceBulletin = async () => {
+    if (!policeBulletin) return;
+    setDownloadingPolicePdf(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const session = (await supabase.auth.getSession()).data.session;
+      const accessToken = session?.access_token || supabaseAnonKey;
+      if (!supabaseUrl || !accessToken) return;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-police-bulletin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey || '',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ reservationId }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        alert(body.error || 'Erreur lors de la génération du PDF.');
+        return;
+      }
+
+      const body = await response.json();
+      if (body.pdf_url) {
+        window.open(body.pdf_url, '_blank', 'noopener');
+      } else {
+        alert('PDF indisponible — réessayez dans un instant.');
+      }
+    } catch (err) {
+      console.warn('Police bulletin download failed:', err);
+      alert('Erreur réseau lors du téléchargement.');
+    } finally {
+      setDownloadingPolicePdf(false);
+    }
   };
 
   const handleRevealIds = async () => {
