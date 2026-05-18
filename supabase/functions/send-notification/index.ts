@@ -31,7 +31,8 @@ type Trigger =
   | 'checkin_day'
   | 'checkout_reminder'
   | 'contract_signed'
-  | 'verification_complete';
+  | 'verification_complete'
+  | 'police_bulletin_submitted';
 
 interface ChannelResult {
   channel: SendChannel;
@@ -91,6 +92,7 @@ const ALLOWED_TRIGGERS: Trigger[] = [
   'checkout_reminder',
   'contract_signed',
   'verification_complete',
+  'police_bulletin_submitted',
 ];
 
 const PLACEHOLDER_PATTERN = /\{([a-z0-9_]+)\}/gi;
@@ -169,6 +171,8 @@ function buildNotificationMessage(payload: NotificationPayload): string {
       return `Bonjour ${payload.guestName}, votre contrat de séjour pour ${payload.propertyName} a bien été signé. Bonne préparation !`;
     case 'verification_complete':
       return `Bonjour ${payload.senderName}, l'identité de ${payload.guestName} pour ${payload.propertyName} vient d'être vérifiée avec succès.`;
+    case 'police_bulletin_submitted':
+      return `Bonjour ${payload.senderName}, ${payload.guestName} vient de soumettre sa fiche de police pour ${payload.propertyName}.`;
     default:
       return `Bonjour ${payload.guestName}, une mise à jour est disponible pour votre réservation à ${payload.propertyName}.`;
   }
@@ -186,8 +190,19 @@ function buildEmailSubject(payload: NotificationPayload): string {
       return `Contrat signé — ${payload.propertyName}`;
     case 'verification_complete':
       return `Identité vérifiée — ${payload.guestName}`;
+    case 'police_bulletin_submitted':
+      return `Fiche de police — ${payload.guestName} — ${payload.propertyName}`;
     default:
       return 'Notification HostCheckIn';
+  }
+}
+
+function defaultRecipientTypeForTrigger(trigger: Trigger | undefined): 'host' | 'guest' | 'both' {
+  switch (trigger) {
+    case 'police_bulletin_submitted':
+      return 'host';
+    default:
+      return 'host';
   }
 }
 
@@ -412,7 +427,9 @@ async function resolveMissingPayloadFields(
     return {
       ...partial,
       channel: isChannel(partial.channel) ? partial.channel : 'email',
-      recipientType: isRecipientType(partial.recipientType) ? partial.recipientType : 'host',
+      recipientType: isRecipientType(partial.recipientType)
+        ? partial.recipientType
+        : defaultRecipientTypeForTrigger(isTrigger(partial.trigger) ? partial.trigger : undefined),
       guestName: partial.guestName || guest?.full_name || 'Voyageur',
       guestEmail: partial.guestEmail || guest?.email || undefined,
       guestPhone: partial.guestPhone || guest?.phone || undefined,

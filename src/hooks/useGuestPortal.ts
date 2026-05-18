@@ -416,6 +416,52 @@ export function useGuestPortal(token: string) {
       return false;
     }
 
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (supabaseUrl && supabaseAnonKey) {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        };
+
+        const notifyHostPromise = fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            reservationId: session.reservationId,
+            trigger: 'police_bulletin_submitted',
+            channel: 'email',
+            recipientType: 'host',
+          }),
+        }).then(async (response) => {
+          if (!response.ok) {
+            const details = await response.text().catch(() => '');
+            console.warn('police_bulletin_submitted notification failed:', response.status, details);
+          }
+        }).catch((err) => console.warn('police_bulletin_submitted notification failed:', err));
+
+        const generatePdfPromise = fetch(`${supabaseUrl}/functions/v1/generate-police-bulletin`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            reservationId: session.reservationId,
+          }),
+        }).then(async (response) => {
+          if (!response.ok) {
+            const details = await response.text().catch(() => '');
+            console.warn('generate-police-bulletin failed:', response.status, details);
+          }
+        }).catch((err) => console.warn('generate-police-bulletin failed:', err));
+
+        void Promise.allSettled([notifyHostPromise, generatePdfPromise]);
+      }
+    } catch (err) {
+      console.warn('police bulletin follow-up dispatch failed:', err);
+    }
+
     setSession((previous) => (previous ? { ...previous, policeBulletinSubmitted: true } : previous));
     setCurrentStep('confirmation');
     return true;

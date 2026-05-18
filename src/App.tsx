@@ -507,6 +507,7 @@ function App() {
               host={host}
               onUpdate={updateHost}
               properties={properties}
+              onUpdateProperty={updateProperty}
               onNavigate={navigateToPage}
             />
           ) : null}
