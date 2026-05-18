@@ -548,6 +548,13 @@ async function insertNotificationLog(
 
 const BREVO_API_KEY_NOT_CONFIGURED = 'BREVO_API_KEY not configured';
 
+// Verified Brevo sender. Brevo rejects emails sent from unverified mailboxes
+// (any host gmail address) — we therefore relay every email through a single
+// system sender configured in the Brevo dashboard. Defaults fall back to the
+// account owner so production keeps sending even before secrets are set.
+const BREVO_SENDER_EMAIL = Deno.env.get('BREVO_SENDER_EMAIL') ?? 'hammas.ayoub@gmail.com';
+const BREVO_SENDER_NAME = Deno.env.get('BREVO_SENDER_NAME') ?? 'HostCheckIn';
+
 function sanitizeBrevoSmsSender(senderName: string): string {
   const alphanumericSender = senderName.replace(/[^a-zA-Z0-9]/g, '');
   if (!alphanumericSender) {
@@ -612,7 +619,17 @@ async function sendEmailWithBrevo(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: payload.senderName, email: payload.hostEmail },
+        // Brevo only accepts emails from senders verified in their dashboard.
+        // Host gmail addresses are never verified, so we use a single
+        // verified system sender (env: BREVO_SENDER_EMAIL) and route replies
+        // back to the host via replyTo.
+        sender: {
+          name: payload.senderName || BREVO_SENDER_NAME,
+          email: BREVO_SENDER_EMAIL,
+        },
+        replyTo: payload.hostEmail
+          ? { email: payload.hostEmail, name: payload.senderName || BREVO_SENDER_NAME }
+          : undefined,
         to: [{ email: to }],
         subject,
         textContent: message,
