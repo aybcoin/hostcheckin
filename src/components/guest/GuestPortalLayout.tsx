@@ -9,14 +9,16 @@ interface GuestPortalLayoutProps {
   children: ReactNode;
   currentStep: GuestPortalStep;
   propertyName: string;
+  steps?: GuestPortalStep[];
 }
 
-const STEP_ORDER: GuestPortalStep[] = ['welcome', 'contract', 'identity', 'confirmation'];
+const DEFAULT_STEP_ORDER: GuestPortalStep[] = ['welcome', 'contract', 'identity', 'confirmation'];
 
-export function GuestPortalLayout({ children, currentStep, propertyName }: GuestPortalLayoutProps) {
+export function GuestPortalLayout({ children, currentStep, propertyName, steps }: GuestPortalLayoutProps) {
   const t = useGuestT();
   const { locale, setLocale } = useGuestLocaleCtx();
-  const activeIndex = STEP_ORDER.indexOf(currentStep);
+  const stepOrder = steps ?? DEFAULT_STEP_ORDER;
+  const activeIndex = stepOrder.indexOf(currentStep);
 
   return (
     <div className={clsx('min-h-screen', surfaceTokens.app)}>
@@ -51,8 +53,12 @@ export function GuestPortalLayout({ children, currentStep, propertyName }: Guest
       </header>
 
       <main role="main" aria-label={t.guestPortal.aria.main} className="mx-auto w-full max-w-3xl px-4 py-5 sm:py-8">
-        <ol className="mb-6 grid grid-cols-4 gap-2" aria-label={t.guestPortal.aria.steps}>
-          {STEP_ORDER.map((step, index) => {
+        <ol
+          className="mb-6 grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${stepOrder.length}, minmax(0, 1fr))` }}
+          aria-label={t.guestPortal.aria.steps}
+        >
+          {stepOrder.map((step, index) => {
             const isActive = currentStep === step;
             const isDone = index < activeIndex;
             const label = t.guestPortal.steps[step];
