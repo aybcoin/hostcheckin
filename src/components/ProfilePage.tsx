@@ -8,15 +8,17 @@ import { AppPage } from '../lib/navigation';
 import { fr } from '../lib/i18n/fr';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
+import { ComplianceSection } from './profile/ComplianceSection';
 
 interface ProfilePageProps {
   host: Host | null;
   onUpdate: (updates: Partial<Host>) => Promise<void>;
   properties: Property[];
+  onUpdateProperty?: (id: string, updates: Partial<Property>) => Promise<void>;
   onNavigate: (page: AppPage) => void;
 }
 
-type AccountSection = 'details' | 'checkin' | 'legal' | 'contracts' | 'billing' | 'security';
+type AccountSection = 'details' | 'checkin' | 'compliance' | 'legal' | 'contracts' | 'billing' | 'security';
 
 interface AccountSectionConfig {
   id: AccountSection;
@@ -27,6 +29,7 @@ export function ProfilePage({
   host,
   onUpdate,
   properties,
+  onUpdateProperty,
   onNavigate,
 }: ProfilePageProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -52,6 +55,7 @@ export function ProfilePage({
   const accountSections: AccountSectionConfig[] = [
     { id: 'details', label: fr.profile.sections.details },
     { id: 'checkin', label: fr.profile.sections.checkin },
+    { id: 'compliance', label: fr.profile.sections.compliance },
     { id: 'legal', label: fr.profile.sections.legal },
     { id: 'contracts', label: fr.profile.sections.contracts },
     { id: 'billing', label: fr.profile.sections.billing },
@@ -229,9 +233,19 @@ export function ProfilePage({
     </Card>
   );
 
+  const renderComplianceSection = () => (
+    <ComplianceSection
+      host={host}
+      properties={properties}
+      onUpdateHost={onUpdate}
+      onUpdateProperty={onUpdateProperty}
+    />
+  );
+
   const renderActiveSection = () => {
     if (activeSection === 'details') return renderDetailsSection();
     if (activeSection === 'checkin') return renderSimpleSection(fr.profile.sectionDescriptions.checkin, fr.profile.openCheckin, 'checkins');
+    if (activeSection === 'compliance') return renderComplianceSection();
     if (activeSection === 'legal') return renderSimpleSection(fr.profile.sectionDescriptions.legal, fr.profile.openLegal, 'help');
     if (activeSection === 'contracts') return renderSimpleSection(fr.profile.sectionDescriptions.contracts, fr.profile.openContracts, 'contracts');
     if (activeSection === 'security') return renderSimpleSection(fr.profile.sectionDescriptions.security, fr.profile.openSecurity, 'security');
