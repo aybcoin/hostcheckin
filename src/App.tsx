@@ -92,9 +92,8 @@ const AutoLinkGenerator = lazy(() =>
 const PublicBookingForm = lazy(() =>
   import('./components/PublicBookingForm').then((module) => ({ default: module.PublicBookingForm })),
 );
-const GuestPortalPage = lazy(() => import('./components/GuestPortalPage'));
-const CheckinLegacyRedirect = lazy(() =>
-  import('./components/CheckinLegacyRedirect').then((module) => ({ default: module.CheckinLegacyRedirect })),
+const CheckinTokenResolver = lazy(() =>
+  import('./components/CheckinTokenResolver').then((module) => ({ default: module.CheckinTokenResolver })),
 );
 
 const legacyPagePathAliases: Partial<Record<string, AppPage>> = {
@@ -143,7 +142,6 @@ function App() {
   const [guestPortalToken, setGuestPortalToken] = useState<string | null>(null);
   const [autoLinkPropertyId, setAutoLinkPropertyId] = useState<string | null>(null);
   const [focusedReservationId, setFocusedReservationId] = useState<string | null>(null);
-  const [legacyCheckinFallback, setLegacyCheckinFallback] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
 
   const applyRoute = useCallback((pathname: string, search: string = '') => {
@@ -170,7 +168,6 @@ function App() {
     const checkinMatch = pathname.match(/^\/checkin\/(.+)$/);
     if (checkinMatch) {
       setVerificationLink(checkinMatch[1]);
-      setLegacyCheckinFallback(false);
       setGuestPortalToken(null);
       setPublicBookingToken(null);
       setAutoLinkPropertyId(null);
@@ -360,23 +357,15 @@ function App() {
   let appContent: JSX.Element;
 
   if (guestPortalToken !== null) {
-    appContent = <GuestPortalPage routeToken={guestPortalToken} />;
+    appContent = (
+      <GuestLocaleProvider>
+        <CheckinTokenResolver token={guestPortalToken} />
+      </GuestLocaleProvider>
+    );
   } else if (verificationLink) {
     appContent = (
       <GuestLocaleProvider>
-        {legacyCheckinFallback ? (
-          <VerificationPage uniqueLink={verificationLink} />
-        ) : (
-          <CheckinLegacyRedirect
-            uniqueLink={verificationLink}
-            onResolved={(token) => {
-              setLegacyCheckinFallback(false);
-              setVerificationLink(null);
-              setGuestPortalToken(token);
-            }}
-            onFailed={() => setLegacyCheckinFallback(true)}
-          />
-        )}
+        <VerificationPage uniqueLink={verificationLink} />
       </GuestLocaleProvider>
     );
   } else if (publicBookingToken) {

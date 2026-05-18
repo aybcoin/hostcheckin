@@ -31,6 +31,30 @@ interface GuestIdentity {
   full_name?: string;
   email?: string | null;
   phone?: string | null;
+  country?: string | null;
+  date_of_birth?: string | null;
+}
+
+interface VerificationHost {
+  id: string;
+  full_name?: string | null;
+  identity_retention_months?: number | null;
+  police_bulletin_enabled?: boolean | null;
+}
+
+interface IdentityOcrData {
+  declared_name?: string | null;
+  extracted_name?: string | null;
+  document_number?: string | null;
+  birth_date?: string | null;
+  birth_place?: string | null;
+  nationality?: string | null;
+}
+
+interface IdentityVerificationRelation {
+  id?: string;
+  status?: string | null;
+  ocr_data?: IdentityOcrData | null;
 }
 
 interface VerificationReservation {
@@ -43,6 +67,7 @@ interface VerificationReservation {
   property_id?: string;
   smart_lock_code?: string | null;
   guests?: GuestIdentity | null;
+  identity_verification?: IdentityVerificationRelation | IdentityVerificationRelation[] | null;
 }
 
 interface VerificationProperty {
@@ -56,6 +81,8 @@ interface VerificationProperty {
   rooms_count?: number;
   check_in_time?: string;
   check_out_time?: string;
+  appart_no?: string | null;
+  hosts?: VerificationHost | VerificationHost[] | null;
 }
 
 interface KycResult {
@@ -63,6 +90,88 @@ interface KycResult {
   confidence: number;
   is_valid_document: boolean;
   rejection_reason: string | null;
+}
+
+function asArray<T>(value: T[] | T | null | undefined): T[] {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function asSingle<T>(value: T[] | T | null | undefined): T | null {
+  return asArray(value)[0] ?? null;
+}
+
+function readOptionalString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function normalizeIdentityOcrData(source: unknown): IdentityOcrData | null {
+  if (!source || typeof source !== 'object') {
+    return null;
+  }
+
+  const normalized: IdentityOcrData = {
+    declared_name: readOptionalString(Reflect.get(source, 'declared_name')),
+    extracted_name: readOptionalString(Reflect.get(source, 'extracted_name')),
+    document_number: readOptionalString(Reflect.get(source, 'document_number')),
+    birth_date: readOptionalString(Reflect.get(source, 'birth_date')),
+    birth_place: readOptionalString(Reflect.get(source, 'birth_place')),
+    nationality: readOptionalString(Reflect.get(source, 'nationality')),
+  };
+
+  if (Object.values(normalized).every((value) => value == null)) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function splitName(fullName: string): { firstName: string; fullName: string } {
+  const safeName = fullName.trim();
+  if (!safeName) {
+    return { firstName: '', fullName: '' };
+  }
+
+  const nameParts = safeName.split(/\s+/);
+  if (nameParts.length === 1) {
+    return { firstName: nameParts[0], fullName: nameParts[0] };
+  }
+
+  return {
+    firstName: nameParts[0],
+    fullName: nameParts.slice(1).join(' '),
+  };
+}
+
+function buildPolicePrefill(args: {
+  reservation: VerificationReservation | null;
+  property: VerificationProperty | null;
+  declaredName: string;
+  identityOcrData: IdentityOcrData | null;
+}) {
+  const guest = asSingle(args.reservation?.guests ?? null);
+  const ocrName =
+    args.identityOcrData?.declared_name
+    || args.identityOcrData?.extracted_name
+    || args.declaredName.trim()
+    || guest?.full_name
+    || '';
+  const split = splitName(ocrName);
+  const nationality = args.identityOcrData?.nationality || guest?.country || '';
+
+  return {
+    profession: '',
+    comingFrom: guest?.country || nationality,
+    goingTo: args.property?.name || '',
+    homeAddress: '',
+    firstName: split.firstName,
+    fullName: split.fullName,
+    dateOfBirth: args.identityOcrData?.birth_date || guest?.date_of_birth || '',
+    placeOfBirth: args.identityOcrData?.birth_place || '',
+    nationality,
+    passportNo: args.identityOcrData?.document_number || '',
+    arrivalDate: args.reservation?.check_in_date || '',
+  };
 }
 
 async function logAuditEvent(params: {
@@ -129,15 +238,29 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
   const dateLocale = { fr: 'fr-FR', en: 'en-GB', es: 'es-ES' }[locale];
   const verificationT = t.verification;
   const isDemoMode = uniqueLink === 'demo-preview';
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [submitting, setSubmitting] = useState(false);
+  const [policeSubmitting, setPoliceSubmitting] = useState(false);
   const [reservation, setReservation] = useState<VerificationReservation | null>(null);
   const [property, setProperty] = useState<VerificationProperty | null>(null);
   const [contractTemplate, setContractTemplate] = useState<string | null>(null);
+  const [policeBulletinEnabled, setPoliceBulletinEnabled] = useState(false);
+  const [identityOcrData, setIdentityOcrData] = useState<IdentityOcrData | null>(null);
   const [idType, setIdType] = useState('');
   const [declaredName, setDeclaredName] = useState('');
   const [declaredEmail, setDeclaredEmail] = useState('');
+  const [profession, setProfession] = useState('');
+  const [comingFrom, setComingFrom] = useState('');
+  const [goingTo, setGoingTo] = useState('');
+  const [homeAddress, setHomeAddress] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [placeOfBirth, setPlaceOfBirth] = useState('');
+  const [nationality, setNationality] = useState('');
+  const [passportNo, setPassportNo] = useState('');
+  const [arrivalDate, setArrivalDate] = useState('');
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
@@ -172,12 +295,34 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
     setSelfiePreview(null);
   }, [selfieFile]);
 
+  useEffect(() => {
+    const prefill = buildPolicePrefill({
+      reservation,
+      property,
+      declaredName,
+      identityOcrData,
+    });
+
+    setProfession(prefill.profession);
+    setComingFrom(prefill.comingFrom);
+    setGoingTo(prefill.goingTo);
+    setHomeAddress(prefill.homeAddress);
+    setFirstName(prefill.firstName);
+    setFullName(prefill.fullName);
+    setDateOfBirth(prefill.dateOfBirth);
+    setPlaceOfBirth(prefill.placeOfBirth);
+    setNationality(prefill.nationality);
+    setPassportNo(prefill.passportNo);
+    setArrivalDate(prefill.arrivalDate);
+  }, [declaredName, identityOcrData, property, reservation]);
+
   const formatDate = (value: string | undefined) => (
     value ? new Date(value).toLocaleDateString(dateLocale) : '—'
   );
 
   const fetchReservation = async () => {
     if (isDemoMode) {
+      setStep(1);
       setReservation({
         id: 'demo-reservation',
         booking_reference: 'DEMO#1',
@@ -190,6 +335,8 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
           full_name: 'Voyageur Démo',
           email: 'demo@hostcheckin.app',
           phone: '+212600000000',
+          country: 'France',
+          date_of_birth: '1990-01-01',
         },
       });
       setProperty({
@@ -203,7 +350,16 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
         rooms_count: 2,
         check_in_time: '15:00',
         check_out_time: '11:00',
+        appart_no: 'A-101',
+        hosts: {
+          id: 'demo-host',
+          full_name: 'Hôte Démo',
+          identity_retention_months: 12,
+          police_bulletin_enabled: false,
+        },
       });
+      setPoliceBulletinEnabled(false);
+      setIdentityOcrData(null);
       setContractTemplate(null);
       setLoadState('loaded');
       return;
@@ -211,10 +367,13 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
 
     try {
       setLoadState('loading');
+      setStep(1);
+      setPoliceBulletinEnabled(false);
+      setIdentityOcrData(null);
 
       const { data: resData, error: resError } = await supabase
         .from('reservations')
-        .select('*, guests(*)')
+        .select('*, guests(*), identity_verification(id, status, ocr_data)')
         .eq('unique_link', uniqueLink)
         .maybeSingle();
 
@@ -228,25 +387,30 @@ export function VerificationPage({ uniqueLink }: VerificationPageProps) {
         return;
       }
 
-      setReservation(resData as VerificationReservation);
+      const typedReservation = resData as VerificationReservation;
+      setReservation(typedReservation);
       // Pre-fill the declared identity fields from the reservation so returning
       // guests see their data, while still allowing them to edit it.
-      setDeclaredName(resData?.guests?.full_name || '');
-      setDeclaredEmail(resData?.guests?.email || '');
+      const guest = asSingle(typedReservation.guests);
+      setDeclaredName(guest?.full_name || '');
+      setDeclaredEmail(guest?.email || '');
+      setIdentityOcrData(normalizeIdentityOcrData(asSingle(typedReservation.identity_verification)?.ocr_data));
 
       const { data: propData } = await supabase
         .from('properties')
-        .select('*')
+        .select('id, host_id, name, address, city, country, max_guests, rooms_count, check_in_time, check_out_time, appart_no, hosts ( id, full_name, identity_retention_months, police_bulletin_enabled )')
         .eq('id', resData.property_id)
         .maybeSingle();
 
       if (propData) {
-        setProperty(propData as VerificationProperty);
+        const typedProperty = propData as VerificationProperty;
+        setProperty(typedProperty);
+        setPoliceBulletinEnabled(Boolean(asSingle(typedProperty.hosts)?.police_bulletin_enabled));
 
         const { data: templateData } = await supabase
           .from('contract_templates')
           .select('content')
-          .eq('host_id', propData.host_id)
+          .eq('host_id', typedProperty.host_id)
           .eq('is_default', true)
           .maybeSingle();
 
@@ -620,6 +784,13 @@ ${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
         setVerificationId(kycData.verification_id);
       }
 
+      const latestOcrData = normalizeIdentityOcrData(kycData.ocr_data);
+      setIdentityOcrData((previous) => ({
+        ...(previous || {}),
+        ...(latestOcrData || {}),
+        declared_name: trimmedName,
+      }));
+
       setKycResult({
         status: kycData.status || 'rejected',
         confidence: kycData.confidence || 0,
@@ -665,7 +836,7 @@ ${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
 
   const handleSubmit = async () => {
     if (isDemoMode) {
-      setStep(4);
+      setStep(policeBulletinEnabled ? 4 : 5);
       return;
     }
 
@@ -794,12 +965,91 @@ ${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
           });
       }
 
-      setStep(4);
+      setStep(policeBulletinEnabled ? 4 : 5);
     } catch (error) {
       console.error('Error submitting verification:', error);
       toast.error(verificationT.errors.submitError);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePoliceSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!reservation || !property || policeSubmitting) {
+      return;
+    }
+
+    setPoliceSubmitting(true);
+
+    try {
+      const payload = {
+        reservation_id: reservation.id,
+        host_id: property.host_id,
+        property_id: property.id,
+        appart_no: property.appart_no ?? null,
+        full_name: fullName.trim(),
+        first_name: firstName.trim(),
+        date_of_birth: dateOfBirth || null,
+        place_of_birth: placeOfBirth.trim(),
+        nationality: nationality.trim(),
+        profession: profession.trim(),
+        coming_from: comingFrom.trim(),
+        going_to: goingTo.trim(),
+        arrival_date: arrivalDate || null,
+        home_address: homeAddress.trim(),
+        passport_no: passportNo.trim(),
+        submitted_at: new Date().toISOString(),
+      };
+
+      const { error: upsertError } = await supabase
+        .from('police_bulletins')
+        .upsert(payload, { onConflict: 'reservation_id' });
+
+      if (upsertError) {
+        console.error('Police bulletin upsert failed:', upsertError);
+        toast.error(verificationT.errors.submitError);
+        return;
+      }
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const headers = {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+      };
+
+      void fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          reservationId: reservation.id,
+          trigger: 'police_bulletin_submitted',
+          channel: 'email',
+          recipientType: 'host',
+        }),
+      }).catch((error) => {
+        console.warn('police_bulletin_submitted notification failed:', error);
+      });
+
+      void fetch(`${supabaseUrl}/functions/v1/generate-police-bulletin`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          reservationId: reservation.id,
+        }),
+      }).catch((error) => {
+        console.warn('generate-police-bulletin failed:', error);
+      });
+
+      setStep(5);
+    } catch (error) {
+      console.error('Police bulletin submit failed:', error);
+      toast.error(verificationT.errors.submitError);
+    } finally {
+      setPoliceSubmitting(false);
     }
   };
 
@@ -845,7 +1095,7 @@ ${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
     );
   }
 
-  if (step === 4) {
+  if (step === 5) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
         <Card variant="highlight" padding="lg" className="w-full max-w-md text-center">
@@ -891,6 +1141,7 @@ ${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
     { num: 1, label: verificationT.steps.identity },
     { num: 2, label: verificationT.steps.selfie },
     { num: 3, label: verificationT.steps.contract },
+    ...(policeBulletinEnabled ? [{ num: 4, label: verificationT.steps.police }] : []),
   ];
 
   return (
@@ -1364,6 +1615,211 @@ ${verificationT.contract.date} ${new Date().toLocaleDateString(dateLocale)}`;
                   </button>
                 </div>
               </div>
+            )}
+
+            {step === 4 && (
+              <form onSubmit={handlePoliceSubmit} className="space-y-5">
+                <div>
+                  <h3 className={clsx("text-lg font-bold mb-1", textTokens.title)}>{verificationT.police.title}</h3>
+                  <p className={clsx("text-sm", textTokens.muted)}>{verificationT.police.subtitle}</p>
+                </div>
+
+                <section className="space-y-3">
+                  <h4 className={clsx("text-sm font-semibold", textTokens.title)}>{verificationT.police.sectionAsk}</h4>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.profession}
+                      </label>
+                      <input
+                        type="text"
+                        value={profession}
+                        onChange={(event) => setProfession(event.target.value)}
+                        placeholder={verificationT.police.placeholders.profession}
+                        className={clsx(inputTokens.base, "text-base")}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.comingFrom}
+                      </label>
+                      <input
+                        type="text"
+                        value={comingFrom}
+                        onChange={(event) => setComingFrom(event.target.value)}
+                        placeholder={verificationT.police.placeholders.comingFrom}
+                        className={clsx(inputTokens.base, "text-base")}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.goingTo}
+                      </label>
+                      <input
+                        type="text"
+                        value={goingTo}
+                        onChange={(event) => setGoingTo(event.target.value)}
+                        placeholder={verificationT.police.placeholders.goingTo}
+                        className={clsx(inputTokens.base, "text-base")}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.homeAddress}
+                      </label>
+                      <input
+                        type="text"
+                        value={homeAddress}
+                        onChange={(event) => setHomeAddress(event.target.value)}
+                        placeholder={verificationT.police.placeholders.homeAddress}
+                        className={clsx(inputTokens.base, "text-base")}
+                        required
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-3">
+                  <h4 className={clsx("text-sm font-semibold", textTokens.title)}>{verificationT.police.sectionAuto}</h4>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.firstName}
+                      </label>
+                      <input
+                        type="text"
+                        value={firstName}
+                        onChange={(event) => setFirstName(event.target.value)}
+                        placeholder={verificationT.police.placeholders.firstName}
+                        className={clsx(inputTokens.base, "text-base")}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.fullName}
+                      </label>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(event) => setFullName(event.target.value)}
+                        placeholder={verificationT.police.placeholders.fullName}
+                        className={clsx(inputTokens.base, "text-base")}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.dateOfBirth}
+                      </label>
+                      <input
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={(event) => setDateOfBirth(event.target.value)}
+                        placeholder={verificationT.police.placeholders.dateOfBirth}
+                        className={clsx(inputTokens.base, "text-base")}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.placeOfBirth}
+                      </label>
+                      <input
+                        type="text"
+                        value={placeOfBirth}
+                        onChange={(event) => setPlaceOfBirth(event.target.value)}
+                        placeholder={verificationT.police.placeholders.placeOfBirth}
+                        className={clsx(inputTokens.base, "text-base")}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.nationality}
+                      </label>
+                      <input
+                        type="text"
+                        value={nationality}
+                        onChange={(event) => setNationality(event.target.value)}
+                        placeholder={verificationT.police.placeholders.nationality}
+                        className={clsx(inputTokens.base, "text-base")}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.passportNo}
+                      </label>
+                      <input
+                        type="text"
+                        value={passportNo}
+                        onChange={(event) => setPassportNo(event.target.value)}
+                        placeholder={verificationT.police.placeholders.passportNo}
+                        className={clsx(inputTokens.base, "text-base font-mono")}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className={clsx("block text-sm font-medium mb-1.5", textTokens.body)}>
+                        {verificationT.police.fields.arrivalDate}
+                      </label>
+                      <input
+                        type="date"
+                        value={arrivalDate}
+                        onChange={(event) => setArrivalDate(event.target.value)}
+                        placeholder={verificationT.police.placeholders.arrivalDate}
+                        className={clsx(inputTokens.base, "text-base")}
+                        required
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className={clsx(
+                      "flex-1 flex items-center justify-center gap-1 py-3 rounded-lg transition-colors font-medium",
+                      ctaTokens.secondary,
+                    )}
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                    {verificationT.contract.back}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={policeSubmitting}
+                    className={clsx(
+                      "flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-colors disabled:opacity-50 font-medium",
+                      ctaTokens.primary,
+                    )}
+                  >
+                    {policeSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        {verificationT.police.submitting}
+                      </>
+                    ) : (
+                      <>
+                        {verificationT.police.submit}
+                        <Check className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </Card>
