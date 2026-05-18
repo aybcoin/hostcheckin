@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
   X, FileText, User, Camera, PenTool, Download, ExternalLink, Loader2,
-  AlertCircle, ShieldCheck, ShieldX, Clock, Activity, Hash, Eye, EyeOff, Lock
+  AlertCircle, ShieldCheck, ShieldX, Clock, Activity, Hash, Eye, EyeOff, Lock,
+  ClipboardCheck
 } from 'lucide-react';
 import { clsx } from '../lib/clsx';
 import { logAuditEvent } from '../lib/audit-log';
@@ -66,6 +67,26 @@ interface AuditEntry {
   consent_text?: string;
 }
 
+interface PoliceBulletinData {
+  id: string;
+  appart_no: string | null;
+  ordre_no: number | null;
+  full_name: string | null;
+  first_name: string | null;
+  date_of_birth: string | null;
+  place_of_birth: string | null;
+  nationality: string | null;
+  profession: string | null;
+  coming_from: string | null;
+  going_to: string | null;
+  arrival_date: string | null;
+  home_address: string | null;
+  passport_no: string | null;
+  pdf_storage_path: string | null;
+  submitted_at: string | null;
+  created_at: string;
+}
+
 interface ReservationDocumentsProps {
   reservationId: string;
   bookingReference: string;
@@ -102,8 +123,10 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
   const [verification, setVerification] = useState<VerificationData | null>(null);
   const [contract, setContract] = useState<ContractData | null>(null);
   const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([]);
+  const [policeBulletin, setPoliceBulletin] = useState<PoliceBulletinData | null>(null);
+  const [policeEnabled, setPoliceEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'identity' | 'contract' | 'audit'>('identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'contract' | 'police' | 'audit'>('identity');
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [idsRevealed, setIdsRevealed] = useState(false);
@@ -142,17 +165,25 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
     if (contractRes.data) setContract(contractRes.data);
     if (auditRes.data) setAuditTrail(auditRes.data);
 
+    const { data: bulletinRow } = await supabase
+      .from('police_bulletins')
+      .select('id, appart_no, ordre_no, full_name, first_name, date_of_birth, place_of_birth, nationality, profession, coming_from, going_to, arrival_date, home_address, passport_no, pdf_storage_path, submitted_at, created_at')
+      .eq('reservation_id', reservationId)
+      .maybeSingle();
+    if (bulletinRow) setPoliceBulletin(bulletinRow as PoliceBulletinData);
+
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
     if (userId) {
       const { data: hostRow } = await supabase
         .from('hosts')
-        .select('identity_retention_months')
+        .select('identity_retention_months, police_bulletin_enabled')
         .eq('id', userId)
         .maybeSingle();
       if (hostRow && typeof hostRow.identity_retention_months === 'number') {
         setRetentionMonths(hostRow.identity_retention_months);
       }
+      if (hostRow) setPoliceEnabled(Boolean(hostRow.police_bulletin_enabled));
     }
 
     setLoading(false);
@@ -299,6 +330,17 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                   <FileText size={16} />
                   <span>Contrat</span>
                 </Button>
+                {(policeEnabled || policeBulletin) && (
+                  <Button
+                    onClick={() => setActiveTab('police')}
+                    variant={activeTab === 'police' ? 'secondary' : 'tertiary'}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <ClipboardCheck size={16} />
+                    <span>Fiche police</span>
+                  </Button>
+                )}
                 <Button
                   onClick={() => setActiveTab('audit')}
                   variant={activeTab === 'audit' ? 'secondary' : 'tertiary'}
@@ -636,6 +678,84 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
                   </div>
                 )}
 
+                {activeTab === 'police' && (
+                  <div className="space-y-4">
+                    {policeBulletin ? (
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={clsx('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium', statusTokens.success)}>
+                              <ClipboardCheck size={12} aria-hidden="true" />
+                              Fiche soumise
+                            </span>
+                            {policeBulletin.submitted_at ? (
+                              <span className={clsx('font-mono text-xs', textTokens.subtle)}>
+                                {formatDate(policeBulletin.submitted_at)}
+                              </span>
+                            ) : null}
+                            {typeof policeBulletin.ordre_no === 'number' ? (
+                              <span className={clsx('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium', borderTokens.default, textTokens.muted)}>
+                                <Hash size={10} aria-hidden="true" />
+                                N° {policeBulletin.ordre_no}
+                              </span>
+                            ) : null}
+                          </div>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleDownloadPoliceBulletin}
+                            disabled={downloadingPolicePdf}
+                          >
+                            {downloadingPolicePdf ? (
+                              <>
+                                <Loader2 size={14} className="animate-spin" />
+                                Préparation…
+                              </>
+                            ) : (
+                              <>
+                                <Download size={14} />
+                                Télécharger le PDF
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
+                        <Card variant="default" padding="md">
+                          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                            <PoliceField label="Appart N°" value={policeBulletin.appart_no} />
+                            <PoliceField label="N° ordre" value={policeBulletin.ordre_no ? `#${policeBulletin.ordre_no}` : null} />
+                            <PoliceField label="Nom de famille" value={policeBulletin.full_name} />
+                            <PoliceField label="Prénom" value={policeBulletin.first_name} />
+                            <PoliceField label="Date de naissance" value={policeBulletin.date_of_birth} />
+                            <PoliceField label="Lieu de naissance" value={policeBulletin.place_of_birth} />
+                            <PoliceField label="Nationalité" value={policeBulletin.nationality} />
+                            <PoliceField label="Profession" value={policeBulletin.profession} />
+                            <PoliceField label="Provenance" value={policeBulletin.coming_from} />
+                            <PoliceField label="Destination" value={policeBulletin.going_to} />
+                            <PoliceField label="Arrivée au Maroc" value={policeBulletin.arrival_date} />
+                            <PoliceField label="N° passeport" value={policeBulletin.passport_no} mono />
+                            <PoliceField className="sm:col-span-2" label="Adresse à domicile" value={policeBulletin.home_address} />
+                          </dl>
+                        </Card>
+                      </>
+                    ) : policeEnabled ? (
+                      <Card variant="default" padding="md" className="text-center">
+                        <ClipboardCheck className={clsx('mx-auto mb-3', textTokens.subtle)} size={32} aria-hidden="true" />
+                        <p className={clsx('text-sm font-medium', textTokens.title)}>En attente de la fiche</p>
+                        <p className={clsx('mt-1 text-xs', textTokens.muted)}>
+                          Le voyageur n'a pas encore soumis sa fiche de police. Elle sera disponible ici dès la fin de l'étape Identité.
+                        </p>
+                      </Card>
+                    ) : (
+                      <Card variant="warning" padding="md">
+                        <p className={clsx('text-sm', textTokens.warning)}>
+                          La fiche de police n'est pas activée pour ce compte. Activez-la depuis Profil → Conformité Maroc.
+                        </p>
+                      </Card>
+                    )}
+                  </div>
+                )}
+
                 {activeTab === 'audit' && (
                   <div className="space-y-4">
                     {auditTrail.length > 0 ? (
@@ -721,5 +841,22 @@ export function ReservationDocuments({ reservationId, bookingReference, onClose 
         </div>
       )}
     </>
+  );
+}
+
+interface PoliceFieldProps {
+  label: string;
+  value: string | number | null | undefined;
+  mono?: boolean;
+  className?: string;
+}
+
+function PoliceField({ label, value, mono, className }: PoliceFieldProps) {
+  const display = value === null || value === undefined || value === '' ? '—' : String(value);
+  return (
+    <div className={className}>
+      <dt className={clsx('text-[11px] font-medium uppercase tracking-wider', textTokens.subtle)}>{label}</dt>
+      <dd className={clsx('mt-0.5 text-sm', mono && 'font-mono', textTokens.title)}>{display}</dd>
+    </div>
   );
 }
