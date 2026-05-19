@@ -17,7 +17,11 @@ const corsHeaders = {
 };
 
 const BUCKET_NAME = 'police-bulletins';
-const AMIRI_FONT_URL = 'https://fonts.gstatic.com/s/amiri/v27/J7aRnpd8CGxBHpUutLM.woff2';
+// Full Amiri TTF (≈380KB) with the complete Arabic glyph set. The previous
+// gstatic URL was a 20KB Latin-only subset, which silently embedded into the
+// PDF but produced empty .notdef boxes for every Arabic codepoint we tried to
+// draw — hence the missing right-side labels.
+const AMIRI_FONT_URL = 'https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHqUp.ttf';
 const ONE_HOUR_IN_SECONDS = 60 * 60;
 
 const LAYOUT = {
@@ -49,13 +53,15 @@ const LAYOUT = {
     rtlOrderY: 724,
   },
   columns: {
+    // Labels widened so "Date d'arrivée au Maroc" / "Date et lieu de naissance"
+    // never overlap the dotted line on the left side.
     leftLabelX: 52,
-    leftLineStartX: 170,
-    leftLineEndX: 294,
-    leftValueX: 178,
-    rightValueRightX: 454,
-    rightLineStartX: 336,
-    rightLineEndX: 458,
+    leftLineStartX: 210,
+    leftLineEndX: 304,
+    leftValueX: 218,
+    rightLineStartX: 320,
+    rightLineEndX: 414,
+    rightValueRightX: 410,
     rightLabelRightX: 542,
   },
   rows: {
