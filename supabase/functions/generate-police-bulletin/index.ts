@@ -299,7 +299,11 @@ function formatDate(value: string | null | undefined): string {
   }
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  if (Number.isNaN(date.getTime())) {
+    // Fall back to the raw string but strip non-WinAnsi chars so a bad value
+    // cannot crash pdf-lib downstream.
+    return sanitizeForWinAnsi(value);
+  }
 
   const day = String(date.getUTCDate()).padStart(2, '0');
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -307,9 +311,32 @@ function formatDate(value: string | null | undefined): string {
   return `${day}/${month}/${year}`;
 }
 
+// Helvetica StandardFont is WinAnsi-only — anything outside cp1252 (e.g. ∞, ™,
+// curly quotes from mobile keyboards, emojis, ligatures) crashes pdf-lib with
+// "WinAnsi cannot encode …". We strip those characters so a single weird
+// keystroke in a guest form can never break the PDF download.
+const WIN_ANSI_EXTRA = new Set([
+  0x0152, 0x0153, 0x0160, 0x0161, 0x0178, 0x017D, 0x017E, 0x0192, 0x02C6, 0x02DC,
+  0x2013, 0x2014, 0x2018, 0x2019, 0x201A, 0x201C, 0x201D, 0x201E, 0x2020, 0x2021,
+  0x2022, 0x2026, 0x2030, 0x2039, 0x203A, 0x20AC, 0x2122,
+]);
+
+function sanitizeForWinAnsi(text: string): string {
+  let out = '';
+  for (const ch of text) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code <= 0x7F || (code >= 0xA0 && code <= 0xFF) || WIN_ANSI_EXTRA.has(code)) {
+      out += ch;
+    } else {
+      out += '?';
+    }
+  }
+  return out;
+}
+
 function compactValue(value: string | null | undefined): string {
   if (!isNonEmptyString(value)) return '—';
-  return value.replace(/\s+/g, ' ').trim();
+  return sanitizeForWinAnsi(value.replace(/\s+/g, ' ').trim());
 }
 
 function combineValue(parts: Array<string | null | undefined>): string {
