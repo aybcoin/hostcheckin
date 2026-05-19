@@ -90,12 +90,14 @@ const STYLE = {
     text: rgb(0.1, 0.1, 0.1),
     muted: rgb(0.45, 0.45, 0.45),
     line: rgb(0.55, 0.55, 0.55),
+    // Peach pill background behind the "Bulletin individuel" title — matches
+    // the reference layout shared by the host.
+    titlePill: rgb(0.97, 0.82, 0.66),
   },
   fontSize: {
-    header: 17,
-    arabicHeader: 17,
+    header: 16,
+    arabicHeader: 16,
     label: 11,
-    subtitle: 9,
     value: 10.5,
     signature: 10,
   },
@@ -103,6 +105,11 @@ const STYLE = {
     segmentWidth: 2.2,
     gapWidth: 2.7,
     thickness: 0.7,
+  },
+  titlePill: {
+    paddingX: 24,
+    paddingY: 10,
+    radius: 22,
   },
 } as const;
 
@@ -173,7 +180,6 @@ type BulletinRecord = {
 
 type LeftField = {
   label: string;
-  subtitle: string;
   value: string;
 };
 
@@ -444,20 +450,14 @@ function drawLeftField(
     LAYOUT.columns.leftLineEndX - LAYOUT.columns.leftValueX,
   );
 
+  // Single French label per row — the user prefers one foreign language plus the
+  // Arabic mirror on the right side, not the trilingual EN/FR/AR stack.
   page.drawText(field.label, {
     x: LAYOUT.columns.leftLabelX,
-    y: rowY + 8,
-    font: fonts.latin,
+    y: rowY + 4,
+    font: fonts.latinBold,
     size: STYLE.fontSize.label,
     color: STYLE.colors.text,
-  });
-
-  page.drawText(field.subtitle, {
-    x: LAYOUT.columns.leftLabelX,
-    y: rowY - 4,
-    font: fonts.latinItalic,
-    size: STYLE.fontSize.subtitle,
-    color: STYLE.colors.muted,
   });
 
   drawDottedLine(page, LAYOUT.columns.leftLineStartX, LAYOUT.columns.leftLineEndX, rowY + 4);
@@ -660,22 +660,44 @@ async function buildBulletinPdf(
   const latestContract = pickLatestContract(asArray(reservation?.contracts));
   const signatureSource = latestContract?.guest_signature_url ?? bulletin.signature_url ?? null;
 
-  drawCenteredText(
-    page,
-    'Bulletin individuel',
-    LAYOUT.header.titleY,
-    STYLE.fontSize.header,
-    fonts.latinBold,
-    STYLE.colors.text,
-  );
-  drawCenteredText(
-    page,
-    prepareRtlText('ورقة شخصية'),
-    LAYOUT.header.arabicTitleY,
-    STYLE.fontSize.arabicHeader,
-    fonts.arabic,
-    STYLE.colors.text,
-  );
+  // Peach rounded-rectangle pill behind both titles ("Bulletin individuel ورقة
+  // شخصية") — the official Moroccan template uses this accent and the host
+  // explicitly asked the PDF to match that visual.
+  const titleLatin = 'Bulletin individuel';
+  const titleArabic = prepareRtlText('ورقة شخصية');
+  const titleLatinWidth = fonts.latinBold.widthOfTextAtSize(titleLatin, STYLE.fontSize.header);
+  const titleArabicWidth = fonts.arabic.widthOfTextAtSize(titleArabic, STYLE.fontSize.arabicHeader);
+  const titlesGap = 18;
+  const pillWidth = titleLatinWidth + titleArabicWidth + titlesGap + STYLE.titlePill.paddingX * 2;
+  const pillHeight = STYLE.fontSize.header + STYLE.titlePill.paddingY * 2;
+  const pillBaselineY = LAYOUT.header.titleY;
+  const pillX = (LAYOUT.page.width - pillWidth) / 2;
+  const pillY = pillBaselineY - STYLE.titlePill.paddingY + 2;
+
+  page.drawRectangle({
+    x: pillX,
+    y: pillY,
+    width: pillWidth,
+    height: pillHeight,
+    color: STYLE.colors.titlePill,
+    borderColor: STYLE.colors.titlePill,
+    borderWidth: 0,
+  });
+
+  page.drawText(titleLatin, {
+    x: pillX + STYLE.titlePill.paddingX,
+    y: pillBaselineY,
+    size: STYLE.fontSize.header,
+    font: fonts.latinBold,
+    color: STYLE.colors.text,
+  });
+  page.drawText(titleArabic, {
+    x: pillX + STYLE.titlePill.paddingX + titleLatinWidth + titlesGap,
+    y: pillBaselineY,
+    size: STYLE.fontSize.arabicHeader,
+    font: fonts.arabic,
+    color: STYLE.colors.text,
+  });
 
   const apartmentText = `Appart N°: ${compactValue(bulletin.appart_no ?? property?.appart_no)}`;
   const ordreText = `N° ordre: ${bulletin.ordre_no ?? '—'}`;
@@ -720,24 +742,22 @@ async function buildBulletinPdf(
   });
 
   const leftFields: LeftField[] = [
-    { label: 'Name', subtitle: 'Nom', value: compactValue(bulletin.full_name) },
-    { label: 'Surname', subtitle: 'Prénom', value: compactValue(bulletin.first_name) },
+    { label: 'Nom', value: compactValue(bulletin.full_name) },
+    { label: 'Prénom', value: compactValue(bulletin.first_name) },
     {
-      label: 'Date & Place of birth',
-      subtitle: 'Date et lieu de naissance',
+      label: 'Date et lieu de naissance',
       value: combineValue([formatDate(bulletin.date_of_birth), bulletin.place_of_birth]),
     },
-    { label: 'Nationality', subtitle: 'Nationalité', value: compactValue(bulletin.nationality) },
-    { label: 'Profession', subtitle: 'Profession', value: compactValue(bulletin.profession) },
-    { label: 'Coming from', subtitle: 'Provenance', value: compactValue(bulletin.coming_from) },
-    { label: 'Going to', subtitle: 'Destination', value: compactValue(bulletin.going_to) },
+    { label: 'Nationalité', value: compactValue(bulletin.nationality) },
+    { label: 'Profession', value: compactValue(bulletin.profession) },
+    { label: 'Provenance', value: compactValue(bulletin.coming_from) },
+    { label: 'Destination', value: compactValue(bulletin.going_to) },
     {
-      label: 'Date of arrival in Morocco',
-      subtitle: "Date d'arrivée au Maroc",
+      label: "Date d'arrivée au Maroc",
       value: formatDate(bulletin.arrival_date ?? reservation?.check_in_date),
     },
-    { label: 'Home address', subtitle: 'Domicile habituel', value: compactValue(bulletin.home_address) },
-    { label: 'N° Passport', subtitle: 'N° passeport', value: compactValue(bulletin.passport_no) },
+    { label: 'Domicile habituel', value: compactValue(bulletin.home_address) },
+    { label: 'N° passeport', value: compactValue(bulletin.passport_no) },
   ];
 
   const rightFields: RightField[] = [

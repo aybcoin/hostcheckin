@@ -32,10 +32,106 @@ interface DocumentAnalysis {
   confidence: number;
   extracted_name: string | null;
   extracted_document_number: string | null;
+  birth_date: string | null;
+  birth_place: string | null;
+  nationality: string | null;
   name_match_score: number;
   matched_keywords: string[];
   rejection_reasons: string[];
   ocr: OcrResult;
+}
+
+// ISO-3 nationality codes → French demonym used on the Moroccan police form.
+const NATIONALITY_BY_ISO3: Record<string, string> = {
+  MAR: "Marocaine",
+  FRA: "Française",
+  ESP: "Espagnole",
+  PRT: "Portugaise",
+  ITA: "Italienne",
+  DEU: "Allemande",
+  GBR: "Britannique",
+  USA: "Américaine",
+  CAN: "Canadienne",
+  BEL: "Belge",
+  CHE: "Suisse",
+  NLD: "Néerlandaise",
+  DZA: "Algérienne",
+  TUN: "Tunisienne",
+  EGY: "Égyptienne",
+  SAU: "Saoudienne",
+  ARE: "Émiratie",
+  TUR: "Turque",
+  CHN: "Chinoise",
+  JPN: "Japonaise",
+};
+
+interface MrzExtraction {
+  document_number: string | null;
+  birth_date: string | null;
+  nationality: string | null;
+  extracted_name: string | null;
+}
+
+/** Parse a TD3 passport MRZ block out of raw OCR lines. */
+function extractFromMrz(ocrLines: string[]): MrzExtraction | null {
+  const cleaned = ocrLines.map((l) => l.replace(/\s+/g, ""));
+  // TD3 line 2: [9 chars doc#][check digit][3 letters nat][6 digits DOB]
+  const line2 = cleaned.find((line) => /^[A-Z0-9<]{9}\d[A-Z]{3}\d{6}/.test(line));
+  if (!line2 || line2.length < 28) return null;
+
+  const documentNumber = line2.slice(0, 9).replace(/</g, "") || null;
+  const nationalityIso = line2.slice(10, 13);
+  const yyRaw = line2.slice(13, 15);
+  const mmRaw = line2.slice(15, 17);
+  const ddRaw = line2.slice(17, 19);
+
+  let birthDate: string | null = null;
+  if (/^\d{2}$/.test(yyRaw) && /^\d{2}$/.test(mmRaw) && /^\d{2}$/.test(ddRaw)) {
+    const yy = Number(yyRaw);
+    const currentYY = new Date().getFullYear() % 100;
+    const year = yy > currentYY ? 1900 + yy : 2000 + yy;
+    birthDate = `${year}-${mmRaw}-${ddRaw}`;
+  }
+
+  const line1 = cleaned.find((line) => /^P[<-][A-Z<]{3}/.test(line));
+  let extractedName: string | null = null;
+  if (line1) {
+    const namesPart = line1.slice(5).replace(/<+$/, "");
+    const [surnameRaw, ...givenRaw] = namesPart.split("<<");
+    const surname = (surnameRaw || "").replace(/</g, " ").trim();
+    const given = givenRaw.join(" ").replace(/</g, " ").trim();
+    const joined = `${given} ${surname}`.trim();
+    if (joined) extractedName = joined;
+  }
+
+  return {
+    document_number: documentNumber,
+    birth_date: birthDate,
+    nationality: /^[A-Z]{3}$/.test(nationalityIso)
+      ? NATIONALITY_BY_ISO3[nationalityIso] ?? nationalityIso
+      : null,
+    extracted_name: extractedName,
+  };
+}
+
+/** Heuristic: scan OCR lines for the value following a "Lieu de naissance" label. */
+function extractPlaceOfBirth(ocrLines: string[]): string | null {
+  const labelRe = /li[eo]u\s*de\s*naissance|place\s*of\s*birth|naissance|محل\s*الازدياد|محل\s*الميلاد/i;
+  const dateLike = /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/;
+  const nextLabelLike =
+    /date|domicile|domicle|residence|résidence|signature|expiration|delivrance|délivrance|nationalité|profession/i;
+
+  for (let i = 0; i < ocrLines.length; i++) {
+    if (!labelRe.test(ocrLines[i])) continue;
+    for (let j = i + 1; j < Math.min(ocrLines.length, i + 4); j++) {
+      const candidate = ocrLines[j].trim();
+      if (!candidate) continue;
+      if (dateLike.test(candidate)) continue;
+      if (nextLabelLike.test(candidate)) continue;
+      return candidate;
+    }
+  }
+  return null;
 }
 
 function summarizeUrl(input: string): string {
@@ -303,6 +399,9 @@ async function analyzeDocument(
       confidence: 0,
       extracted_name: null,
       extracted_document_number: null,
+      birth_date: null,
+      birth_place: null,
+      nationality: null,
       name_match_score: 0,
       matched_keywords: [],
       rejection_reasons: [
@@ -360,6 +459,15 @@ async function analyzeDocument(
   const kwScore = Math.min(matchedKeywords.length / 2, 1); // 2+ keywords = full
   const confidence = Math.round((kwScore * 0.5 + nameResult.score * 0.5) * 100) / 100;
 
+  // Structured extraction from MRZ (when present, this is the most reliable source
+  // of nationality + DOB + document number) and from labelled OCR lines for the
+  // place of birth. These feed the police-bulletin prefill on the frontend.
+  const mrz = extractFromMrz(ocr.lines);
+  const placeOfBirth = extractPlaceOfBirth(ocr.lines);
+  const mrzDocNumber = mrz?.document_number ?? null;
+  const finalDocNumber = mrzDocNumber || docNumber;
+  const finalExtractedName = mrz?.extracted_name || extractedName;
+
   const documentTypeMap: Record<string, string> = {
     cin: "carte_identite",
     passport: "passeport",
@@ -373,8 +481,11 @@ async function analyzeDocument(
     is_valid_document: isValid,
     document_type_detected: documentTypeMap[idType] || idType,
     confidence,
-    extracted_name: extractedName,
-    extracted_document_number: docNumber,
+    extracted_name: finalExtractedName,
+    extracted_document_number: finalDocNumber,
+    birth_date: mrz?.birth_date ?? null,
+    birth_place: placeOfBirth,
+    nationality: mrz?.nationality ?? null,
     name_match_score: nameResult.score,
     matched_keywords: matchedKeywords,
     rejection_reasons: rejectionReasons,
@@ -497,6 +608,12 @@ Deno.serve(async (req: Request) => {
       extracted_name: analysis.extracted_name,
       name_match_score: analysis.name_match_score,
       document_number: analysis.extracted_document_number,
+      // Structured fields recovered from MRZ + label heuristics so the police
+      // bulletin step can prefill DOB / nationality / place of birth without
+      // re-parsing the raw OCR lines on the client.
+      birth_date: analysis.birth_date,
+      birth_place: analysis.birth_place,
+      nationality: analysis.nationality,
       document_type_detected: analysis.document_type_detected,
       matched_keywords: analysis.matched_keywords,
       confidence: analysis.confidence,
@@ -578,6 +695,9 @@ Deno.serve(async (req: Request) => {
         ocr_data: {
           extracted_name: analysis.extracted_name,
           document_number: analysis.extracted_document_number,
+          birth_date: analysis.birth_date,
+          birth_place: analysis.birth_place,
+          nationality: analysis.nationality,
         },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
