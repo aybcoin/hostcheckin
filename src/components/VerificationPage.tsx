@@ -105,18 +105,129 @@ function readOptionalString(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
+// ISO-3 → demonym mapping for nationalities we routinely see at check-in.
+// Falls back to the raw ISO code if not in the map so the field is never blank.
+const NATIONALITY_BY_ISO3: Record<string, string> = {
+  MAR: 'Marocaine',
+  FRA: 'Française',
+  ESP: 'Espagnole',
+  PRT: 'Portugaise',
+  ITA: 'Italienne',
+  DEU: 'Allemande',
+  GBR: 'Britannique',
+  USA: 'Américaine',
+  CAN: 'Canadienne',
+  BEL: 'Belge',
+  CHE: 'Suisse',
+  NLD: 'Néerlandaise',
+  DZA: 'Algérienne',
+  TUN: 'Tunisienne',
+  EGY: 'Égyptienne',
+  SAU: 'Saoudienne',
+  ARE: 'Émiratie',
+  TUR: 'Turque',
+  CHN: 'Chinoise',
+  JPN: 'Japonaise',
+};
+
+interface MrzExtraction {
+  document_number?: string | null;
+  birth_date?: string | null;
+  nationality?: string | null;
+  extracted_name?: string | null;
+}
+
+/**
+ * Parse a TD3 passport MRZ block (two 44-character lines) out of raw OCR lines.
+ * MRZ is highly standardized — when present it is the most reliable source of
+ * nationality, DOB and document number, so we always prefer it over noisy
+ * label-based extraction.
+ */
+function extractFromMrz(ocrLines: unknown): MrzExtraction | null {
+  if (!Array.isArray(ocrLines)) return null;
+  const cleaned = ocrLines
+    .filter((line): line is string => typeof line === 'string')
+    .map((line) => line.replace(/\s+/g, ''));
+
+  const line2 = cleaned.find((line) => /^[A-Z0-9<]{30,}\d[A-Z]{3}\d{6,}/.test(line));
+  if (!line2 || line2.length < 28) return null;
+
+  const documentNumber = line2.slice(0, 9).replace(/</g, '') || null;
+  const nationalityIso = line2.slice(10, 13);
+  const yyRaw = line2.slice(13, 15);
+  const mmRaw = line2.slice(15, 17);
+  const ddRaw = line2.slice(17, 19);
+
+  let birthDate: string | null = null;
+  if (/^\d{2}$/.test(yyRaw) && /^\d{2}$/.test(mmRaw) && /^\d{2}$/.test(ddRaw)) {
+    const yy = Number(yyRaw);
+    const currentYY = new Date().getFullYear() % 100;
+    const year = yy > currentYY ? 1900 + yy : 2000 + yy;
+    birthDate = `${year}-${mmRaw}-${ddRaw}`;
+  }
+
+  const line1 = cleaned.find((line) => /^P[<-][A-Z<]{3}/.test(line));
+  let extractedName: string | null = null;
+  if (line1) {
+    const namesPart = line1.slice(5).replace(/<+$/, '');
+    const [surnameRaw, ...givenRaw] = namesPart.split('<<');
+    const surname = (surnameRaw || '').replace(/</g, ' ').trim();
+    const given = givenRaw.join(' ').replace(/</g, ' ').trim();
+    const joined = `${given} ${surname}`.trim();
+    if (joined) extractedName = joined;
+  }
+
+  return {
+    document_number: documentNumber,
+    birth_date: birthDate,
+    nationality: /^[A-Z]{3}$/.test(nationalityIso)
+      ? NATIONALITY_BY_ISO3[nationalityIso] ?? nationalityIso
+      : null,
+    extracted_name: extractedName,
+  };
+}
+
+/**
+ * Heuristic: scan raw OCR lines for the value following a "Lieu de naissance"
+ * (or English/Arabic equivalent) label. Falls back to null if not found.
+ */
+function extractPlaceOfBirth(ocrLines: unknown): string | null {
+  if (!Array.isArray(ocrLines)) return null;
+  const lines = ocrLines.filter((line): line is string => typeof line === 'string');
+  const labelRe = /lieu\s*de\s*naissance|place\s*of\s*birth|محل\s*الازدياد|محل\s*الميلاد/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (labelRe.test(lines[i])) {
+      // Value is typically the next non-empty line that isn't another label.
+      for (let j = i + 1; j < Math.min(lines.length, i + 3); j++) {
+        const candidate = lines[j].trim();
+        if (!candidate) continue;
+        if (/date|domicile|residence|signature|expiration|délivrance/i.test(candidate)) continue;
+        return candidate;
+      }
+    }
+  }
+  return null;
+}
+
 function normalizeIdentityOcrData(source: unknown): IdentityOcrData | null {
   if (!source || typeof source !== 'object') {
     return null;
   }
 
+  const mrz = extractFromMrz(Reflect.get(source, 'ocr_lines'));
+  const placeOfBirthFromLines = extractPlaceOfBirth(Reflect.get(source, 'ocr_lines'));
+
   const normalized: IdentityOcrData = {
     declared_name: readOptionalString(Reflect.get(source, 'declared_name')),
-    extracted_name: readOptionalString(Reflect.get(source, 'extracted_name')),
-    document_number: readOptionalString(Reflect.get(source, 'document_number')),
-    birth_date: readOptionalString(Reflect.get(source, 'birth_date')),
-    birth_place: readOptionalString(Reflect.get(source, 'birth_place')),
-    nationality: readOptionalString(Reflect.get(source, 'nationality')),
+    extracted_name:
+      readOptionalString(Reflect.get(source, 'extracted_name')) || mrz?.extracted_name || null,
+    document_number:
+      readOptionalString(Reflect.get(source, 'document_number')) || mrz?.document_number || null,
+    birth_date: readOptionalString(Reflect.get(source, 'birth_date')) || mrz?.birth_date || null,
+    birth_place: readOptionalString(Reflect.get(source, 'birth_place')) || placeOfBirthFromLines,
+    nationality:
+      readOptionalString(Reflect.get(source, 'nationality')) || mrz?.nationality || null,
   };
 
   if (Object.values(normalized).every((value) => value == null)) {
