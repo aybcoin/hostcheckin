@@ -40,33 +40,32 @@ const LAYOUT = {
     arabicTitleY: 764,
   },
   summary: {
-    apartmentLabelX: 52,
-    apartmentValueX: 122,
-    apartmentY: 724,
-    ordreLabelX: 252,
-    ordreValueX: 318,
-    ordreY: 724,
-    rtlOrderValueRightX: 500,
-    rtlOrderLineStartX: 390,
-    rtlOrderLineEndX: 486,
-    rtlOrderLabelRightX: 544,
-    rtlOrderY: 724,
+    // "Appart N°: ......" on the far left, "N° ordre: ...... رقم الترتيب"
+    // on the far right — single dotted-underline value in each block.
+    apartmentLabelX: 50,
+    apartmentLineStartX: 110,
+    apartmentLineEndX: 220,
+    apartmentValueX: 116,
+    ordreLabelX: 340,
+    ordreLineStartX: 395,
+    ordreLineEndX: 460,
+    ordreValueX: 400,
+    rtlOrderLabelRightX: 545,
+    summaryY: 736,
   },
+  // Each row is one full line: bilingual EN/FR label on the left, ONE long
+  // dotted underline carrying the value across the middle, Arabic label on
+  // the right — mirroring the official Moroccan template.
   columns: {
-    // Labels widened so "Date d'arrivée au Maroc" / "Date et lieu de naissance"
-    // never overlap the dotted line on the left side.
-    leftLabelX: 52,
-    leftLineStartX: 210,
-    leftLineEndX: 304,
-    leftValueX: 218,
-    rightLineStartX: 320,
-    rightLineEndX: 414,
-    rightValueRightX: 410,
-    rightLabelRightX: 542,
+    leftLabelX: 50,
+    valueLineStartX: 195,
+    valueLineEndX: 415,
+    valueTextX: 200,
+    rightLabelRightX: 545,
   },
   rows: {
-    firstY: 676,
-    step: 46,
+    firstY: 692,
+    step: 42,
   },
   footer: {
     dateLabelX: 52,
@@ -104,6 +103,7 @@ const STYLE = {
     header: 16,
     arabicHeader: 16,
     label: 11,
+    subtitle: 8.5,
     value: 10.5,
     signature: 10,
   },
@@ -186,6 +186,7 @@ type BulletinRecord = {
 
 type LeftField = {
   label: string;
+  subtitle: string;
   value: string;
 };
 
@@ -442,50 +443,41 @@ function drawDottedLine(page: PDFPage, startX: number, endX: number, y: number):
   }
 }
 
-function drawLeftField(
+function drawFieldRow(
   page: PDFPage,
   fonts: EmbeddedFonts,
   rowIndex: number,
   field: LeftField,
+  rightLabel: string,
 ): void {
   const rowY = LAYOUT.rows.firstY - (rowIndex * LAYOUT.rows.step);
-  const value = truncateToWidth(
-    field.value,
-    fonts.latin,
-    STYLE.fontSize.value,
-    LAYOUT.columns.leftLineEndX - LAYOUT.columns.leftValueX,
-  );
 
-  // Single French label per row — the user prefers one foreign language plus the
-  // Arabic mirror on the right side, not the trilingual EN/FR/AR stack.
+  // Bold English / primary label on top
   page.drawText(field.label, {
     x: LAYOUT.columns.leftLabelX,
-    y: rowY + 4,
+    y: rowY + 6,
     font: fonts.latinBold,
     size: STYLE.fontSize.label,
     color: STYLE.colors.text,
   });
 
-  drawDottedLine(page, LAYOUT.columns.leftLineStartX, LAYOUT.columns.leftLineEndX, rowY + 4);
-
-  page.drawText(value, {
-    x: LAYOUT.columns.leftValueX,
-    y: rowY + 6,
-    font: fonts.latin,
-    size: STYLE.fontSize.value,
-    color: STYLE.colors.text,
+  // Italic French subtitle below
+  page.drawText(field.subtitle, {
+    x: LAYOUT.columns.leftLabelX,
+    y: rowY - 5,
+    font: fonts.latinItalic,
+    size: STYLE.fontSize.subtitle,
+    color: STYLE.colors.muted,
   });
-}
 
-function drawRightField(
-  page: PDFPage,
-  fonts: EmbeddedFonts,
-  rowIndex: number,
-  field: RightField,
-): void {
-  const rowY = LAYOUT.rows.firstY - (rowIndex * LAYOUT.rows.step);
-  const label = prepareRtlText(field.label);
-  const labelWidth = fonts.arabic.widthOfTextAtSize(label, STYLE.fontSize.label);
+  // Single long dotted line carrying the value across the middle.
+  drawDottedLine(
+    page,
+    LAYOUT.columns.valueLineStartX,
+    LAYOUT.columns.valueLineEndX,
+    rowY,
+  );
+
   const valueIsArabic = containsArabic(field.value);
   const valueFont = valueIsArabic ? fonts.arabic : fonts.latin;
   const rawValue = valueIsArabic ? prepareRtlText(field.value) : field.value;
@@ -493,23 +485,26 @@ function drawRightField(
     rawValue,
     valueFont,
     STYLE.fontSize.value,
-    LAYOUT.columns.rightValueRightX - LAYOUT.columns.rightLineStartX,
+    LAYOUT.columns.valueLineEndX - LAYOUT.columns.valueTextX,
   );
-  const valueWidth = valueFont.widthOfTextAtSize(value, STYLE.fontSize.value);
-
-  drawDottedLine(page, LAYOUT.columns.rightLineStartX, LAYOUT.columns.rightLineEndX, rowY + 4);
 
   page.drawText(value, {
-    x: LAYOUT.columns.rightValueRightX - valueWidth,
-    y: rowY + 6,
+    x: LAYOUT.columns.valueTextX,
+    y: rowY + 4,
     font: valueFont,
     size: STYLE.fontSize.value,
     color: STYLE.colors.text,
   });
 
-  page.drawText(label, {
-    x: LAYOUT.columns.rightLabelRightX - labelWidth,
-    y: rowY + 6,
+  // Right-aligned Arabic label — bold so it visually balances the bold English.
+  const arabicLabel = prepareRtlText(rightLabel);
+  const arabicLabelWidth = fonts.arabic.widthOfTextAtSize(
+    arabicLabel,
+    STYLE.fontSize.label,
+  );
+  page.drawText(arabicLabel, {
+    x: LAYOUT.columns.rightLabelRightX - arabicLabelWidth,
+    y: rowY + 4,
     font: fonts.arabic,
     size: STYLE.fontSize.label,
     color: STYLE.colors.text,
@@ -705,88 +700,115 @@ async function buildBulletinPdf(
     color: STYLE.colors.text,
   });
 
-  const apartmentText = `Appart N°: ${compactValue(bulletin.appart_no ?? property?.appart_no)}`;
-  const ordreText = `N° ordre: ${bulletin.ordre_no ?? '—'}`;
-  page.drawText(apartmentText, {
+  // Header summary: Appart N° (left) ＋ N° ordre + Arabic mirror (right).
+  page.drawText('Appart N°:', {
     x: LAYOUT.summary.apartmentLabelX,
-    y: LAYOUT.summary.apartmentY,
+    y: LAYOUT.summary.summaryY,
     font: fonts.latin,
     size: STYLE.fontSize.label,
     color: STYLE.colors.text,
   });
-  page.drawText(ordreText, {
-    x: LAYOUT.summary.ordreLabelX,
-    y: LAYOUT.summary.ordreY,
-    font: fonts.latin,
-    size: STYLE.fontSize.label,
-    color: STYLE.colors.text,
-  });
-
-  const rtlOrderValue = String(bulletin.ordre_no ?? '—');
-  const rtlOrderValueWidth = fonts.latin.widthOfTextAtSize(rtlOrderValue, STYLE.fontSize.value);
-  const rtlOrderLabel = prepareRtlText('رقم الترتيب');
-  const rtlOrderLabelWidth = fonts.arabic.widthOfTextAtSize(rtlOrderLabel, STYLE.fontSize.label);
   drawDottedLine(
     page,
-    LAYOUT.summary.rtlOrderLineStartX,
-    LAYOUT.summary.rtlOrderLineEndX,
-    LAYOUT.summary.rtlOrderY + 2,
+    LAYOUT.summary.apartmentLineStartX,
+    LAYOUT.summary.apartmentLineEndX,
+    LAYOUT.summary.summaryY - 1,
   );
-  page.drawText(rtlOrderValue, {
-    x: LAYOUT.summary.rtlOrderValueRightX - rtlOrderValueWidth,
-    y: LAYOUT.summary.rtlOrderY,
+  page.drawText(compactValue(bulletin.appart_no ?? property?.appart_no), {
+    x: LAYOUT.summary.apartmentValueX,
+    y: LAYOUT.summary.summaryY + 1,
     font: fonts.latin,
     size: STYLE.fontSize.value,
     color: STYLE.colors.text,
   });
-  page.drawText(rtlOrderLabel, {
-    x: LAYOUT.summary.rtlOrderLabelRightX - rtlOrderLabelWidth,
-    y: LAYOUT.summary.rtlOrderY,
-    font: fonts.arabic,
+
+  page.drawText('N° ordre:', {
+    x: LAYOUT.summary.ordreLabelX,
+    y: LAYOUT.summary.summaryY,
+    font: fonts.latin,
     size: STYLE.fontSize.label,
     color: STYLE.colors.text,
   });
+  drawDottedLine(
+    page,
+    LAYOUT.summary.ordreLineStartX,
+    LAYOUT.summary.ordreLineEndX,
+    LAYOUT.summary.summaryY - 1,
+  );
+  page.drawText(String(bulletin.ordre_no ?? ''), {
+    x: LAYOUT.summary.ordreValueX,
+    y: LAYOUT.summary.summaryY + 1,
+    font: fonts.latin,
+    size: STYLE.fontSize.value,
+    color: STYLE.colors.text,
+  });
 
-  const leftFields: LeftField[] = [
-    { label: 'Nom', value: compactValue(bulletin.full_name) },
-    { label: 'Prénom', value: compactValue(bulletin.first_name) },
+  const rtlOrderLabel = prepareRtlText('رقم الترتيب');
+  const rtlOrderLabelWidth = fonts.arabic.widthOfTextAtSize(rtlOrderLabel, STYLE.fontSize.label);
+  page.drawText(rtlOrderLabel, {
+    x: LAYOUT.summary.rtlOrderLabelRightX - rtlOrderLabelWidth,
+    y: LAYOUT.summary.summaryY,
+    font: fonts.arabic,
+    size: STYLE.fontSize.label,
+    color: STYLE.colors.text
+  });
+
+  // Each row carries: bold EN label + italic FR subtitle on the left,
+  // one long dotted underline with the value across the middle, RTL Arabic
+  // label on the right. Layout mirrors the official Moroccan template the
+  // host shared.
+  const rows: Array<{ left: LeftField; rightLabel: string }> = [
     {
-      label: 'Date et lieu de naissance',
-      value: combineValue([formatDate(bulletin.date_of_birth), bulletin.place_of_birth]),
+      left: { label: 'Name:', subtitle: 'Nom :', value: compactValue(bulletin.full_name) },
+      rightLabel: 'الاسم العائلي',
     },
-    { label: 'Nationalité', value: compactValue(bulletin.nationality) },
-    { label: 'Profession', value: compactValue(bulletin.profession) },
-    { label: 'Provenance', value: compactValue(bulletin.coming_from) },
-    { label: 'Destination', value: compactValue(bulletin.going_to) },
     {
-      label: "Date d'arrivée au Maroc",
-      value: formatDate(bulletin.arrival_date ?? reservation?.check_in_date),
+      left: { label: 'Surname:', subtitle: 'Prénom :', value: compactValue(bulletin.first_name) },
+      rightLabel: 'الاسم الشخصي',
     },
-    { label: 'Domicile habituel', value: compactValue(bulletin.home_address) },
-    { label: 'N° passeport', value: compactValue(bulletin.passport_no) },
+    {
+      left: {
+        label: 'Date & Place of birth:',
+        subtitle: 'Date et lieu de naissance :',
+        value: combineValue([formatDate(bulletin.date_of_birth), bulletin.place_of_birth]),
+      },
+      rightLabel: 'مكان وتاريخ الازدياد',
+    },
+    {
+      left: { label: 'Nationality:', subtitle: 'Nationalité :', value: compactValue(bulletin.nationality) },
+      rightLabel: 'الجنسية',
+    },
+    {
+      left: { label: 'Profession:', subtitle: 'Profession :', value: compactValue(bulletin.profession) },
+      rightLabel: 'المهنة',
+    },
+    {
+      left: { label: 'Coming from:', subtitle: 'Provenance :', value: compactValue(bulletin.coming_from) },
+      rightLabel: 'محل القدوم',
+    },
+    {
+      left: { label: 'Going to:', subtitle: 'Destination :', value: compactValue(bulletin.going_to) },
+      rightLabel: 'الذهاب الى',
+    },
+    {
+      left: {
+        label: 'Date of arrival in Morocco:',
+        subtitle: "Date d'entrée au Maroc :",
+        value: formatDate(bulletin.arrival_date ?? reservation?.check_in_date),
+      },
+      rightLabel: 'تاريخ دخول المغرب',
+    },
+    {
+      left: { label: 'Home address:', subtitle: 'Domicile habituel :', value: compactValue(bulletin.home_address) },
+      rightLabel: 'محل السكنى',
+    },
+    {
+      left: { label: 'N° Passport:', subtitle: 'N° passeport :', value: compactValue(bulletin.passport_no) },
+      rightLabel: 'رقم جواز السفر',
+    },
   ];
 
-  const rightFields: RightField[] = [
-    { label: 'الاسم العائلي', value: compactValue(bulletin.full_name) },
-    { label: 'الاسم الشخصي', value: compactValue(bulletin.first_name) },
-    {
-      label: 'مكان وتاريخ الازدياد',
-      value: combineValue([formatDate(bulletin.date_of_birth), bulletin.place_of_birth]),
-    },
-    { label: 'الجنسية', value: compactValue(bulletin.nationality) },
-    { label: 'المهنة', value: compactValue(bulletin.profession) },
-    { label: 'محل القدوم', value: compactValue(bulletin.coming_from) },
-    { label: 'الذهاب الى', value: compactValue(bulletin.going_to) },
-    {
-      label: 'تاريخ دخول المغرب',
-      value: formatDate(bulletin.arrival_date ?? reservation?.check_in_date),
-    },
-    { label: 'محل السكنى', value: compactValue(bulletin.home_address) },
-    { label: 'رقم جواز السفر', value: compactValue(bulletin.passport_no) },
-  ];
-
-  leftFields.forEach((field, index) => drawLeftField(page, fonts, index, field));
-  rightFields.forEach((field, index) => drawRightField(page, fonts, index, field));
+  rows.forEach((row, index) => drawFieldRow(page, fonts, index, row.left, row.rightLabel));
 
   const issuedOn = formatDate(latestContract?.signed_at ?? bulletin.submitted_at ?? new Date().toISOString());
   page.drawText('Le:', {
