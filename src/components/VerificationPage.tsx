@@ -149,7 +149,10 @@ function extractFromMrz(ocrLines: unknown): MrzExtraction | null {
     .filter((line): line is string => typeof line === 'string')
     .map((line) => line.replace(/\s+/g, ''));
 
-  const line2 = cleaned.find((line) => /^[A-Z0-9<]{30,}\d[A-Z]{3}\d{6,}/.test(line));
+  // TD3 MRZ line 2 structure: [9 chars doc#][1 check][3 letters nat][6 digits DOB]
+  // We anchor on that exact prefix — a greedy match like {30,} would consume the
+  // whole line and leave nothing for the nationality/DOB groups.
+  const line2 = cleaned.find((line) => /^[A-Z0-9<]{9}\d[A-Z]{3}\d{6}/.test(line));
   if (!line2 || line2.length < 28) return null;
 
   const documentNumber = line2.slice(0, 9).replace(/</g, '') || null;
@@ -194,17 +197,22 @@ function extractFromMrz(ocrLines: unknown): MrzExtraction | null {
 function extractPlaceOfBirth(ocrLines: unknown): string | null {
   if (!Array.isArray(ocrLines)) return null;
   const lines = ocrLines.filter((line): line is string => typeof line === 'string');
-  const labelRe = /lieu\s*de\s*naissance|place\s*of\s*birth|محل\s*الازدياد|محل\s*الميلاد/i;
+  // Label OCR is unreliable — "Lieu" gets read as "Lieo", "Place" as "lace", etc.
+  // Match on the most distinctive noun and skip lines that look like a date.
+  const labelRe = /li[eo]u\s*de\s*naissance|place\s*of\s*birth|naissance|محل\s*الازدياد|محل\s*الميلاد/i;
+  const dateLike = /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/;
+  const nextLabelLike = /date|domicile|domicle|residence|résidence|signature|expiration|delivrance|délivrance|nationalité|profession/i;
 
   for (let i = 0; i < lines.length; i++) {
-    if (labelRe.test(lines[i])) {
-      // Value is typically the next non-empty line that isn't another label.
-      for (let j = i + 1; j < Math.min(lines.length, i + 3); j++) {
-        const candidate = lines[j].trim();
-        if (!candidate) continue;
-        if (/date|domicile|residence|signature|expiration|délivrance/i.test(candidate)) continue;
-        return candidate;
-      }
+    if (!labelRe.test(lines[i])) continue;
+    // Skip the matching line itself if it also contains the date — the OCR often
+    // glues the label and the date together.
+    for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+      const candidate = lines[j].trim();
+      if (!candidate) continue;
+      if (dateLike.test(candidate)) continue;
+      if (nextLabelLike.test(candidate)) continue;
+      return candidate;
     }
   }
   return null;
