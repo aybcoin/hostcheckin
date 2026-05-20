@@ -58,9 +58,9 @@ const LAYOUT = {
   // the right — mirroring the official Moroccan template.
   columns: {
     leftLabelX: 50,
-    valueLineStartX: 195,
+    valueLineStartX: 220,
     valueLineEndX: 415,
-    valueTextX: 200,
+    valueTextX: 223,
     rightLabelRightX: 545,
   },
   rows: {
@@ -72,21 +72,27 @@ const LAYOUT = {
     dateValueX: 84,
     dateLineStartX: 82,
     dateLineEndX: 210,
-    dateY: 164,
+    dateY: 199,
     dateArabicLabelRightX: 542,
     dateArabicLineStartX: 432,
     dateArabicLineEndX: 520,
+    signatureLabelY: 132,
     signatureLineStartX: 150,
     signatureLineEndX: 308,
-    signatureLineY: 110,
+    signatureLineY: 145,
     signatureImageX: 168,
-    signatureImageY: 118,
+    signatureImageY: 153,
     signatureImageMaxWidth: 118,
     signatureImageMaxHeight: 36,
     signatureArabicLineStartX: 412,
     signatureArabicLineEndX: 506,
     signatureArabicLabelRightX: 542,
-    signatureArabicY: 110,
+    signatureArabicY: 145,
+  },
+  verificationCode: {
+    dividerY: 112,
+    labelY: 100,
+    codeY: 88,
   },
 } as const;
 
@@ -181,6 +187,7 @@ type BulletinRecord = {
   signature_url?: string | null;
   pdf_storage_path?: string | null;
   submitted_at?: string | null;
+  verification_code?: string | null;
   reservations?: ReservationRecord | ReservationRecord[] | null;
 };
 
@@ -200,6 +207,7 @@ type EmbeddedFonts = {
   latinBold: PDFFont;
   latinItalic: PDFFont;
   arabic: PDFFont;
+  mono: PDFFont;
 };
 
 const ARABIC_FORMS: Record<string, {
@@ -345,6 +353,42 @@ function sanitizeForWinAnsi(text: string): string {
     }
   }
   return out;
+}
+
+async function sha256Short(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 8)
+    .toUpperCase();
+}
+
+async function generateVerificationCode(
+  documentType: string,
+  reservationId: string,
+  appartNo: string | null | undefined,
+  ordreNo: number | null | undefined,
+  guestName: string | null | undefined,
+  submittedAt: string | null | undefined,
+): Promise<string> {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const appart = (appartNo ?? 'APP')
+    .replace(/[^A-Z0-9]/gi, '')
+    .toUpperCase()
+    .slice(0, 4)
+    .padEnd(3, '0');
+  const ordre = String(ordreNo ?? 0).padStart(4, '0');
+  const payload = [
+    reservationId,
+    appartNo ?? '',
+    String(ordreNo ?? ''),
+    (guestName ?? '').toLowerCase(),
+    submittedAt ?? '',
+    date,
+  ].join('|');
+  const hash = await sha256Short(payload);
+  return `HC-${documentType}-${date}-${appart}-${ordre}-${hash}`;
 }
 
 function compactValue(value: string | null | undefined): string {
@@ -605,6 +649,7 @@ async function fetchBulletinRecord(
       signature_url,
       pdf_storage_path,
       submitted_at,
+      verification_code,
       reservations!inner (
         id,
         check_in_date,
@@ -643,18 +688,20 @@ async function fetchBulletinRecord(
 
 async function buildBulletinPdf(
   bulletin: BulletinRecord,
+  verificationCode: string,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
 
   const page = pdfDoc.addPage([LAYOUT.page.width, LAYOUT.page.height]);
-  const [latin, latinBold, latinItalic] = await Promise.all([
+  const [latin, latinBold, latinItalic, mono] = await Promise.all([
     pdfDoc.embedFont(StandardFonts.Helvetica),
     pdfDoc.embedFont(StandardFonts.HelveticaBold),
     pdfDoc.embedFont(StandardFonts.HelveticaOblique),
+    pdfDoc.embedFont(StandardFonts.Courier),
   ]);
   const amiri = await pdfDoc.embedFont(await getAmiriFontBytes(), { subset: true });
-  const fonts: EmbeddedFonts = { latin, latinBold, latinItalic, arabic: amiri };
+  const fonts: EmbeddedFonts = { latin, latinBold, latinItalic, arabic: amiri, mono };
 
   const reservation = asSingle(bulletin.reservations);
   const property = asSingle(reservation?.properties);
@@ -889,6 +936,50 @@ async function buildBulletinPdf(
     color: STYLE.colors.text,
   });
 
+  // "Signature" text label centered below the left signature dotted line
+  const signatureLabel = 'Signature';
+  const signatureLabelWidth = fonts.latin.widthOfTextAtSize(signatureLabel, STYLE.fontSize.signature);
+  const signatureLabelCenterX = (LAYOUT.footer.signatureLineStartX + LAYOUT.footer.signatureLineEndX) / 2;
+  page.drawText(signatureLabel, {
+    x: signatureLabelCenterX - signatureLabelWidth / 2,
+    y: LAYOUT.footer.signatureLabelY,
+    font: fonts.latin,
+    size: STYLE.fontSize.signature,
+    color: STYLE.colors.muted,
+  });
+
+  // Thin gray separator line
+  drawDottedLine(
+    page,
+    LAYOUT.margins.left,
+    LAYOUT.page.width - LAYOUT.margins.right,
+    LAYOUT.verificationCode.dividerY,
+  );
+
+  // Label
+  const vcLabel = 'Code cryptographique / Verification code :';
+  page.drawText(vcLabel, {
+    x: LAYOUT.margins.left,
+    y: LAYOUT.verificationCode.labelY,
+    font: fonts.latinItalic,
+    size: 7,
+    color: STYLE.colors.muted,
+  });
+
+  // The HC-FP-... code in Courier monospace, centered
+  const vcLabelWidth = fonts.latinItalic.widthOfTextAtSize(vcLabel, 7);
+  const vcCodeText = verificationCode;
+  const vcCodeWidth = fonts.mono.widthOfTextAtSize(vcCodeText, 8);
+  const pageCenter = LAYOUT.page.width / 2;
+  page.drawText(vcCodeText, {
+    x: pageCenter - vcCodeWidth / 2,
+    y: LAYOUT.verificationCode.codeY,
+    font: fonts.mono,
+    size: 8,
+    color: STYLE.colors.text,
+  });
+  void vcLabelWidth;
+
   return await pdfDoc.save();
 }
 
@@ -940,11 +1031,26 @@ serve(async (req: Request) => {
           success: true,
           pdf_url: existingUrl.signedUrl,
           storage_path: bulletin.pdf_storage_path,
+          verification_code: bulletin.verification_code ?? null,
         });
       }
     }
 
-    const pdfBytes = await buildBulletinPdf(bulletin);
+    const reservation = asSingle(bulletin.reservations);
+    const property = asSingle(reservation?.properties);
+    const verificationCode =
+      isNonEmptyString(bulletin.verification_code) && body.regenerate !== true
+        ? bulletin.verification_code
+        : await generateVerificationCode(
+            'FP',
+            bulletin.reservation_id,
+            bulletin.appart_no ?? property?.appart_no,
+            bulletin.ordre_no,
+            bulletin.full_name,
+            bulletin.submitted_at,
+          );
+
+    const pdfBytes = await buildBulletinPdf(bulletin, verificationCode);
     const storagePath = `${bulletin.host_id}/${bulletin.reservation_id}.pdf`;
 
     const { error: uploadError } = await supabase.storage
@@ -962,6 +1068,7 @@ serve(async (req: Request) => {
       .from('police_bulletins')
       .update({
         pdf_storage_path: storagePath,
+        verification_code: verificationCode,
         updated_at: new Date().toISOString(),
       })
       .eq('id', bulletin.id);
@@ -982,6 +1089,7 @@ serve(async (req: Request) => {
       success: true,
       pdf_url: signedUrlResult.signedUrl,
       storage_path: storagePath,
+      verification_code: verificationCode,
     });
   } catch (error) {
     console.error('generate-police-bulletin error:', error);
